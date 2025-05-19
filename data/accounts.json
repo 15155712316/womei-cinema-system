@@ -1,0 +1,4 @@
+[
+    {"account_id": "user001", "password": "123456", "balance": 100.0, "points": 500},
+    {"account_id": "user002", "password": "654321", "balance": 50.0, "points": 200}
+] 
