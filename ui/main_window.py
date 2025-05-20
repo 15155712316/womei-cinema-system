@@ -1,5 +1,9 @@
 import tkinter as tk  # 导入tkinter库，tk是Python自带的GUI库
 from tkinter import ttk, messagebox  # 导入ttk（美化控件）和messagebox（弹窗）
+from ui.login_panel import LoginPanel
+from ui.account_list_panel import AccountListPanel
+from ui.cinema_select_panel import CinemaSelectPanel
+from ui.seat_map_panel import SeatMapPanel
 
 class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
     def __init__(self):  # 初始化方法
@@ -27,10 +31,16 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.account_list_frame = tk.LabelFrame(left_frame, text="账号列表区", fg="red")
         self.account_list_frame.place(x=0, y=login_h, width=left_w, height=account_h)
 
+        # 集成登录面板和账号列表面板
+        self.login_panel = LoginPanel(self.login_frame)
+        self.login_panel.pack(fill=tk.BOTH, expand=True)
+        self.account_list_panel = AccountListPanel(self.account_list_frame)
+        self.account_list_panel.pack(fill=tk.BOTH, expand=True)
+
         # ========== 中栏 ==========
-        center_frame = tk.Frame(self, bg="#f8f8f8")
+        center_frame = tk.Frame(self, bg="#fff")
         center_frame.place(x=left_w, y=0, width=center_w, height=total_height)
-        center_top_h = int(total_height * 0.33)
+        center_top_h = int(total_height * 0.38)
         center_bottom_h = total_height - center_top_h
         # 上部tab栏
         center_top_frame = tk.Frame(center_frame)
@@ -43,6 +53,8 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         tab1_right = tk.LabelFrame(tab1, text="券列表区", fg="red")
         tab1_left.place(x=0, y=0, width=center_w//2, height=center_top_h)
         tab1_right.place(x=center_w//2, y=0, width=center_w//2, height=center_top_h)
+        self.cinema_panel = CinemaSelectPanel(tab1_left)
+        self.cinema_panel.pack(fill="both", expand=True)
         self.center_notebook.add(tab1, text="影院/券")
         # 其余tab: 全宽
         for i, name in enumerate(["出票", "账号", "绑券", "订单", "积分", "会员卡"]):
@@ -51,6 +63,11 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         # 下部座位区
         center_bottom_frame = tk.LabelFrame(center_frame, text="座位区域", fg="red")
         center_bottom_frame.place(x=0, y=center_top_h, width=center_w, height=center_bottom_h)
+        # 选座区 SeatMapPanel 只放在座位区域
+        self.seat_panel = SeatMapPanel(center_bottom_frame, seat_data=[])
+        self.seat_panel.pack(fill="both", expand=True, padx=10, pady=5)
+        # 绑定场次选择事件
+        self.cinema_panel.set_seat_panel(self.seat_panel)
 
         # ========== 右栏 ==========
         right_frame = tk.Frame(self, bg="#f0f0f0")
@@ -90,20 +107,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         tk.Label(self.account_frame, text="账号列表:").pack(anchor="w", pady=(6,0))  # 账号列表标签
         tk.Listbox(self.account_frame, height=5).pack(fill=tk.BOTH, expand=True, pady=2)  # 账号列表框
 
-    def _build_cinema_area(self):  # 构建影院选择区
-        # 城市、影院、电影、日期、场次下拉
-        row = 0  # 行号计数器
-        for label in ["城市", "影院", "电影", "日期", "场次"]:  # 循环创建标签和下拉框
-            tk.Label(self.cinema_frame, text=label+":").grid(row=row, column=0, sticky="w", pady=2)  # 标签
-            ttk.Combobox(self.cinema_frame, values=["示例1", "示例2"], state="readonly").grid(row=row, column=1, sticky="ew", pady=2, padx=2)  # 下拉框
-            if label == "场次":  # 如果是场次
-                # 在场次下拉框下方添加"打开选座"按钮
-                tk.Button(self.cinema_frame, text="打开选座").grid(row=row+1, column=0, columnspan=2, sticky="ew", pady=4)  # 打开选座按钮
-            row += 1  # 行号加1
-        self.cinema_frame.grid_columnconfigure(1, weight=1)  # 下拉框列可拉伸
-        # 搜索按钮
-        tk.Button(self.cinema_frame, text="搜索影院", width=10).grid(row=0, column=2, padx=4)  # 搜索影院按钮
-        tk.Button(self.cinema_frame, text="刷新会员卡", width=10).grid(row=1, column=2, padx=4)  # 刷新会员卡按钮
+    
 
     def _build_coupon_area(self):  # 构建券列表区
         tk.Label(self.coupon_frame, text="可用券:").pack(anchor="w")  # 券列表标签

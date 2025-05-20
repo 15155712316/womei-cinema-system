@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# UI面板结构与说明
+
+本项目的[ui/](mdc:ui)目录包含所有Tkinter界面相关代码，主要面板如下：
+
+- [cinema_select_panel.py](mdc:ui/cinema_select_panel.py)：影院、影片、日期、场次四级联动选择区，负责数据联动和座位图刷新。
+- [seat_map_panel.py](mdc:ui/seat_map_panel.py)：座位图渲染区，负责座位排布、样式、交互逻辑。
+
+每个面板均为独立类，便于维护和扩展。面板之间通过方法（如set_seat_panel、update_seats）进行数据和事件传递。
+

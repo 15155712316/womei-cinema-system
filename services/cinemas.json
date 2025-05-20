@@ -1,0 +1,18 @@
+[
+  {
+    "name": "虹湾影城",
+    "base_url": "tt7.cityfilms.cn",
+    "cinemaid": "11b7e4bcc265",
+    "openid": "ohA6p7VxLxzcHoBw1_E8VcyEvVVs",
+    "token": "9de4d8353cd30172",
+    "userid": "14700283316"
+  },
+  {
+    "name": "万友影城",
+    "base_url": "zcxzs7.cityfilms.cn",
+    "cinemaid": "0f1e21d86ac8",
+    "openid": "oEW4I7NdSlziiCBWQQVelGbFEPSU",
+    "token": "64921354c989cf73",
+    "userid": "14700283316"
+  }
+]
