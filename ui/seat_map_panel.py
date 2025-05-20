@@ -50,21 +50,24 @@ class SeatMapPanel(tk.Frame):
                     text=str(num),
                     width=3, height=1,
                     relief="solid",
-                    bd=1,
-                    font=("微软雅黑", 10),
+                    bd=2 if status == "sold" else 1,
+                    font=("微软雅黑", 10, "bold") if status == "sold" else ("微软雅黑", 10),
                     bg=self.get_bg(status),
                     fg=self.get_fg(status),
-                    state="normal" if status != "sold" else "disabled",
-                    command=lambda r=r, c=c: self.toggle_seat(r, c)
+                    activebackground=self.get_bg(status),
+                    activeforeground=self.get_fg(status),
+                    cursor="arrow",
                 )
+                if status != "sold":
+                    btn.config(command=lambda r=r, c=c: self.toggle_seat(r, c))
                 btn.grid(row=r, column=cn, padx=2, pady=2)
                 self.seat_btns[(r, c)] = btn
 
     def get_bg(self, status):
         if status == "available":
-            return "#2196f3"  # 蓝色
+            return "#fff"  # 可售座位白色
         elif status == "sold":
-            return "#f44336"  # 红色
+            return "#bdbdbd"  # 已售座位灰色
         elif status == "selected":
             return "#4caf50"  # 绿色
         return "#fff"
@@ -74,14 +77,14 @@ class SeatMapPanel(tk.Frame):
             return "#000"     # 黑色
         elif status == "selected":
             return "#fff"
-        return "#fff"         # 蓝底白字
+        return "#2196f3"         # 可售座位蓝字
 
     def toggle_seat(self, r, c):
         seat = self.seat_data[r][c]
         key = (r, c)
         if key in self.selected_seats:
             self.selected_seats.remove(key)
-            # 恢复为原始状态
+            # 恢复为原始状态（可售座位）
             seat['status'] = 'available' if seat.get('s', 'F') == 'F' else 'sold'
         else:
             self.selected_seats.add(key)
