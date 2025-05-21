@@ -8,6 +8,8 @@ class SeatMapPanel(tk.Frame):
         super().__init__(master, *args, **kwargs)
         self.seat_data = seat_data or []  # 二维座位数据
         self.selected_seats = set()       # 选中座位集合
+        self._priceinfo = {}              # 当前价格信息
+        self.account_getter = lambda: {}   # 获取账号信息的函数
         self._build_ui()
 
     def _build_ui(self):
@@ -23,19 +25,21 @@ class SeatMapPanel(tk.Frame):
         self.grid_columnconfigure(0, weight=1)
         self.seat_items = {}  # (r, c): (rect_id, text_id)
         self._draw_seats()
-        self._draw_legend()
+        # 新增：底部按钮区
+        self.submit_btn = tk.Button(self, text="提交订单", font=("微软雅黑", 11, "bold"), fg="#333", command=self._on_submit_order_click)
+        self.submit_btn.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(4, 0))
 
     def _draw_seats(self):
         self.canvas.delete("all")
         self.seat_items.clear()
         # 座位格子参数
-        cell_w, cell_h = 32, 32
-        pad_x, pad_y = 6, 6
-        label_w = 24
+        cell_w, cell_h = 27, 27  # 再增大十分之一
+        pad_x, pad_y = 4, 4
+        label_w = 16
+        max_x, max_y = 0, 0
         for r, row in enumerate(self.seat_data):
             y = pad_y + r * (cell_h + pad_y)
-            # 排号
-            self.canvas.create_text(label_w//2, y + cell_h//2, text=str(r+1), font=("微软雅黑", 10, "bold"), fill="#333")
+            self.canvas.create_text(label_w//2, y + cell_h//2, text=str(r+1), font=("微软雅黑", 8, "bold"), fill="#333")
             last_cn = 0
             for c, seat in enumerate(row):
                 if seat is None:
@@ -46,7 +50,6 @@ class SeatMapPanel(tk.Frame):
                 status = seat.get('status', 'available')
                 if status == 'empty':
                     continue
-                # 画矩形（黑色边框）
                 fill = self.get_bg(status)
                 rect_id = self.canvas.create_rectangle(
                     x, y, x+cell_w, y+cell_h,
@@ -54,34 +57,30 @@ class SeatMapPanel(tk.Frame):
                 )
                 text_id = self.canvas.create_text(
                     x+cell_w//2, y+cell_h//2, text=str(num),
-                    font=("微软雅黑", 12, "bold") if status=="sold" else ("微软雅黑", 12),
+                    font=("微软雅黑", 9, "bold") if status=="sold" else ("微软雅黑", 9),
                     fill=self.get_fg(status)
                 )
                 self.seat_items[(r, c)] = (rect_id, text_id)
-                # 绑定点击事件
                 if status == "available":
                     self.canvas.tag_bind(rect_id, '<Button-1>', lambda e, r=r, c=c: self.toggle_seat(r, c))
                     self.canvas.tag_bind(text_id, '<Button-1>', lambda e, r=r, c=c: self.toggle_seat(r, c))
-        # 更新滚动区域
+                max_x = max(max_x, x+cell_w)
+                max_y = max(max_y, y+cell_h)
         self.canvas.update_idletasks()
         bbox = self.canvas.bbox("all")
         if bbox:
             self.canvas.config(scrollregion=bbox)
-
-    def _draw_legend(self):
-        # 图例用Canvas画
-        legend = tk.Canvas(self, bg="#fff", height=36, highlightthickness=0)
-        legend.grid(row=2, column=0, columnspan=2, sticky="w", pady=(6,0))
-        items = [
-            ("#fff", "#000", "可售"),
-            ("#4caf50", "#fff", "已选"),
-            ("#bdbdbd", "#000", "已售"),
-        ]
-        for i, (bg, fg, label) in enumerate(items):
-            x = 10 + i*90
-            legend.create_rectangle(x, 8, x+28, 32, fill=bg, outline="#000", width=1)
-            legend.create_text(x+14, 20, text="座", font=("微软雅黑", 10, "bold"), fill=fg)
-            legend.create_text(x+44, 20, text=label, font=("微软雅黑", 9), fill="#333")
+            # 居中显示
+            canvas_w = self.canvas.winfo_width()
+            canvas_h = self.canvas.winfo_height()
+            content_w = max_x + pad_x
+            content_h = max_y + pad_y
+            x_offset = max((canvas_w - content_w) // 2, 0)
+            y_offset = max((canvas_h - content_h) // 2, 0)
+            self.canvas.xview_moveto(0)
+            self.canvas.yview_moveto(0)
+            if x_offset > 0 or y_offset > 0:
+                self.canvas.move("all", x_offset, y_offset)
 
     def get_bg(self, status):
         if status == "available":
@@ -109,6 +108,12 @@ class SeatMapPanel(tk.Frame):
             self.selected_seats.add(key)
             seat['status'] = "selected"
         self._update_seat_visual(r, c)
+        # 新增：选座回调
+        if hasattr(self, 'on_seat_selected') and callable(self.on_seat_selected):
+            selected = [self.seat_data[r][c] for (r, c) in self.selected_seats]
+            self.on_seat_selected(selected)
+        # 新增：自动刷新底部显示
+        self.update_info_label()
 
     def _update_seat_visual(self, r, c):
         seat = self.seat_data[r][c]
@@ -121,6 +126,44 @@ class SeatMapPanel(tk.Frame):
         self.seat_data = seat_data or []
         self.selected_seats.clear()
         self._draw_seats()
+        self.update_info_label()
 
     def get_selected_seats(self):
-        return [self.seat_data[r][c]['num'] for (r, c) in self.selected_seats] 
+        return [self.seat_data[r][c]['num'] for (r, c) in self.selected_seats]
+
+    def set_on_seat_selected(self, callback):
+        self.on_seat_selected = callback
+
+    def update_info_label(self):
+        selected = [self.seat_data[r][c] for (r, c) in self.selected_seats]
+        priceinfo = self._priceinfo
+        account = self.account_getter() if hasattr(self, 'account_getter') else {}
+        if account and account.get('cardno'):
+            price = float(priceinfo.get('proprice', 0) or 0)
+        else:
+            price = float(priceinfo.get('orgprice', 0) or 0)
+        seat_strs = []
+        for seat in selected:
+            row = seat.get('row') or seat.get('rn')
+            num = seat.get('num')
+            seat_strs.append(f"{row}排{num}")
+        seat_info = '  '.join(seat_strs)
+        total = int(price) * len(selected)
+        price_part = f"  单价{int(price)}*{len(selected)}={total}元" if seat_strs else ""
+        btn_text = f"提交订单  {seat_info}{price_part}" if seat_info else "提交订单"
+        self.submit_btn.config(text=btn_text)
+
+    def _on_submit_order_click(self):
+        if hasattr(self, 'on_submit_order') and callable(self.on_submit_order):
+            selected = [self.seat_data[r][c] for (r, c) in self.selected_seats]
+            self.on_submit_order(selected)
+
+    def set_on_submit_order(self, callback):
+        self.on_submit_order = callback
+
+    def set_priceinfo(self, priceinfo):
+        self._priceinfo = priceinfo or {}
+        self.update_info_label()
+
+    def set_account_getter(self, getter):
+        self.account_getter = getter 

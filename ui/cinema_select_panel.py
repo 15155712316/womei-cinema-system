@@ -4,9 +4,10 @@ import json
 import os
 
 class CinemaSelectPanel(tb.Frame):
-    def __init__(self, master):
+    def __init__(self, master, on_cinema_changed=None):
         super().__init__(master)
         self.pack_propagate(False)
+        self.on_cinema_changed = on_cinema_changed
 
         # 字体和间距参数
         combo_font = ("微软雅黑", 10)         # 下拉框和输入框字体
@@ -67,6 +68,9 @@ class CinemaSelectPanel(tb.Frame):
         row5.pack(fill="x", padx=row_padx, pady=row_pady+1)
         tb.Button(row5, text="打开选座 获取可用券", bootstyle="secondary", width=18, style="Heavy.TButton")\
             .pack(fill="x", pady=0)
+        # 当前账号显示区
+        self.current_account_label = tb.Label(self, text="当前账号：-", font=("微软雅黑", 11, "bold"), foreground="red")
+        self.current_account_label.pack(fill="x", padx=8, pady=(2, 0))
 
         # 美化：按钮纯黑字、加粗
         style = tb.Style()
@@ -75,6 +79,7 @@ class CinemaSelectPanel(tb.Frame):
 
     # ========== 联动事件 ==========
     def on_cinema_select(self, event):
+        print("[DEBUG] on_cinema_select 被触发")
         idx = self.cinema_combo.current()
         if idx < 0:
             return
@@ -100,6 +105,9 @@ class CinemaSelectPanel(tb.Frame):
         # 自动联动：选中第一个影片，触发影片选择事件
         if film_names:
             self.on_movie_select(None)
+
+        if self.on_cinema_changed:
+            self.on_cinema_changed()
 
     def on_movie_select(self, event):
         film_name = self.movie_var.get()
@@ -161,9 +169,20 @@ class CinemaSelectPanel(tb.Frame):
             cinema['base_url'], showCode, hallCode, filmCode, filmNo, showDate, startTime,
             userid, openid, token, cinemaid
         )
-        print("请求参数：", showCode, hallCode, filmCode, filmNo, showDate, startTime, userid, openid, token, cinemaid)
-        print("接口返回：", seats_data)
-        if seats_data and 'resultData' in seats_data and 'seats' in seats_data['resultData']:
+        # 新增：保存价格信息到主窗口（无条件赋值，确保后续读取不为None）
+        priceinfo = seats_data['resultData'].get('priceinfo', {}) if seats_data and 'resultData' in seats_data and seats_data['resultData'] else {}
+        self.master.master.last_priceinfo = priceinfo
+        print("last_priceinfo set to:", priceinfo)
+        if hasattr(self, 'seat_panel') and hasattr(self.seat_panel, 'set_priceinfo'):
+            self.seat_panel.set_priceinfo(priceinfo)
+        if hasattr(self.master.master, 'current_account'):
+            self.master.master.current_account = getattr(self.master.master, 'current_account', None)
+        if not seats_data or 'resultData' not in seats_data or not seats_data['resultData']:
+            import tkinter.messagebox as mb
+            mb.showwarning("已过场", "该场次已过场，无法选座")
+            self.seat_panel.update_seats([])
+            return
+        if 'seats' in seats_data['resultData']:
             # 处理为seat_map格式
             seats = seats_data['resultData']['seats']
             all_rows = set(int(seat['rn']) for seat in seats)
@@ -190,5 +209,20 @@ class CinemaSelectPanel(tb.Frame):
         else:
             self.seat_panel.update_seats([])
 
+        print("on_seat_selected: last_priceinfo =", getattr(self, 'last_priceinfo', None))
+
+        if hasattr(self.seat_panel, 'update_info_label'):
+            self.seat_panel.update_info_label()
+
     def set_seat_panel(self, seat_panel):
         self.seat_panel = seat_panel
+
+    def set_current_account(self, account):
+        if account:
+            text = (
+                f"当前账号：{account.get('userid', '-')}\n"
+                f"余额：{account.get('balance', 0)}  积分：{account.get('score', 0)}"
+            )
+        else:
+            text = "当前账号：-"
+        self.current_account_label.config(text=text)

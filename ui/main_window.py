@@ -4,6 +4,9 @@ from ui.login_panel import LoginPanel
 from ui.account_list_panel import AccountListPanel
 from ui.cinema_select_panel import CinemaSelectPanel
 from ui.seat_map_panel import SeatMapPanel
+import json
+from services.order_api import create_order
+import tkinter.messagebox as mb
 
 class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
     def __init__(self):  # 初始化方法
@@ -11,6 +14,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.title("柴犬影院下单系统")  # 设置窗口标题
         self.geometry("1250x750")  # 设置窗口大小
         self.configure(bg="#f8f8f8")  # 设置窗口背景色
+        self.last_priceinfo = {}
 
         # 计算各栏宽度
         total_width = 1250
@@ -32,9 +36,13 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.account_list_frame.place(x=0, y=login_h, width=left_w, height=account_h)
 
         # 集成登录面板和账号列表面板
-        self.login_panel = LoginPanel(self.login_frame)
+        self.login_panel = LoginPanel(
+            self.login_frame,
+            get_cinemaid_func=self.get_selected_cinemaid,
+            refresh_account_list_func=self.refresh_account_list
+        )
         self.login_panel.pack(fill=tk.BOTH, expand=True)
-        self.account_list_panel = AccountListPanel(self.account_list_frame)
+        self.account_list_panel = AccountListPanel(self.account_list_frame, on_account_selected=self.set_current_account)
         self.account_list_panel.pack(fill=tk.BOTH, expand=True)
 
         # ========== 中栏 ==========
@@ -53,7 +61,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         tab1_right = tk.LabelFrame(tab1, text="券列表区", fg="red")
         tab1_left.place(x=0, y=0, width=center_w//2, height=center_top_h)
         tab1_right.place(x=center_w//2, y=0, width=center_w//2, height=center_top_h)
-        self.cinema_panel = CinemaSelectPanel(tab1_left)
+        self.cinema_panel = CinemaSelectPanel(tab1_left, on_cinema_changed=self.refresh_account_list)
         self.cinema_panel.pack(fill="both", expand=True)
         self.center_notebook.add(tab1, text="影院/券")
         # 其余tab: 全宽
@@ -66,6 +74,8 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         # 选座区 SeatMapPanel 只放在座位区域
         self.seat_panel = SeatMapPanel(center_bottom_frame, seat_data=[])
         self.seat_panel.pack(fill="both", expand=True, padx=10, pady=5)
+        self.seat_panel.set_account_getter(lambda: getattr(self, 'current_account', {}))
+        self.seat_panel.set_on_submit_order(self.on_submit_order)
         # 绑定场次选择事件
         self.cinema_panel.set_seat_panel(self.seat_panel)
 
@@ -141,6 +151,92 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         order_text.insert(tk.END, "订单号: 14700283316\n影片: 独一无二\n时间: 2025-05-18 17:50\n座位: 7排8座\n应付: ¥38.9\n余额: ¥1490.1\n")  # 示例订单内容
         order_text.pack(fill=tk.BOTH, expand=True, pady=2)  # 填充整个区域
         tk.Button(self.orderinfo_frame, text="一键支付", bg="#ff9800", fg="#fff").pack(fill=tk.X, pady=4)  # 一键支付按钮
+
+    def get_selected_cinemaid(self):
+        # 获取影院选择区当前选中的cinemaid
+        idx = self.cinema_panel.cinema_combo.current()
+        if idx < 0:
+            return None
+        return self.cinema_panel.cinemas[idx]['cinemaid']
+
+    def set_current_account(self, account):
+        self.current_account = account
+        self.cinema_panel.set_current_account(account)
+
+    def refresh_account_list(self):
+        try:
+            with open("data/accounts.json", "r", encoding="utf-8") as f:
+                accounts = json.load(f)
+        except Exception:
+            accounts = []
+        cinemaid = self.get_selected_cinemaid()
+        filtered = [acc for acc in accounts if acc['cinemaid'] == cinemaid] if cinemaid else accounts
+        self.account_list_panel.update_accounts(filtered)
+        # 默认高亮第一个账号
+        current_account = filtered[0] if filtered else None
+        self.set_current_account(current_account)
+
+    def on_seat_selected(self, selected_seats):
+        pass  # 价格和座位显示已迁移到 SeatMapPanel
+
+    def on_submit_order(self, selected_seats):
+        # 实现提交订单的逻辑
+        account = self.current_account
+        cinema = self.cinema_panel.cinemas[self.cinema_panel.cinema_combo.current()]
+        session = self.cinema_panel.current_sessions[self.cinema_panel.session_combo.current()]
+        priceinfo = getattr(self, 'last_priceinfo', {})
+        # seatInfo 列表组装
+        seat_info_list = []
+        for seat in selected_seats:
+            seat_info_list.append({
+                "seatInfo": f"{seat['row']}排{seat['num']}座",
+                "eventPrice": 0,
+                "strategyPrice": int(float(priceinfo.get('proprice', 0))),
+                "ticketPrice": int(float(priceinfo.get('proprice', 0))),
+                "seatRow": int(seat['row']),
+                "seatRowId": int(seat['row']),
+                "seatCol": int(seat['cn']),
+                "seatColId": int(seat['cn']),
+                "seatNo": seat['sn'],
+                "sectionId": seat.get('sectionId', '11111'),
+                "ls": seat.get('ls', ''),
+                "rowIndex": int(seat.get('rowIndex', 0)),
+                "colIndex": int(seat.get('colIndex', 0)),
+                "index": int(seat.get('index', 0))
+            })
+        seat_info_json = json.dumps(seat_info_list, ensure_ascii=False)
+        params = {
+            'groupid': '',
+            'cardno': account.get('cardno', ''),
+            'userid': account['userid'],
+            'cinemaid': cinema['cinemaid'],
+            'CVersion': '3.9.12',
+            'OS': 'Windows',
+            'token': account['token'],
+            'openid': account['openid'],
+            'source': '2',
+            'oldOrderNo': '',
+            'showTime': session['k'],
+            'eventCode': '',
+            'hallCode': session['j'],
+            'showCode': session['g'],
+            'filmCode': session.get('h', ''),
+            'filmNo': session.get('fno', ''),
+            'recvpPhone': '',
+            'seatInfo': seat_info_json,
+            'payType': 3,
+            'companyChannelId': 5,
+            'shareMemberId': '',
+            'limitprocount': 0
+        }
+        try:
+            result = create_order(params)
+            if result.get('resultCode') == '0':
+                mb.showinfo("下单成功", f"订单号: {result['resultData']['orderno']}")
+            else:
+                mb.showerror("下单失败", result.get('resultDesc', '未知错误'))
+        except Exception as e:
+            mb.showerror("网络错误", str(e))
 
 if __name__ == "__main__":  # 程序入口
     app = CinemaOrderSimulatorUI()  # 创建主窗口对象
