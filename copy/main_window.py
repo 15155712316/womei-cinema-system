@@ -5,13 +5,8 @@ from ui.account_list_panel import AccountListPanel
 from ui.cinema_select_panel import CinemaSelectPanel
 from ui.seat_map_panel import SeatMapPanel
 import json
-from services.order_api import create_order, get_unpaid_order_detail, get_coupons_by_order, bind_coupon, get_order_list, get_order_detail, get_order_qrcode_api, cancel_all_unpaid_orders
+from services.order_api import create_order, get_unpaid_order_detail, get_coupons_by_order
 import tkinter.messagebox as mb
-from PIL import Image, ImageDraw, ImageFont, ImageTk
-import io
-import os
-import re
-import datetime
 
 class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
     def __init__(self):  # 初始化方法
@@ -85,17 +80,13 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         # 其余tab: 全宽
         for i, name in enumerate(["出票", "账号", "绑券", "订单", "积分", "会员卡"]):
             tab = tk.Frame(self.center_notebook)
-            if name == "绑券":
-                self.build_bind_coupon_tab(tab)
-            if name == "订单":
-                self.build_order_list_tab(tab)
             self.center_notebook.add(tab, text=name)
         # 下部座位区
         center_bottom_frame = tk.LabelFrame(center_frame, text="座位区域", fg="red")
         center_bottom_frame.place(x=0, y=center_top_h, width=center_w, height=center_bottom_h)
-        # 优化：使用pack并设置fill/expand，保证座位区和按钮不会被挤压
+        # 选座区 SeatMapPanel 只放在座位区域
         self.seat_panel = SeatMapPanel(center_bottom_frame, seat_data=[])
-        self.seat_panel.pack(fill="both", expand=True, padx=10, pady=10)
+        self.seat_panel.pack(fill="both", expand=True, padx=10, pady=5)
         self.seat_panel.set_account_getter(lambda: getattr(self, 'current_account', {}))
         self.seat_panel.set_on_submit_order(self.on_submit_order)
         # 绑定场次选择事件
@@ -104,14 +95,11 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         # ========== 右栏 ==========
         right_frame = tk.Frame(self, bg="#f0f0f0")
         right_frame.place(x=left_w+center_w, y=0, width=right_w, height=total_height)
-        # 右侧上下分布 - 调整比例给取票码区域更多空间
-        qrcode_height = int(total_height * 0.65)  # 取票码区占65%
-        orderinfo_height = total_height - qrcode_height  # 订单详情区占35%
-        
+        # 右侧上下分布
         right_top = tk.Frame(right_frame, bg="#f0f0f0")
-        right_top.place(x=0, y=0, width=right_w, height=qrcode_height)
+        right_top.place(x=0, y=0, width=right_w, height=total_height//2)
         right_bottom = tk.Frame(right_frame, bg="#f0f0f0")
-        right_bottom.place(x=0, y=qrcode_height, width=right_w, height=orderinfo_height)
+        right_bottom.place(x=0, y=total_height//2, width=right_w, height=total_height//2)
         # 先放二维码区在上
         self.qrcode_frame = tk.LabelFrame(right_top, text="取票码区", fg="red")
         self.qrcode_frame.pack(fill=tk.BOTH, expand=True, padx=2, pady=2)
@@ -239,54 +227,14 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.clear_coupons()
 
     def on_seat_selected(self, selected_seats):
-        print(f"[DEBUG] on_seat_selected called with {len(selected_seats)} seats")
-        print(f"[DEBUG] current last_priceinfo: {getattr(self, 'last_priceinfo', None)}")
-        print(f"[DEBUG] selected seats: {[f"{s.get('row')}排{s.get('num')}座" for s in selected_seats]}")
-        # 注意：这里不应该清空券列表，因为这只是选座操作，不应该影响已选择的券
-        # self.clear_coupons()  # 暂时注释掉，避免影响选座体验
+        self.clear_coupons()
 
     def on_submit_order(self, selected_seats):
-        print(f"[下单流程] 开始处理 {len(selected_seats)} 个座位的下单请求")
         self.clear_coupons()
         account = self.current_account
         cinema = self.cinema_panel.cinemas[self.cinema_panel.cinema_combo.current()]
         session = self.cinema_panel.current_sessions[self.cinema_panel.session_combo.current()]
         priceinfo = getattr(self, 'last_priceinfo', {})
-        
-        if not account:
-            mb.showerror("下单失败", "请先选择账号")
-            return
-        
-        print(f"[下单流程] 账号: {account.get('userid')}, 影院: {cinema.get('name')}")
-        
-        # ========== 步骤1：取消所有未付款订单 ==========
-        print("[下单流程] 第1步: 检查并取消未付款订单")
-        cancel_result = cancel_all_unpaid_orders(account, cinema)
-        
-        if cancel_result.get('resultCode') != '0':
-            mb.showerror("下单失败", f"取消未付款订单失败: {cancel_result.get('resultDesc')}")
-            return
-        
-        # 显示取消结果
-        cancelled_count = cancel_result.get('cancelledCount', 0)
-        failed_count = cancel_result.get('failedCount', 0)
-        total_count = cancel_result.get('totalCount', 0)
-        
-        if total_count > 0:
-            if failed_count == 0:
-                print(f"[下单流程] ✓ 成功取消 {cancelled_count} 个未付款订单")
-                mb.showinfo("订单清理", f"已成功取消 {cancelled_count} 个未付款订单，现在开始下单")
-            else:
-                failed_orders = cancel_result.get('failedOrders', [])
-                error_msg = f"取消了 {cancelled_count} 个订单，但有 {failed_count} 个失败：\n{', '.join(failed_orders[:3])}"
-                if len(failed_orders) > 3:
-                    error_msg += f"\n等 {len(failed_orders)} 个订单"
-                mb.showwarning("部分取消失败", error_msg + "\n\n将继续尝试下单")
-        else:
-            print("[下单流程] ✓ 无未付款订单，直接下单")
-        
-        # ========== 步骤2：构建座位信息 ==========
-        print("[下单流程] 第2步: 构建座位信息")
         seat_info_list = []
         for seat in selected_seats:
             seat_info_list.append({
@@ -306,9 +254,6 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                 "index": int(seat.get('index', 0))
             })
         seat_info_json = json.dumps(seat_info_list, ensure_ascii=False)
-        
-        # ========== 步骤3：构建下单参数 ==========
-        print("[下单流程] 第3步: 构建下单参数")
         params = {
             'groupid': '',
             'cardno': account.get('cardno', ''),
@@ -333,20 +278,13 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             'shareMemberId': '',
             'limitprocount': 0
         }
-        
-        # ========== 步骤4：执行下单 ==========
-        print("[下单流程] 第4步: 执行下单请求")
         try:
             result = create_order(params)
             if result.get('resultCode') == '0':
                 orderno = result['resultData']['orderno']
-                print(f"[下单流程] ✓ 下单成功，订单号: {orderno}")
                 print("下单返回数据：", result)
                 print("当前账号信息：", account)
                 print("当前影院信息：", cinema)
-                
-                # ========== 步骤5：获取可用优惠券 ==========
-                print("[下单流程] 第5步: 获取订单可用优惠券")
                 coupon_params = {
                     'orderno': orderno,
                     'cinemaid': cinema['cinemaid'],
@@ -364,9 +302,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                 print("即将请求优惠券参数：", coupon_params)
                 coupon_result = get_coupons_by_order(coupon_params)
                 print("[下单后可用优惠券接口返回]", coupon_result)
-                
-                # ========== 步骤6：查询订单详情 ==========
-                print("[下单流程] 第6步: 查询订单详情")
+                # 查询订单详情
                 detail_params = {
                     'orderno': orderno,
                     'groupid': '',
@@ -385,16 +321,10 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                     ticketcount = detail['resultData'].get('ticketcount', 1)
                 self.update_coupons(coupon_result, ticketcount)
                 self.show_order_detail(detail)
-                
-                print("[下单流程] ✓ 下单流程完成")
             else:
-                error_msg = result.get('resultDesc', '未知错误')
-                print(f"[下单流程] ✗ 下单失败: {error_msg}")
-                mb.showerror("下单失败", error_msg)
+                mb.showerror("下单失败", result.get('resultDesc', '未知错误'))
         except Exception as e:
-            error_msg = str(e)
-            print(f"[下单流程] ✗ 下单异常: {error_msg}")
-            mb.showerror("网络错误", error_msg)
+            mb.showerror("网络错误", str(e))
 
     def show_order_detail(self, detail):
         self.orderinfo_text.config(state="normal")
@@ -478,380 +408,6 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                 self.coupon_listbox.selection_clear(i)
             idxs = self.coupon_listbox.curselection()
         self.selected_coupons = [self.coupons_data[i] for i in idxs]
-
-    def build_bind_coupon_tab(self, tab):
-        # 券号输入区
-        input_frame = tk.Frame(tab)
-        input_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=8, pady=8)
-        tk.Label(input_frame, text="每行一个券号：").grid(row=0, column=0, sticky="w", padx=2, pady=(2, 0))
-        # 输入框
-        self.coupon_text = tk.Text(input_frame, height=18, width=24)
-        self.coupon_text.grid(row=1, column=0, sticky="nsew", padx=0, pady=(0, 4))
-        # 按钮
-        bind_btn = tk.Button(input_frame, text="绑定当前账号", command=self.on_bind_coupons, bg="#4caf50", fg="#fff", font=("微软雅黑", 11, "bold"))
-        bind_btn.grid(row=2, column=0, sticky="ew", padx=0, pady=(0, 0))
-        # 行权重
-        input_frame.rowconfigure(1, weight=1)
-        input_frame.columnconfigure(0, weight=1)
-        # 日志输出区
-        log_frame = tk.Frame(tab)
-        log_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=8, pady=8)
-        tk.Label(log_frame, text="绑定日志：").pack(anchor="w")
-        self.bind_log_text = tk.Text(log_frame, height=18, width=40, state="normal")
-        self.bind_log_text.pack(fill=tk.BOTH, expand=True)
-        tk.Button(log_frame, text="复制日志", command=self.copy_bind_log).pack(anchor="e", pady=4)
-
-    def on_bind_coupons(self):
-        account = getattr(self, 'current_account', None)
-        if not account:
-            mb.showwarning("未选中账号", "请先在左侧账号列表选择要绑定的账号！")
-            return
-        coupon_codes = self.coupon_text.get("1.0", "end").strip().splitlines()
-        coupon_codes = [c.strip() for c in coupon_codes if c.strip()]
-        if not coupon_codes:
-            mb.showwarning("无券号", "请输入至少一个券号！")
-            return
-        log_lines = []
-        success, fail = 0, 0
-        fail_codes = []
-        for code in coupon_codes:
-            params = {
-                'couponcode': code,
-                'cinemaid': account['cinemaid'],
-                'userid': account['userid'],
-                'openid': account['openid'],
-                'token': account['token'],
-                'CVersion': '3.9.12',
-                'OS': 'Windows',
-                'source': '2',
-                'groupid': '',
-                'cardno': account.get('cardno', '')
-            }
-            try:
-                res = bind_coupon(params)
-                if res.get('resultCode') == '0':
-                    log_lines.append(f"券{code} 绑定成功")
-                    success += 1
-                else:
-                    log_lines.append(f"券{code} 绑定失败：{res.get('resultDesc', '未知错误')}")
-                    fail += 1
-                    fail_codes.append(code)
-            except Exception as e:
-                log_lines.append(f"券{code} 绑定失败：{str(e)}")
-                fail += 1
-                fail_codes.append(code)
-        log_lines.append(f"\n共{len(coupon_codes)}张券，绑定成功{success}，失败{fail}")
-        if fail_codes:
-            log_lines.append(f"失败券号：{', '.join(fail_codes)}")
-        self.bind_log_text.config(state="normal")
-        self.bind_log_text.delete("1.0", "end")
-        self.bind_log_text.insert("end", "\n".join(log_lines))
-        self.bind_log_text.config(state="normal")
-
-    def copy_bind_log(self):
-        log = self.bind_log_text.get("1.0", "end").strip()
-        self.clipboard_clear()
-        self.clipboard_append(log)
-        mb.showinfo("复制成功", "日志内容已复制到剪贴板！")
-
-    def build_order_list_tab(self, tab):
-        # 顶部刷新按钮
-        top_frame = tk.Frame(tab)
-        top_frame.pack(fill=tk.X, pady=4)
-        refresh_btn = tk.Button(top_frame, text="刷新", width=8, command=self.refresh_order_list)
-        refresh_btn.pack(side=tk.LEFT, padx=8)
-        # 订单表格
-        columns = ("影片", "影院", "状态", "订单号")
-        style = ttk.Style()
-        style.configure("Order.Treeview", font=("微软雅黑", 13), rowheight=36)
-        style.configure("Order.Treeview.Heading", font=("微软雅黑", 13, "bold"))
-        self.order_tree = ttk.Treeview(tab, columns=columns, show="headings", height=12, style="Order.Treeview")
-        for col in columns:
-            self.order_tree.heading(col, text=col)
-            self.order_tree.column(col, width=180 if col=="影院" else 150, anchor="center")
-        self.order_tree.pack(fill=tk.BOTH, expand=True, padx=10, pady=4)
-        # 滚动条
-        scrollbar = ttk.Scrollbar(tab, orient="vertical", command=self.order_tree.yview)
-        self.order_tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.order_tree.delete(*self.order_tree.get_children())
-        self.order_tree.bind('<Double-1>', self.on_order_double_click)
-
-    def refresh_order_list(self):
-        # 校验影院和账号
-        cinemaid = self.get_selected_cinemaid()
-        account = getattr(self, 'current_account', None)
-        if not cinemaid:
-            mb.showwarning("未选中影院", "请先选择影院！")
-            return
-        if not account or not account.get('userid'):
-            mb.showwarning("未选中账号", "请先在左侧账号列表选择账号！")
-            return
-        params = {
-            'pageNo': 1,
-            'groupid': '',
-            'cinemaid': cinemaid,
-            'cardno': account.get('cardno', ''),
-            'userid': account['userid'],
-            'openid': account['openid'],
-            'CVersion': '3.9.12',
-            'OS': 'Windows',
-            'token': account['token'],
-            'source': '2'
-        }
-        result = get_order_list(params)
-        self.order_tree.delete(*self.order_tree.get_children())
-        if result.get('resultCode') == '0' and result.get('resultData'):
-            orders = result['resultData'].get('orders', [])
-            for idx, order in enumerate(orders, 1):
-                film = order.get('orderName', '')
-                cinema = order.get('cinemaName', '') if 'cinemaName' in order else ''
-                status = order.get('orderS', '')
-                orderno = order.get('orderno', '')
-                self.order_tree.insert('', 'end', values=(film, cinema, status, orderno))
-        else:
-            mb.showinfo("无订单", result.get('resultDesc', '未查询到订单'))
-
-    def on_order_double_click(self, event):
-        item = self.order_tree.focus()
-        if not item:
-            return
-        values = self.order_tree.item(item, 'values')
-        if len(values) < 4:
-            return
-        film, cinema, status, orderno = values
-        # 获取订单详情
-        account = getattr(self, 'current_account', None)
-        cinemaid = self.get_selected_cinemaid()
-        if not account or not cinemaid:
-            mb.showwarning("未选中账号或影院", "请先选择账号和影院！")
-            return
-        params = {
-            'orderno': orderno,
-            'groupid': '',
-            'cinemaid': cinemaid,
-            'cardno': account.get('cardno', ''),
-            'userid': account['userid'],
-            'openid': account['openid'],
-            'CVersion': '3.9.12',
-            'OS': 'Windows',
-            'token': account['token'],
-            'source': '2'
-        }
-        detail = get_order_detail(params)
-        # 获取二维码
-        qrcode_img = get_order_qrcode_api(orderno)
-        # 合成美观图片并展示
-        self.show_order_qrcode_img(detail, qrcode_img)
-
-    def show_order_qrcode_img(self, detail, qrcode_img_bytes):
-        if not detail or detail.get('resultCode') != '0':
-            mb.showerror("订单详情获取失败", detail.get('resultDesc', '未知错误'))
-            return
-        data = detail['resultData']
-        film = data.get('filmName', '')
-        show_time = data.get('showTime', '')
-        hall = data.get('hallName', '')
-        seat_info = data.get('seatInfo', '')
-        ticket_code = data.get('ticketCode', '') or data.get('ticketcode', '')
-        ds_code = data.get('dsValidateCode', '')
-        orderno = data.get('orderno', '')
-        mobile = data.get('orderMobile', '')
-        cinema_name = data.get('cinemaName', '')
-        pay_time = data.get('payTime', '')
-        pay_amount = data.get('payAmount', 0)
-        pay_amount_str = f"¥{int(pay_amount)/100:.2f}" if pay_amount else ""
-        
-        # 取当前月日
-        try:
-            if pay_time:
-                dt = datetime.datetime.strptime(pay_time[:10], "%Y-%m-%d")
-            else:
-                dt = datetime.datetime.now()
-            month_day = dt.strftime("%m%d")
-        except:
-            month_day = datetime.datetime.now().strftime("%m%d")
-        
-        # 影院名去除特殊字符
-        cinema_name_safe = re.sub(r'[^\u4e00-\u9fa5A-Za-z0-9]', '', cinema_name)
-        img_filename = f"{cinema_name_safe}_{month_day}_{orderno}.png"
-        
-        # 优化图片尺寸和布局 - 减少留白，提升观感
-        width, height = 320, 420
-        img = Image.new('RGB', (width, height), color='white')
-        draw = ImageDraw.Draw(img)
-        
-        try:
-            font_title = ImageFont.truetype("msyh.ttc", 18)  # 标题稍大
-            font_text = ImageFont.truetype("msyh.ttc", 12)   # 正文适中 
-            font_code = ImageFont.truetype("msyh.ttc", 15)   # 取票码突出
-            font_small = ImageFont.truetype("msyh.ttc", 10)  # 小字体
-        except:
-            font_title = font_text = font_code = font_small = None
-        
-        # 减少顶部边距
-        y = 8
-        
-        # 电影名称（标题，加粗效果）
-        draw.text((12, y), film, fill='black', font=font_title)
-        y += 26
-        
-        # 场次时间
-        draw.text((12, y), show_time, fill='#555', font=font_text)
-        y += 18
-        
-        # 影厅和座位信息
-        draw.text((12, y), f"{hall}  {seat_info}", fill='#555', font=font_text)
-        y += 22
-        
-        # 取票分割线（减少间距）
-        draw.line((12, y, width-12, y), fill='#ddd', width=1)
-        y += 8
-        draw.text((12, y), "取票", fill='black', font=font_text)
-        y += 16
-        
-        # 二维码居中显示（增大尺寸）
-        qr_size = 140
-        qr_x = int((width - qr_size) / 2)
-        if qrcode_img_bytes:
-            try:
-                qrcode = Image.open(io.BytesIO(qrcode_img_bytes)).resize((qr_size, qr_size))
-                img.paste(qrcode, (qr_x, y))
-            except Exception:
-                # 如果二维码加载失败，绘制占位图
-                draw.rectangle([qr_x, y, qr_x + qr_size, y + qr_size], outline='#ccc', width=2)
-                draw.text((qr_x + qr_size//2 - 20, y + qr_size//2 - 6), "二维码", fill='#999', font=font_text)
-        y += qr_size + 6
-        
-        # 取票码（橙色高亮，居中，减少间距）
-        if ds_code:
-            code_text = f"取票码：{ds_code}"
-            try:
-                code_w = draw.textlength(code_text, font=font_code)
-            except:
-                code_w = len(code_text) * 10
-            draw.text(((width - code_w) // 2, y), code_text, fill='#ff6600', font=font_code)
-            y += 20
-        
-        # 提示文字（缩小字体，减少间距）
-        tip_text = "请到自助取票机扫描上述二维码取票"
-        try:
-            tip_w = draw.textlength(tip_text, font=font_small)
-        except:
-            tip_w = len(tip_text) * 6
-        draw.text(((width - tip_w) // 2, y), tip_text, fill='#999', font=font_small)
-        y += 18
-        
-        # 订单详情分割线（减少间距）
-        draw.line((12, y, width-12, y), fill='#ddd', width=1)
-        y += 8
-        draw.text((12, y), "订单详情", fill='black', font=font_text)
-        y += 16
-        
-        # 订单信息（紧凑布局，减少行间距）
-        line_height = 15
-        
-        # 实付金额
-        if pay_amount_str:
-            draw.text((12, y), f"实付金额：{pay_amount_str}", fill='#333', font=font_text)
-            y += line_height
-        
-        # 影院名称
-        # 如果影院名太长，截断显示
-        cinema_display = cinema_name[:15] + "..." if len(cinema_name) > 15 else cinema_name
-        draw.text((12, y), f"影院名称：{cinema_display}", fill='#333', font=font_text)
-        y += line_height
-        
-        # 手机号码
-        if mobile:
-            draw.text((12, y), f"手机号码：{mobile}", fill='#333', font=font_text)
-            y += line_height
-        
-        # 订单号（分行显示，避免过长）
-        if orderno:
-            if len(orderno) > 16:
-                draw.text((12, y), f"订单号：{orderno[:16]}", fill='#333', font=font_text)
-                y += line_height
-                draw.text((12, y), f"        {orderno[16:]}", fill='#333', font=font_text)
-            else:
-                draw.text((12, y), f"订单号：{orderno}", fill='#333', font=font_text)
-            y += line_height
-        
-        # 购买时间
-        if pay_time:
-            draw.text((12, y), f"购买时间：{pay_time}", fill='#333', font=font_text)
-        
-        # 保存图片到data/img
-        img_dir = os.path.join('data', 'img')
-        os.makedirs(img_dir, exist_ok=True)
-        img_path = os.path.abspath(os.path.join(img_dir, img_filename))
-        img.save(img_path)
-        self._last_qrcode_img_path = img_path
-        self._last_qrcode_img_pil = img
-        
-        # 取票码区顶部按钮（始终显示）
-        if not hasattr(self, 'qrcode_btn_frame') or not self.qrcode_btn_frame.winfo_ismapped():
-            if hasattr(self, 'qrcode_btn_frame'):
-                self.qrcode_btn_frame.destroy()
-            self.qrcode_btn_frame = tk.Frame(self.qrcode_frame)
-            self.qrcode_btn_frame.pack(side=tk.TOP, fill=tk.X, pady=(2,4))
-            self.copy_path_btn = tk.Button(self.qrcode_btn_frame, text="复制路径", command=self.copy_qrcode_img_path)
-            self.copy_path_btn.pack(side=tk.LEFT, padx=2)
-            self.copy_img_btn = tk.Button(self.qrcode_btn_frame, text="复制图片", command=self.copy_qrcode_img_to_clipboard)
-            self.copy_img_btn.pack(side=tk.LEFT, padx=2)
-        
-        # 清除之前的图片显示
-        for widget in self.qrcode_frame.winfo_children():
-            if widget != self.qrcode_btn_frame:
-                widget.destroy()
-        
-        # 重新创建图片显示标签，使用滚动显示
-        canvas = tk.Canvas(self.qrcode_frame, bg='white')
-        scrollbar = tk.Scrollbar(self.qrcode_frame, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # 创建可滚动的frame
-        scrollable_frame = tk.Frame(canvas, bg='white')
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-        
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        
-        # 将图片放在可滚动frame中
-        img_tk = ImageTk.PhotoImage(img)
-        img_label = tk.Label(scrollable_frame, image=img_tk, bg='white')
-        img_label.image = img_tk  # 保持引用
-        img_label.pack(pady=2)
-        
-        # 包装布局
-        canvas.pack(side="left", fill="both", expand=True, padx=4, pady=4)
-        scrollbar.pack(side="right", fill="y")
-
-    def copy_qrcode_img_path(self):
-        if hasattr(self, '_last_qrcode_img_path'):
-            self.clipboard_clear()
-            self.clipboard_append(self._last_qrcode_img_path)
-            # 移除弹窗提示
-
-    def copy_qrcode_img_to_clipboard(self):
-        if hasattr(self, '_last_qrcode_img_pil'):
-            try:
-                import win32clipboard
-                from PIL import Image
-                import io
-                output = io.BytesIO()
-                self._last_qrcode_img_pil.convert('RGB').save(output, 'BMP')
-                data = output.getvalue()[14:]
-                output.close()
-                win32clipboard.OpenClipboard()
-                win32clipboard.EmptyClipboard()
-                win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-                win32clipboard.CloseClipboard()
-                # 移除弹窗提示
-            except Exception as e:
-                mb.showerror("复制失败", f"图片复制失败: {e}")
 
 if __name__ == "__main__":  # 程序入口
     app = CinemaOrderSimulatorUI()  # 创建主窗口对象

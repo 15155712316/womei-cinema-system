@@ -33,14 +33,24 @@ class SeatMapPanel(tk.Frame):
         self.canvas.delete("all")
         self.seat_items.clear()
         # 座位格子参数
-        cell_w, cell_h = 27, 27  # 再增大十分之一
+        cell_w, cell_h = 32, 32
         pad_x, pad_y = 4, 4
         label_w = 16
         max_x, max_y = 0, 0
+        
         for r, row in enumerate(self.seat_data):
+            # 简化：直接使用基础间距，无需复杂的间距计算
             y = pad_y + r * (cell_h + pad_y)
-            self.canvas.create_text(label_w//2, y + cell_h//2, text=str(r+1), font=("微软雅黑", 8, "bold"), fill="#333")
-            last_cn = 0
+            
+            # 获取当前行的排号（直接从座位数据中读取）
+            row_label = "?"
+            for seat in row:
+                if seat is not None:
+                    row_label = str(seat.get('row', r+1))  # 使用seat中的row字段
+                    break
+            
+            self.canvas.create_text(label_w//2, y + cell_h//2, text=row_label, font=("微软雅黑", 8, "bold"), fill="#333")
+            
             for c, seat in enumerate(row):
                 if seat is None:
                     continue
@@ -66,6 +76,7 @@ class SeatMapPanel(tk.Frame):
                     self.canvas.tag_bind(text_id, '<Button-1>', lambda e, r=r, c=c: self.toggle_seat(r, c))
                 max_x = max(max_x, x+cell_w)
                 max_y = max(max_y, y+cell_h)
+        
         self.canvas.update_idletasks()
         bbox = self.canvas.bbox("all")
         if bbox:
@@ -129,7 +140,7 @@ class SeatMapPanel(tk.Frame):
         self.update_info_label()
 
     def get_selected_seats(self):
-        return [self.seat_data[r][c]['num'] for (r, c) in self.selected_seats]
+        return [self.seat_data[r][c]['num'] for (r, c) in self.selected_seats] 
 
     def set_on_seat_selected(self, callback):
         self.on_seat_selected = callback
@@ -137,20 +148,30 @@ class SeatMapPanel(tk.Frame):
     def update_info_label(self):
         selected = [self.seat_data[r][c] for (r, c) in self.selected_seats]
         priceinfo = self._priceinfo
+        print(f"[DEBUG] update_info_label: priceinfo = {priceinfo}")
+        print(f"[DEBUG] update_info_label: selected seats = {len(selected)}")
         account = self.account_getter() if hasattr(self, 'account_getter') else {}
         if account and account.get('cardno'):
             price = float(priceinfo.get('proprice', 0) or 0)
+            price_type = "会员价"
         else:
             price = float(priceinfo.get('orgprice', 0) or 0)
+            price_type = "原价"
+        print(f"[DEBUG] calculated price: {price} ({price_type})")
         seat_strs = []
-        for seat in selected:
-            row = seat.get('row') or seat.get('rn')
+        for r, c in self.selected_seats:
+            seat = self.seat_data[r][c]
+            # 直接使用座位数据中的row字段
+            display_row = seat.get('row', r + 1)  # 使用数据中的row字段
             num = seat.get('num')
-            seat_strs.append(f"{row}排{num}")
+            seat_strs.append(f"{display_row}排{num}")
+            # 调试：显示座位信息
+            print(f"[DEBUG] 座位显示: {display_row}排{num}座 (数据r={seat.get('r')}, 真实rn={seat.get('rn')})")
         seat_info = '  '.join(seat_strs)
         total = int(price) * len(selected)
         price_part = f"  单价{int(price)}*{len(selected)}={total}元" if seat_strs else ""
         btn_text = f"提交订单  {seat_info}{price_part}" if seat_info else "提交订单"
+        print(f"[DEBUG] final button text: {btn_text}")
         self.submit_btn.config(text=btn_text)
 
     def _on_submit_order_click(self):
@@ -162,6 +183,7 @@ class SeatMapPanel(tk.Frame):
         self.on_submit_order = callback
 
     def set_priceinfo(self, priceinfo):
+        print(f"[DEBUG] SeatMapPanel.set_priceinfo called with: {priceinfo}")
         self._priceinfo = priceinfo or {}
         self.update_info_label()
 

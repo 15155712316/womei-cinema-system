@@ -196,61 +196,31 @@ class CinemaSelectPanel(tb.Frame):
         if 'seats' in seats_data['resultData']:
             # 处理为seat_map格式
             seats = seats_data['resultData']['seats']
-            print(f"[座位数据调试] 原始座位数据总数: {len(seats)}")
-            
-            # 关键修复：使用数据中的r字段（连续行号）而不是rn字段（真实排号）
-            all_rows = sorted(set(int(seat['r']) for seat in seats))  # 使用r字段！
-            all_cols = sorted(set(int(seat['cn']) for seat in seats))
-            max_col = max(all_cols) if all_cols else 0
-            
-            print(f"[座位数据调试] 数据行号(r): {all_rows}")
-            print(f"[座位数据调试] 真实排号(rn): {sorted(set(int(seat['rn']) for seat in seats))}")
-            print(f"[座位数据调试] 实际列数: {all_cols}")
-            print(f"[座位数据调试] 最大列数: {max_col}")
-            
-            # 使用r字段的最大值作为行数
-            max_row = max(all_rows) if all_rows else 0
+            all_rows = set(int(seat['rn']) for seat in seats)
+            all_cols = set(int(seat['cn']) for seat in seats)
+            max_row = max(all_rows)
+            max_col = max(all_cols)
             seat_map = [[None for _ in range(max_col)] for _ in range(max_row)]
-            
-            print(f"[座位映射调试] 使用数据行号r作为排号，范围: {all_rows}")
-            
             for seat in seats:
-                data_row = int(seat['r'])      # 数据中的行号（用于界面和下单）
-                real_row = int(seat['rn'])     # 真实排号（仅用于参考）
-                api_col = int(seat['cn'])
-                ui_row = data_row - 1          # 转为数组索引
-                ui_col = api_col - 1           # 列数减1作为索引
-                
+                row = int(seat['rn']) - 1
+                col = int(seat['cn']) - 1
                 # 修正：严格判断已售座位（如B、S、E等都算已售）
                 status = 'available' if seat['s'] == 'F' else 'sold'
-                
-                # 详细调试输出关键座位
-                if data_row in [1, 2, 3, 4] and api_col in [5, 6, 7, 9, 10]:
-                    print(f"[关键座位] 数据排{data_row}列{api_col} -> 界面排{data_row}列{api_col}: r={seat['r']}, rn={seat['rn']}, cn={seat['cn']}, c={seat['c']}, s={seat['s']}, status={status}")
-                
-                seat_map[ui_row][ui_col] = {
+                # 调试输出
+                # print(f"row={row}, col={col}, s={seat['s']}, status={status}")
+                seat_map[row][col] = {
                     'num': seat['c'],
                     'status': status,
-                    'row': data_row,           # 保存数据行号，用于界面显示和下单
-                    'real_row': real_row,      # 保存真实排号，仅用于参考
+                    'row': seat['rn'],
                     'sn': seat['sn'],
                     's': seat['s'],
                     'cn': seat['cn'],
-                    'r': seat['r'],            # 保存原始r字段
-                    'rn': seat['rn'],          # 保存原始rn字段
                 }
-            
-            # 统计实际可用座位数量
-            available_count = sum(1 for seat in seats if seat['s'] == 'F')
-            sold_count = len(seats) - available_count
-            print(f"[座位数据调试] 可用座位: {available_count}, 已售座位: {sold_count}")
-            print(f"[座位数据调试] 最终seat_map尺寸: {len(seat_map)}行 x {max_col}列")
-            
             self.seat_panel.update_seats(seat_map)
         else:
             self.seat_panel.update_seats([])
 
-        print("on_seat_selected: last_priceinfo =", getattr(self.master.master, 'last_priceinfo', None))
+        print("on_seat_selected: last_priceinfo =", getattr(self, 'last_priceinfo', None))
 
         if hasattr(self.seat_panel, 'update_info_label'):
             self.seat_panel.update_info_label()

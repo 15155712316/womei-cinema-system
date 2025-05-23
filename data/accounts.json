@@ -5,7 +5,8 @@
     "token": "9de4d8353cd30172",
     "cinemaid": "11b7e4bcc265",
     "balance": 0,
-    "points": 0
+    "points": 0,
+    "is_main": false
   },
   {
     "userid": "14700283316",
@@ -13,7 +14,8 @@
     "token": "64921354c989cf73",
     "cinemaid": "0f1e21d86ac8",
     "balance": 0,
-    "points": 0
+    "points": 0,
+    "is_main": false
   },
   {
     "userid": "15155712316",
@@ -23,6 +25,7 @@
     "balance": 400,
     "points": 0,
     "cardno": "15155712316",
-    "score": 3833
+    "score": 3833,
+    "is_main": true
   }
 ]
