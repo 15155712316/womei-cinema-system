@@ -42,6 +42,22 @@ def get_coupons_by_order(params: dict) -> dict:
     
     return api_get('MiniTicket/index.php/MiniCoupon/getCouponByOrder', cinemaid, params=params, headers=special_headers)
 
+def get_coupon_list(params: dict) -> dict:
+    """
+    获取账号券列表接口（MiniCoupon/getCouponList） - 使用GET请求
+    :param params: dict，需包含 voucherType, pageNo, groupid, cinemaid, cardno, userid, openid, CVersion, OS, token, source
+    :return: dict，接口返回的json
+    """
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+    
+    print(f"[券列表API] 获取账号券列表")
+    print(f"[券列表API] 影院ID: {cinemaid}")
+    print(f"[券列表API] 用户ID: {params.get('userid')}")
+    
+    return api_get('MiniTicket/index.php/MiniCoupon/getCouponList', cinemaid, params=params)
+
 def bind_coupon(params: dict) -> dict:
     """
     绑定优惠券接口 - 使用GET请求（修复：匹配真实小程序请求方式）
@@ -165,6 +181,7 @@ def get_order_list(params: dict) -> dict:
 def cancel_order(params: dict) -> dict:
     """
     取消订单接口（MiniOrder/cancelorder） - 使用动态base_url
+    修复：使用GET请求，与真实小程序保持一致
     :param params: dict，需包含 orderno, groupid, cinemaid, cardno, userid, openid, CVersion, OS, token, source
     :return: dict，接口返回的json，异常时resultCode=-1
     """
@@ -172,12 +189,12 @@ def cancel_order(params: dict) -> dict:
     if not cinemaid:
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
     
-    # 构建请求参数
+    # 构建请求参数 - 修复：cardno使用空值，与真实小程序保持一致
     request_params = {
         'orderno': params.get('orderno', ''),
         'groupid': params.get('groupid', ''),
         'cinemaid': params.get('cinemaid', ''),
-        'cardno': params.get('cardno', ''),
+        'cardno': '',  # 修复：使用空值，与真实小程序保持一致
         'userid': params.get('userid', ''),
         'openid': params.get('openid', ''),
         'CVersion': params.get('CVersion', '3.9.12'),
@@ -188,8 +205,10 @@ def cancel_order(params: dict) -> dict:
     
     print(f"[取消订单API] 订单号: {request_params['orderno']}")
     print(f"[取消订单API] 影院ID: {request_params['cinemaid']}")
+    print(f"[取消订单API] 使用GET请求（修复）")
     
-    return api_post('MiniTicket/index.php/MiniOrder/cancelorder', cinemaid, data=request_params)
+    # 修复：使用GET请求而不是POST请求
+    return api_get('MiniTicket/index.php/MiniOrder/cancelorder', cinemaid, params=request_params)
 
 def cancel_all_unpaid_orders(account: dict, cinemaid: str) -> dict:
     """
@@ -223,7 +242,7 @@ def cancel_all_unpaid_orders(account: dict, cinemaid: str) -> dict:
         return {"resultCode": "0", "resultDesc": "success", "cancelledCount": 0}
     
     orders = order_list_result.get('resultData', {}).get('orders', [])
-    unpaid_orders = [order for order in orders if order.get('orderS') == '未付款']
+    unpaid_orders = [order for order in orders if order.get('orderS') == '待付款']
     
     print(f"[取消未付款订单] 找到 {len(unpaid_orders)} 个未付款订单")
     

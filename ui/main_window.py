@@ -4,6 +4,8 @@ from ui.login_panel import LoginPanel
 from ui.account_list_panel import AccountListPanel
 from ui.cinema_select_panel import CinemaSelectPanel
 from ui.seat_map_panel import SeatMapPanel
+# 添加用户认证相关导入
+from services.auth_service import auth_service
 import json
 from services.order_api import create_order, get_unpaid_order_detail, get_coupons_by_order, bind_coupon, get_order_list, get_order_detail, get_order_qrcode_api, cancel_all_unpaid_orders, get_coupon_prepay_info, pay_order
 import tkinter.messagebox as mb
@@ -13,14 +15,26 @@ import os
 import re
 import datetime
 import time
+import traceback
 
 class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
     def __init__(self):  # 初始化方法
         super().__init__()  # 调用父类初始化
+        
+        # 添加用户认证检查
+        self.current_user = None
+        self.auth_check_timer = None
+        
         self.title("柴犬影院下单系统")  # 设置窗口标题
         self.geometry("1250x750")  # 设置窗口大小
         self.configure(bg="#f8f8f8")  # 设置窗口背景色
         self.last_priceinfo = {}
+
+        # 初始化时隐藏主窗口，等待用户登录
+        self.withdraw()
+        
+        # 启动用户认证检查
+        self._start_auth_check()
 
         # 计算各栏宽度
         total_width = 1250
@@ -86,12 +100,14 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.selected_coupons = []
         self.max_coupon_select = 1  # 默认最多可选1张券，后续由订单详情接口ticketcount动态赋值
         self.coupon_listbox.bind('<<ListboxSelect>>', self.on_coupon_select)
-        self.center_notebook.add(tab1, text="影院/券")
+        self.center_notebook.add(tab1, text="出票")
         # 其余tab: 全宽
-        for i, name in enumerate(["出票", "账号", "绑券", "订单", "积分", "会员卡", "影院"]):
+        for i, name in enumerate(["绑券", "兑换券", "订单", "影院"]):
             tab = tk.Frame(self.center_notebook)
             if name == "绑券":
                 self.build_bind_coupon_tab(tab)
+            if name == "兑换券":
+                self.build_coupon_exchange_tab(tab)
             if name == "订单":
                 self.build_order_list_tab(tab)
             if name == "影院":
@@ -154,6 +170,155 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         # 修复：初始化完成后自动加载账号列表
         print("[程序启动] 开始自动加载账号列表...")
         self.after_idle(self._auto_load_initial_state)
+    
+    def _start_auth_check(self):
+        """启动用户认证检查"""
+        from ui.login_window import LoginWindow
+        
+        # 创建并显示登录窗口
+        self.login_window = LoginWindow()
+        self.login_window.login_success.connect(self._on_user_login_success)
+        
+        # 在主窗口中心显示登录窗口
+        self.center_login_window()
+        self.login_window.show()
+    
+    def center_login_window(self):
+        """居中显示登录窗口"""
+        # 确保主窗口已完全创建
+        self.update_idletasks()
+        
+        # 获取主窗口位置和大小
+        main_x = self.winfo_x()
+        main_y = self.winfo_y()
+        main_width = self.winfo_width()
+        main_height = self.winfo_height()
+        
+        # 计算登录窗口居中位置
+        login_width = 400
+        login_height = 500
+        x = main_x + (main_width - login_width) // 2
+        y = main_y + (main_height - login_height) // 2
+        
+        self.login_window.move(x, y)
+    
+    def _on_user_login_success(self, user_info):
+        """用户登录成功回调"""
+        self.current_user = user_info
+        print(f"[主窗口] 用户登录成功: {user_info.get('username')}, 积分: {user_info.get('points')}")
+        
+        # 显示主窗口
+        self.deiconify()
+        
+        # 启动定期权限检查
+        self._start_periodic_auth_check()
+        
+        # 更新窗口标题显示用户信息
+        username = user_info.get('username', '用户')
+        points = user_info.get('points', 0)
+        self.title(f"柴犬影院下单系统 - {username} (积分: {points})")
+    
+    def _start_periodic_auth_check(self):
+        """启动定期权限检查"""
+        def check_auth():
+            try:
+                is_valid, message, user_info = auth_service.check_auth()
+                
+                if not is_valid:
+                    # 认证失效，强制重新登录
+                    print(f"[权限检查] 认证失效: {message}")
+                    messagebox.showerror("权限验证失败", f"{message}\n\n请重新登录")
+                    self.logout_and_restart()
+                    return
+                
+                # 更新用户信息
+                if user_info:
+                    self.current_user = user_info
+                    username = user_info.get('username', '用户')
+                    points = user_info.get('points', 0)
+                    self.title(f"柴犬影院下单系统 - {username} (积分: {points})")
+                
+                # 继续定期检查
+                self.auth_check_timer = self.after(30000, check_auth)  # 30秒检查一次
+                
+            except Exception as e:
+                print(f"[权限检查] 检查异常: {e}")
+                # 出现异常也继续检查
+                self.auth_check_timer = self.after(60000, check_auth)  # 1分钟后再检查
+        
+        # 首次检查延迟5秒
+        self.auth_check_timer = self.after(5000, check_auth)
+    
+    def logout_and_restart(self):
+        """登出并重启认证"""
+        # 停止定期检查
+        if self.auth_check_timer:
+            self.after_cancel(self.auth_check_timer)
+            self.auth_check_timer = None
+        
+        # 清除用户信息
+        auth_service.logout()
+        self.current_user = None
+        
+        # 隐藏主窗口
+        self.withdraw()
+        
+        # 重新显示登录窗口
+        self._start_auth_check()
+    
+    def check_permission_before_action(self, action_name: str, points_cost: int = 0) -> bool:
+        """
+        在执行重要操作前检查权限
+        :param action_name: 操作名称
+        :param points_cost: 积分消耗
+        :return: 是否允许执行
+        """
+        if not self.current_user:
+            messagebox.showerror("权限错误", "用户未登录")
+            return False
+        
+        # 检查认证状态
+        is_valid, message, user_info = auth_service.check_auth()
+        if not is_valid:
+            messagebox.showerror("权限验证失败", f"{message}\n\n请重新登录")
+            self.logout_and_restart()
+            return False
+        
+        # 检查积分（如果需要）
+        if points_cost > 0:
+            current_points = user_info.get('points', 0)
+            if current_points < points_cost:
+                messagebox.showerror("积分不足", f"操作\"{action_name}\"需要 {points_cost} 积分\n当前积分: {current_points}")
+                return False
+        
+        return True
+    
+    def use_points_for_action(self, action_name: str, points_cost: int) -> bool:
+        """
+        为操作扣除积分
+        :param action_name: 操作名称
+        :param points_cost: 积分消耗
+        :return: 是否扣除成功
+        """
+        if points_cost <= 0:
+            return True
+        
+        success, message = auth_service.use_points(action_name, points_cost)
+        if success:
+            # 更新本地用户信息
+            if self.current_user:
+                new_points = self.current_user.get('points', 0) - points_cost
+                self.current_user['points'] = max(0, new_points)
+                
+                # 更新窗口标题
+                username = self.current_user.get('username', '用户')
+                self.title(f"柴犬影院下单系统 - {username} (积分: {self.current_user['points']})")
+            
+            print(f"[积分扣除] {action_name}: -{points_cost}, {message}")
+            return True
+        else:
+            messagebox.showerror("积分扣除失败", message)
+            return False
 
     def _auto_load_initial_state(self):
         """
@@ -259,6 +424,8 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.cinema_panel.set_current_account(account)
         # 更新券绑定界面的账号信息
         self.update_bind_account_info()
+        # 更新兑换券界面的账号信息
+        self.update_exchange_account_info()
 
     def set_main_account(self, account):
         # 设置主账号并保存到accounts.json
@@ -368,11 +535,14 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         print(f"[下单流程] 当前账号: {account.get('userid')}")
         
         try:
+            print(f"[下单流程CRITICAL] 进入try块，即将执行取消未付款订单操作...")
             # 1. 检查并取消未付款订单
             self._cancel_unpaid_orders(account, cinemaid)
+            print(f"[下单流程CRITICAL] 取消未付款订单完成，即将获取会员信息...")
             
             # 2. 获取会员信息
             self.member_info = self._get_member_info(account, cinemaid)
+            print(f"[下单流程CRITICAL] 获取会员信息完成，即将创建订单...")
             
             # 3. 创建订单
             order_result = self._create_order(account, selected_seats, cinemaid)
@@ -453,13 +623,17 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
     
     def _cancel_unpaid_orders(self, account, cinemaid):
         """取消未付款订单"""
+        print(f"[下单流程DEBUG] _cancel_unpaid_orders方法被调用！账号: {account.get('userid')}, 影院: {cinemaid}")
         try:
             print("[下单流程] 检查未付款订单...")
             result = cancel_all_unpaid_orders(account, cinemaid)
             if result:
                 print(f"[下单流程] 取消了 {result.get('cancelledCount', 0)} 个未付款订单")
+            else:
+                print("[下单流程] cancel_all_unpaid_orders返回None")
         except Exception as e:
             print(f"[下单流程] 取消未付款订单异常: {e}")
+            traceback.print_exc()
     
     def _get_member_info(self, account, cinemaid):
         """获取会员信息"""
@@ -628,8 +802,14 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                     payment = int(coupon_data.get('paymentAmount', 0)) / 100
                     info_lines.append(f"需付金额：¥{payment:.2f}")
             else:
-                # 未选择券的情况
-                info_lines.append("未选择券")
+                # 未选择券或券信息无效的情况
+                selected_coupons = getattr(self, 'selected_coupons', [])
+                if selected_coupons:
+                    # 有选择券但券信息无效
+                    info_lines.append(f"券信息无效（已选{len(selected_coupons)}张）")
+                else:
+                    # 未选择券
+                    info_lines.append("未选择券")
                 
                 if is_member:
                     # 会员未选券：使用mem_totalprice字段（分转元）
@@ -1375,23 +1555,48 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         # 获取券选择后的价格信息
         coupon_info = getattr(self, 'current_coupon_info', None)
         
-        if not couponcode:
-            messagebox.showwarning("支付失败", "请先选择优惠券")
-            return
+        # 判断是否使用券支付
+        use_coupon = bool(couponcode and coupon_info and coupon_info.get('resultCode') == '0')
+        
+        if use_coupon:
+            # 使用券支付：从券价格信息中获取支付参数
+            coupon_data = coupon_info['resultData']
+            pay_amount = coupon_data.get('paymentAmount', '0')  # 实付金额
+            discount_price = coupon_data.get('discountprice', '0')  # 优惠价格
             
-        if not coupon_info or coupon_info.get('resultCode') != '0':
-            messagebox.showwarning("支付失败", "无法获取券价格信息，请重新选择券")
-            return
+            # 检查会员支付金额
+            is_member = self.member_info and self.member_info.get('is_member')
+            if is_member:
+                mem_payment = coupon_data.get('mempaymentAmount', '0')
+                if mem_payment != '0':
+                    pay_amount = mem_payment  # 会员优先使用会员支付金额
             
-        # 从券价格信息中获取支付参数
-        coupon_data = coupon_info['resultData']
+            print(f"[一键支付] 使用券支付，券号: {couponcode}")
+            print(f"[一键支付] 实付金额: {pay_amount}分，优惠: {discount_price}分")
+        else:
+            # 不使用券，按原价支付
+            couponcode = ''  # 清空券号
+            
+            # 获取原价支付金额
+            is_member = self.member_info and self.member_info.get('is_member')
+            if is_member:
+                # 会员：使用会员总价
+                pay_amount = str(order_data.get('mem_totalprice', 0))  # 会员总价（分）
+            else:
+                # 非会员：使用订单总价
+                pay_amount = str(order_data.get('payAmount', 0))  # 订单总价（分）
+            
+            discount_price = '0'  # 无优惠
+            
+            print(f"[一键支付] 不使用券，按原价支付")
+            print(f"[一键支付] 支付金额: {pay_amount}分（{'会员价' if is_member else '原价'}）")
         
         # 构建支付参数
         pay_params = {
             'orderno': orderno,
-            'payprice': coupon_data.get('paymentAmount', '0'),  # 实付金额
-            'discountprice': coupon_data.get('discountprice', '0'),  # 优惠价格
-            'couponcodes': couponcode,  # 券号列表
+            'payprice': pay_amount,  # 实付金额
+            'discountprice': discount_price,  # 优惠价格
+            'couponcodes': couponcode,  # 券号列表（可为空）
             'groupid': '',
             'cinemaid': cinemaid,
             'cardno': account.get('cardno', ''),
@@ -1414,7 +1619,8 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             print(f"[一键支付] 支付结果: {pay_result}")
             
             if pay_result and pay_result.get('resultCode') == '0':
-                messagebox.showinfo("支付成功", f"订单 {orderno} 支付成功！")
+                payment_desc = f"券支付（已使用{len(selected_coupons)}张券）" if use_coupon else "原价支付（未使用券）"
+                messagebox.showinfo("支付成功", f"订单 {orderno} 支付成功！\n支付方式：{payment_desc}")
                 
                 # 支付成功后自动获取订单详情和二维码
                 try:
@@ -1850,6 +2056,223 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         except Exception as e:
             print(f"[影院管理] 刷新影院信息异常: {e}")
             messagebox.showerror("刷新失败", f"刷新影院信息时发生错误: {e}")
+
+    def build_coupon_exchange_tab(self, tab):
+        """构建兑换券tab - 显示当前账号的券列表"""
+        # 顶部控制区
+        top_frame = tk.Frame(tab)
+        top_frame.pack(fill=tk.X, pady=4, padx=8)
+        
+        # 刷新按钮
+        self.exchange_refresh_btn = tk.Button(top_frame, text="刷新", width=8, command=self.refresh_coupon_exchange_list)
+        self.exchange_refresh_btn.pack(side=tk.LEFT, padx=4)
+        
+        # 有效期统计标签
+        self.coupon_stats_label = tk.Label(top_frame, text="", font=("微软雅黑", 10), fg="blue")
+        self.coupon_stats_label.pack(side=tk.LEFT, padx=(20, 4))
+        
+        # 当前账号信息
+        self.exchange_account_info = tk.Label(top_frame, text="当前账号：未选择", font=("微软雅黑", 10), fg="red")
+        self.exchange_account_info.pack(side=tk.RIGHT, padx=4)
+        
+        # 券列表区域
+        # 使用与下单后券列表相同的样式
+        self.exchange_coupon_listbox = tk.Listbox(tab, selectmode="single", font=("微软雅黑", 10), activestyle="dotbox")
+        self.exchange_coupon_listbox.pack(fill="both", expand=True, padx=8, pady=8)
+        
+        # 保存券数据
+        self.exchange_coupons_data = []
+        
+        # 初始更新账号信息
+        self.update_exchange_account_info()
+    
+    def update_exchange_account_info(self):
+        """更新兑换券界面的账号信息显示"""
+        account = getattr(self, 'current_account', None)
+        if hasattr(self, 'exchange_account_info'):
+            if account:
+                # 获取影院名称
+                cinema_name = "未知影院"
+                try:
+                    from services.cinema_manager import cinema_manager
+                    cinemas = cinema_manager.load_cinema_list()
+                    for cinema in cinemas:
+                        if cinema.get('cinemaid') == account.get('cinemaid'):
+                            cinema_name = cinema.get('cinemaShortName', '未知影院')
+                            break
+                except:
+                    pass
+                
+                info_text = f"当前账号：{account['userid']} @ {cinema_name} (余额:{account.get('balance', 0)} 积分:{account.get('score', 0)})"
+                self.exchange_account_info.config(text=info_text, fg="blue")
+            else:
+                self.exchange_account_info.config(text="请先选择账号和影院", fg="red")
+    
+    def refresh_coupon_exchange_list(self):
+        """刷新兑换券列表"""
+        # 防重复调用机制
+        if hasattr(self, '_refreshing_exchange_coupons') and self._refreshing_exchange_coupons:
+            print("[兑换券刷新] 已有刷新请求在进行中，跳过重复请求")
+            return
+        
+        account = getattr(self, 'current_account', None)
+        cinemaid = self.get_selected_cinemaid()
+        
+        if not account:
+            messagebox.showwarning("未选中账号", "请先在左侧账号列表选择账号！")
+            return
+        
+        if not cinemaid:
+            messagebox.showwarning("未选中影院", "请先选择影院！")
+            return
+        
+        # 设置刷新状态标志
+        self._refreshing_exchange_coupons = True
+        
+        # 禁用刷新按钮并更改文本
+        if hasattr(self, 'exchange_refresh_btn'):
+            self.exchange_refresh_btn.config(state="disabled", text="刷新中...")
+        
+        # 显示刷新状态
+        if hasattr(self, 'coupon_stats_label'):
+            self.coupon_stats_label.config(text="正在获取券列表...", fg="orange")
+        
+        # 构建请求参数 - 确保只请求当前选择的影院和账号
+        params = {
+            'voucherType': -1,  # -1表示获取所有类型券
+            'pageNo': 1,
+            'groupid': '',
+            'cinemaid': cinemaid,
+            'cardno': account.get('cardno', ''),
+            'userid': account['userid'],
+            'openid': account['openid'],
+            'CVersion': '3.9.12',
+            'OS': 'Windows',
+            'token': account['token'],
+            'source': '2'
+        }
+        
+        print(f"[兑换券刷新] 正在获取账号 {account['userid']} @ 影院 {cinemaid} 的券列表...")
+        
+        try:
+            from services.order_api import get_coupon_list
+            result = get_coupon_list(params)
+            
+            print(f"[兑换券刷新] 券列表结果: {result}")
+            
+            if result.get('resultCode') == '0':
+                self.update_exchange_coupon_list(result)
+                print(f"[兑换券刷新] 成功获取券列表")
+            else:
+                error_desc = result.get('resultDesc', '未知错误')
+                print(f"[兑换券刷新] 获取券列表失败: {error_desc}")
+                messagebox.showwarning("获取券列表失败", f"获取失败：{error_desc}")
+                self.clear_exchange_coupon_list()
+                
+        except Exception as e:
+            print(f"[兑换券刷新] 异常: {e}")
+            messagebox.showerror("获取券列表异常", f"获取券列表时发生错误: {e}")
+            self.clear_exchange_coupon_list()
+        finally:
+            # 无论成功失败都要恢复按钮状态和清除刷新状态标志
+            self._refreshing_exchange_coupons = False
+            if hasattr(self, 'exchange_refresh_btn'):
+                self.exchange_refresh_btn.config(state="normal", text="刷新")
+            print(f"[兑换券刷新] 刷新完成，重置状态标志")
+    
+    def update_exchange_coupon_list(self, coupon_result):
+        """更新兑换券列表显示"""
+        # 清空现有列表
+        self.exchange_coupon_listbox.delete(0, 'end')
+        self.exchange_coupons_data = []
+        
+        if not coupon_result or coupon_result.get('resultCode') != '0':
+            self.exchange_coupon_listbox.insert('end', '获取券列表失败')
+            self.coupon_stats_label.config(text="")
+            return
+        
+        # 获取券数据 - 适配不同的数据结构
+        coupon_data = coupon_result.get('resultData', {})
+        vouchers = coupon_data.get('vouchers', []) or coupon_data.get('coupons', []) or coupon_data.get('data', [])
+        
+        if not vouchers:
+            self.exchange_coupon_listbox.insert('end', '暂无可用优惠券')
+            self.coupon_stats_label.config(text="券数量：0张")
+            return
+        
+        # 过滤券：只保留未使用且未过期的券
+        valid_vouchers = []
+        total_count = len(vouchers)
+        used_count = 0
+        expired_count = 0
+        
+        for voucher in vouchers:
+            # 检查是否已使用 (redeemed=1表示已使用)
+            is_used = str(voucher.get('redeemed', '0')) == '1'
+            # 检查是否已过期 (expired=1表示已过期)
+            is_expired = str(voucher.get('expired', '0')) == '1'
+            
+            if is_used:
+                used_count += 1
+            elif is_expired:
+                expired_count += 1
+            else:
+                # 未使用且未过期的券
+                valid_vouchers.append(voucher)
+        
+        if not valid_vouchers:
+            self.exchange_coupon_listbox.insert('end', '暂无可用优惠券')
+            self.coupon_stats_label.config(text=f"总券数：{total_count}张 (已使用:{used_count}张, 已过期:{expired_count}张, 可用:0张)")
+            return
+        
+        # 按有效期分组统计
+        expire_stats = {}
+        
+        for voucher in valid_vouchers:
+            # 获取有效期 - 尝试多个字段
+            expire_date = voucher.get('expireddate') or voucher.get('expiredDate') or voucher.get('expire_date', '未知')
+            
+            # 统计
+            if expire_date != '未知':
+                expire_key = expire_date.split(' ')[0]  # 只取日期部分
+                expire_stats[expire_key] = expire_stats.get(expire_key, 0) + 1
+        
+        # 按有效期升序排列券
+        valid_vouchers.sort(key=lambda v: v.get('expireddate', ''))
+        
+        # 显示券列表
+        for i, voucher in enumerate(valid_vouchers):
+            # 获取券信息
+            name = voucher.get('couponname') or voucher.get('voucherName') or voucher.get('name', f'券{i+1}')
+            expire = voucher.get('expireddate') or voucher.get('expiredDate') or '未知'
+            code = voucher.get('couponcode') or voucher.get('voucherCode') or voucher.get('code', f'未知券号{i+1}')
+            
+            # 格式化显示
+            display = f"{name} | 有效期至 {expire} | 券号 {code}"
+            self.exchange_coupon_listbox.insert('end', display)
+            self.exchange_coupons_data.append(voucher)
+        
+        # 生成统计文本
+        if expire_stats:
+            stats_items = []
+            for expire_date in sorted(expire_stats.keys()):
+                count = expire_stats[expire_date]
+                stats_items.append(f"{expire_date}到期{count}张")
+            stats_text = f"可用券：{len(valid_vouchers)}张 ({' '.join(stats_items)}) | 总计:{total_count}张 (已用:{used_count}张, 过期:{expired_count}张)"
+        else:
+            stats_text = f"可用券：{len(valid_vouchers)}张 | 总计:{total_count}张 (已用:{used_count}张, 过期:{expired_count}张)"
+        
+        self.coupon_stats_label.config(text=stats_text)
+        print(f"[兑换券列表] 更新完成，总计 {total_count} 张券，可用 {len(valid_vouchers)} 张券，已使用 {used_count} 张，已过期 {expired_count} 张")
+    
+    def clear_exchange_coupon_list(self):
+        """清空兑换券列表"""
+        if hasattr(self, 'exchange_coupon_listbox'):
+            self.exchange_coupon_listbox.delete(0, 'end')
+            self.exchange_coupon_listbox.insert('end', '暂无券数据')
+        if hasattr(self, 'coupon_stats_label'):
+            self.coupon_stats_label.config(text="")
+        self.exchange_coupons_data = []
 
 if __name__ == "__main__":  # 程序入口
     app = CinemaOrderSimulatorUI()  # 创建主窗口对象

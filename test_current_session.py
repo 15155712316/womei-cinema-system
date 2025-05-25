@@ -1,152 +1,135 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-测试当前日期的场次，验证修复后的错误处理逻辑
+检查当前会话的待支付订单数量和取消功能测试
 """
 
 import sys
 import os
-import datetime
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-def test_current_date_session():
-    """测试当前日期的场次"""
-    print("=== 测试当前日期的场次 ===")
+def test_current_session():
+    """测试当前会话状态"""
+    print("=== 检查当前待支付订单状态 ===")
     
     try:
-        from services.film_service import get_plan_seat_info
+        # 1. 加载账号信息
+        import json
+        with open("data/accounts.json", "r", encoding="utf-8") as f:
+            accounts = json.load(f)
         
-        # 获取今天的日期
-        today = datetime.datetime.now().strftime('%Y-%m-%d')
-        print(f"今天日期: {today}")
+        # 找到华夏优加荟大都荟账号
+        test_account = None
+        for acc in accounts:
+            if acc.get('cinemaid') == '35fec8259e74':
+                test_account = acc
+                break
         
-        # 使用万友影城最新排期.json中的一个未来场次
-        test_params = {
-            'base_url': 'zcxzs7.cityfilms.cn',
-            'showCode': '82632505228PNN06',  # 2025-05-22的场次
-            'hallCode': '0000000000000007',
-            'filmCode': '001a01192025',
-            'filmNo': '001a01192025',
-            'showDate': '2025-05-22',  # 使用未来日期
-            'startTime': '10:00',
-            'userid': '15155712316',
-            'openid': 'oAOCp7VbeeoqMM4yC8e2i3G3lxI8',
-            'token': '3a30b9e980892714',
-            'cinemaid': '0f1e21d86ac8'
+        if not test_account:
+            print("❌ 未找到华夏优加荟大都荟账号")
+            return
+        
+        print(f"✓ 找到测试账号: {test_account.get('userid')}")
+        
+        # 2. 获取当前订单列表
+        from services.order_api import get_order_list
+        params = {
+            'pageNo': 1,
+            'groupid': '',
+            'cinemaid': test_account['cinemaid'],
+            'cardno': test_account.get('cardno', ''),
+            'userid': test_account['userid'],
+            'openid': test_account['openid'],
+            'CVersion': '3.9.12',
+            'OS': 'Windows',
+            'token': test_account['token'],
+            'source': '2'
         }
         
-        print(f"调用座位API参数:")
-        for key, value in test_params.items():
-            print(f"  {key}: {value}")
-        print()
+        result = get_order_list(params)
         
-        result = get_plan_seat_info(**test_params)
-        
-        print(f"API调用结果:")
-        print(f"  resultCode: {result.get('resultCode', 'N/A')}")
-        print(f"  resultDesc: {result.get('resultDesc', 'N/A')}")
-        print(f"  has resultData: {'Yes' if result.get('resultData') else 'No'}")
-        
-        if result.get('resultData'):
-            if 'seats' in result['resultData']:
-                seats_count = len(result['resultData']['seats'])
-                print(f"  座位数量: {seats_count}")
+        if result.get('resultCode') == '0':
+            orders = result.get('resultData', {}).get('orders', [])
+            pending_orders = [order for order in orders if order.get('orderS') == '待付款']
+            
+            print(f"\n📊 当前订单状态:")
+            print(f"总订单数: {len(orders)}")
+            print(f"待付款订单数: {len(pending_orders)}")
+            
+            if pending_orders:
+                print(f"\n📋 待付款订单详情:")
+                for i, order in enumerate(pending_orders, 1):
+                    orderno = order.get('orderno', '无订单号')
+                    name = order.get('orderName', '无名称')
+                    timeout = order.get('orderTimeOutDate', '无超时时间')
+                    print(f"  {i}. {orderno} | {name} | 超时时间: {timeout}")
                 
-                # 分析座位状态
-                if seats_count > 0:
-                    available_seats = [s for s in result['resultData']['seats'] if s.get('s') == 'F']
-                    sold_seats = [s for s in result['resultData']['seats'] if s.get('s') != 'F']
-                    print(f"  可用座位: {len(available_seats)}")
-                    print(f"  已售座位: {len(sold_seats)}")
-            
-            if 'priceinfo' in result['resultData']:
-                price_info = result['resultData']['priceinfo']
-                print(f"  价格信息: {price_info}")
-        
-        if result.get('error'):
-            print(f"  错误信息: {result.get('error')}")
-        
-        print()
-        
-        # 模拟错误处理逻辑
-        print("模拟新的错误处理逻辑:")
-        if not result or 'resultData' not in result or not result['resultData']:
-            result_code = result.get('resultCode', '') if result else ''
-            result_desc = result.get('resultDesc', '') if result else ''
-            
-            # 修复：检查resultDesc中是否包含"已过场"关键词（无论resultCode是什么）
-            if '过期' in result_desc or '已过场' in result_desc or '时间' in result_desc:
-                print("  -> 会显示：已过场")
-            elif result and result_code == '500':
-                # 500错误但不是过场问题
-                print(f"  -> 会显示：获取座位失败 - {result_desc}")
-            elif result and result_code == '400':
-                print("  -> 会显示：座位信息暂时无法获取，请稍后重试")
-            elif result and result.get('error'):
-                print(f"  -> 会显示：网络错误 - {result.get('error')}")
+                # 3. 测试取消功能 - 使用修复后的cancel_order
+                print(f"\n🔧 测试修复后的取消订单功能:")
+                
+                from services.order_api import cancel_order
+                for i, order in enumerate(pending_orders, 1):
+                    orderno = order.get('orderno')
+                    print(f"\n--- 测试取消订单 {i}: {orderno} ---")
+                    
+                    cancel_params = {
+                        'orderno': orderno,
+                        'groupid': '',
+                        'cinemaid': test_account['cinemaid'],
+                        'cardno': test_account.get('cardno', ''),
+                        'userid': test_account['userid'],
+                        'openid': test_account['openid'],
+                        'CVersion': '3.9.12',
+                        'OS': 'Windows',
+                        'token': test_account['token'],
+                        'source': '2'
+                    }
+                    
+                    cancel_result = cancel_order(cancel_params)
+                    print(f"取消结果: {cancel_result}")
+                    
+                    if cancel_result.get('resultCode') == '0':
+                        print(f"✅ 订单 {orderno} 取消成功")
+                    else:
+                        error_desc = cancel_result.get('resultDesc', '未知错误')
+                        print(f"❌ 订单 {orderno} 取消失败: {error_desc}")
+                
+                # 4. 再次检查订单列表，确认取消效果
+                print(f"\n🔍 再次检查订单列表:")
+                result2 = get_order_list(params)
+                
+                if result2.get('resultCode') == '0':
+                    orders2 = result2.get('resultData', {}).get('orders', [])
+                    pending_orders2 = [order for order in orders2 if order.get('orderS') == '待付款']
+                    
+                    print(f"取消后总订单数: {len(orders2)}")
+                    print(f"取消后待付款订单数: {len(pending_orders2)}")
+                    
+                    if len(pending_orders2) < len(pending_orders):
+                        cancelled_count = len(pending_orders) - len(pending_orders2)
+                        print(f"✅ 成功取消了 {cancelled_count} 个订单")
+                    elif len(pending_orders2) == len(pending_orders):
+                        print(f"⚠️ 订单数量没有变化，可能取消失败")
+                    else:
+                        print(f"❓ 订单数量异常变化")
+                        
             else:
-                print("  -> 会显示：获取座位失败，请检查网络连接或稍后重试")
+                print(f"✅ 当前没有待付款订单")
+                
+                # 显示所有订单状态
+                print(f"\n📋 所有订单状态:")
+                for order in orders:
+                    orderno = order.get('orderno', '无订单号')
+                    name = order.get('orderName', '无名称')
+                    status = order.get('orderS', '无状态')
+                    print(f"  - {orderno} | {name} | {status}")
         else:
-            print("  -> 正常加载座位图")
-        
-    except Exception as e:
-        print(f"座位API调用异常: {e}")
-        print()
-
-def test_cinema_id_in_real_scenario():
-    """测试真实场景下的影院ID保持"""
-    print("=== 测试真实场景下的影院ID保持 ===")
-    
-    try:
-        from services.cinema_info_api import get_cinema_info, format_cinema_data
-        
-        # 使用真实的影院ID测试
-        test_cinemaid = '61011571'
-        test_domain = 'www.heibaiyingye.cn'
-        
-        print(f"测试影院ID: {test_cinemaid}")
-        print(f"测试域名: {test_domain}")
-        print()
-        
-        # 获取真实的影院信息
-        cinema_info = get_cinema_info(test_domain, test_cinemaid)
-        
-        if cinema_info:
-            print("API返回的影院信息:")
-            print(f"  API返回的cinemaid: {cinema_info.get('cinemaid', 'N/A')}")
-            print(f"  影院名称: {cinema_info.get('cinemaShortName', 'N/A')}")
-            print(f"  城市名称: {cinema_info.get('cityName', 'N/A')}")
-            print()
-            
-            # 测试格式化数据（修复后）
-            formatted_data = format_cinema_data(cinema_info, test_domain, test_cinemaid)
-            
-            print("格式化后的影院数据:")
-            print(f"  保持的cinemaid: {formatted_data.get('cinemaid')}")
-            print(f"  影院名称: {formatted_data.get('cinemaShortName')}")
-            print(f"  base_url: {formatted_data.get('base_url')}")
-            print()
-            
-            # 验证是否保持了原始ID
-            if formatted_data.get('cinemaid') == test_cinemaid:
-                print("✓ 影院ID保持修复成功！原始ID被正确保留")
-            else:
-                print("✗ 影院ID保持修复失败！ID被覆盖了")
-        else:
-            print("无法获取影院信息，可能是网络问题或域名不正确")
+            print(f"❌ 获取订单列表失败: {result.get('resultDesc')}")
     
     except Exception as e:
-        print(f"测试异常: {e}")
+        print(f"❌ 测试过程中发生异常: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
-    print("开始测试修复后的实际效果...")
-    print()
-    
-    test_current_date_session()
-    test_cinema_id_in_real_scenario()
-    
-    print("测试完成！")
-    print()
-    print("总结：")
-    print("1. 场次过期问题：现在会根据API的具体错误信息智能判断")
-    print("2. 影院ID覆盖问题：原始添加的影院ID现在会被正确保持") 
+    test_current_session() 

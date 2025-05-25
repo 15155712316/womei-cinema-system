@@ -1,0 +1,32 @@
+{
+  "13800138000": {
+    "id": "user_001",
+    "phone": "13800138000",
+    "username": "管理员",
+    "machine_code": "6fbae16cd7f2b470160c6469ce22aa67",
+    "status": 1,
+    "points": 100,
+    "created_at": "2025-05-25 16:23:38",
+    "last_login": ""
+  },
+  "13900139000": {
+    "id": "user_002",
+    "phone": "13900139000",
+    "username": "测试用户",
+    "machine_code": "6fbae16cd7f2b470160c6469ce22aa67",
+    "status": 1,
+    "points": 50,
+    "created_at": "2025-05-25 16:23:38",
+    "last_login": ""
+  },
+  "13700137000": {
+    "id": "user_003",
+    "phone": "13700137000",
+    "username": "普通用户",
+    "machine_code": "6fbae16cd7f2b470160c6469ce22aa67",
+    "status": 1,
+    "points": 30,
+    "created_at": "2025-05-25 16:23:38",
+    "last_login": ""
+  }
+}

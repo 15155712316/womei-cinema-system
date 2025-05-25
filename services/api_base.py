@@ -14,9 +14,11 @@ class APIBase:
             'Accept': 'application/json',
             'Content-Type': 'application/x-www-form-urlencoded',
             'xweb_xhr': '1',
-            'referer': 'https://servicewechat.com/wxaea711f302cc71ec/1/page-frame.html',
-            'accept-language': 'zh-CN,zh;q=0.9',
-            'priority': 'u=1, i'
+            'Sec-Fetch-Site': 'cross-site',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty',
+            'Referer': 'https://servicewechat.com/wx03aeb42bd6a3580e/1/page-frame.html',
+            'Accept-Language': 'zh-CN,zh;q=0.9'
         }
     
     def get_base_url_for_cinema(self, cinemaid):
