@@ -1,5 +1,6 @@
 import requests
 from urllib.parse import urlparse, parse_qs
+from .api_base import api_get
 
 def login_and_check_card(
     phone: str,
@@ -13,7 +14,9 @@ def login_and_check_card(
     OS: str = "Windows",
     source: str = "2"
 ) -> dict:
-    url = "https://zcxzs7.cityfilms.cn/MiniTicket/index.php/MiniMember/getMemcardList"
+    """登录并检查会员卡信息 - 使用动态base_url"""
+    
+    # 构建请求参数
     params = {
         "cinemaid": cinemaid,
         "userid": phone,
@@ -26,21 +29,19 @@ def login_and_check_card(
         "OS": OS,
         "source": source
     }
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639",
-        "Accept": "application/json",
-        "xweb_xhr": "1",
-        "content-type": "application/x-www-form-urlencoded",
-        "sec-fetch-site": "cross-site",
-        "sec-fetch-mode": "cors",
-        "sec-fetch-dest": "empty",
-        "referer": "https://servicewechat.com/wxaea711f302cc71ec/1/page-frame.html",
-        "accept-language": "zh-CN,zh;q=0.9",
-        "priority": "u=1, i"
-    }
-    resp = requests.get(url, params=params, headers=headers, timeout=5, verify=False)
     
-    return resp.json()
+    print(f"[登录API] 开始调用登录接口")
+    print(f"[登录API] 影院ID: {cinemaid}")
+    print(f"[登录API] 手机号: {phone}")
+    print(f"[登录API] CK长度: {len(ck)}")
+    print(f"[登录API] OpenID: {openid}")
+    print(f"[登录API] 请求参数: {params}")
+    
+    # 使用新的API基础服务，自动根据cinemaid选择base_url
+    result = api_get('MiniTicket/index.php/MiniMember/getMemcardList', cinemaid, params=params)
+    
+    print(f"[登录API] 返回数据: {result}")
+    return result
 
 def extract_params_and_request(url: str, headers: dict = None) -> dict:
     """

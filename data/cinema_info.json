@@ -1,0 +1,36 @@
+[
+  {
+    "cinemaid": "35fec8259e74",
+    "cinemaShortName": "华夏优加荟大都荟",
+    "cityName": "陕西",
+    "cinemaAddress": "高新大都荟负一层",
+    "cinemaPhone": "",
+    "base_url": "www.heibaiyingye.cn",
+    "createTime": "2025-05-24 22:22:17",
+    "updateTime": "2025-05-24 22:22:17"
+  },
+  {
+    "cinemaid": "11b7e4bcc265",
+    "cinemaShortName": "深影国际影城(佐阾虹湾购物中心店)",
+    "cityName": "深圳市",
+    "cinemaAddress": "福田区北环大道6098号佐阾虹湾购物中心3楼",
+    "cinemaPhone": "",
+    "base_url": "tt7.cityfilms.cn",
+    "limitTicketAmount": "6",
+    "cinemaState": 0,
+    "createTime": "2025-05-25 01:09:39",
+    "updateTime": "2025-05-25 01:09:39"
+  },
+  {
+    "cinemaid": "0f1e21d86ac8",
+    "cinemaShortName": "深圳万友影城IBCMall店",
+    "cityName": "深圳市",
+    "cinemaAddress": "罗湖区布心路3008号IBCMALL4楼",
+    "cinemaPhone": "",
+    "base_url": "zcxzs7.cityfilms.cn",
+    "limitTicketAmount": "6",
+    "cinemaState": 0,
+    "createTime": "2025-05-25 01:10:52",
+    "updateTime": "2025-05-25 01:10:52"
+  }
+]

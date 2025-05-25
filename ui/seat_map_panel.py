@@ -5,6 +5,12 @@ class SeatMapPanel(tk.Frame):
     影院座位图UI组件（Canvas方案），每个座位为黑色边框矩形，支持可售/已售/选中状态，交互逻辑与原Button方案一致。
     """
     def __init__(self, master, seat_data=None, *args, **kwargs):
+        """
+        初始化座位图面板。
+        参数：
+            master: 父窗口对象
+            seat_data: 二维座位数据列表
+        """
         super().__init__(master, *args, **kwargs)
         self.seat_data = seat_data or []  # 二维座位数据
         self.selected_seats = set()       # 选中座位集合
@@ -13,6 +19,9 @@ class SeatMapPanel(tk.Frame):
         self._build_ui()
 
     def _build_ui(self):
+        """
+        构建座位图UI，包括Canvas和滚动条、底部提交订单按钮。
+        """
         # 滚动区域
         self.canvas = tk.Canvas(self, bg="#fff", highlightthickness=0)
         self.scroll_x = tk.Scrollbar(self, orient="horizontal", command=self.canvas.xview)
@@ -30,6 +39,9 @@ class SeatMapPanel(tk.Frame):
         self.submit_btn.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(4, 0))
 
     def _draw_seats(self):
+        """
+        绘制所有座位格子，根据状态显示不同颜色和交互。
+        """
         self.canvas.delete("all")
         self.seat_items.clear()
         # 座位格子参数
@@ -94,6 +106,13 @@ class SeatMapPanel(tk.Frame):
                 self.canvas.move("all", x_offset, y_offset)
 
     def get_bg(self, status):
+        """
+        根据座位状态返回背景色。
+        参数：
+            status: 座位状态字符串
+        返回：
+            str: 背景色
+        """
         if status == "available":
             return "#fff"  # 可售座位白色
         elif status == "sold":
@@ -103,6 +122,13 @@ class SeatMapPanel(tk.Frame):
         return "#fff"
 
     def get_fg(self, status):
+        """
+        根据座位状态返回前景色（字体颜色）。
+        参数：
+            status: 座位状态字符串
+        返回：
+            str: 字体颜色
+        """
         if status == "sold":
             return "#000"
         elif status == "selected":
@@ -110,6 +136,12 @@ class SeatMapPanel(tk.Frame):
         return "#000"
 
     def toggle_seat(self, r, c):
+        """
+        切换指定座位的选中状态，并刷新UI。
+        参数：
+            r: 行索引
+            c: 列索引
+        """
         seat = self.seat_data[r][c]
         key = (r, c)
         if key in self.selected_seats:
@@ -127,6 +159,12 @@ class SeatMapPanel(tk.Frame):
         self.update_info_label()
 
     def _update_seat_visual(self, r, c):
+        """
+        刷新指定座位的UI显示（颜色等）。
+        参数：
+            r: 行索引
+            c: 列索引
+        """
         seat = self.seat_data[r][c]
         status = seat.get('status', 'available')
         rect_id, text_id = self.seat_items[(r, c)]
@@ -134,18 +172,36 @@ class SeatMapPanel(tk.Frame):
         self.canvas.itemconfig(text_id, fill=self.get_fg(status))
 
     def update_seats(self, seat_data):
+        """
+        更新座位数据并重绘座位图。
+        参数：
+            seat_data: 新的二维座位数据
+        """
         self.seat_data = seat_data or []
         self.selected_seats.clear()
         self._draw_seats()
         self.update_info_label()
 
     def get_selected_seats(self):
+        """
+        获取当前选中的所有座位编号。
+        返回：
+            list: 选中座位的编号列表
+        """
         return [self.seat_data[r][c]['num'] for (r, c) in self.selected_seats] 
 
     def set_on_seat_selected(self, callback):
+        """
+        设置选座回调函数。
+        参数：
+            callback: 回调函数
+        """
         self.on_seat_selected = callback
 
     def update_info_label(self):
+        """
+        刷新底部提交订单按钮的显示内容，包括选中座位和价格。
+        """
         selected = [self.seat_data[r][c] for (r, c) in self.selected_seats]
         priceinfo = self._priceinfo
         print(f"[DEBUG] update_info_label: priceinfo = {priceinfo}")
@@ -175,17 +231,35 @@ class SeatMapPanel(tk.Frame):
         self.submit_btn.config(text=btn_text)
 
     def _on_submit_order_click(self):
+        """
+        提交订单按钮点击事件，调用外部回调。
+        """
         if hasattr(self, 'on_submit_order') and callable(self.on_submit_order):
             selected = [self.seat_data[r][c] for (r, c) in self.selected_seats]
             self.on_submit_order(selected)
 
     def set_on_submit_order(self, callback):
+        """
+        设置提交订单回调函数。
+        参数：
+            callback: 回调函数
+        """
         self.on_submit_order = callback
 
     def set_priceinfo(self, priceinfo):
+        """
+        设置当前价格信息，并刷新底部显示。
+        参数：
+            priceinfo: 价格信息字典
+        """
         print(f"[DEBUG] SeatMapPanel.set_priceinfo called with: {priceinfo}")
         self._priceinfo = priceinfo or {}
         self.update_info_label()
 
     def set_account_getter(self, getter):
+        """
+        设置获取账号信息的回调函数。
+        参数：
+            getter: 回调函数
+        """
         self.account_getter = getter 

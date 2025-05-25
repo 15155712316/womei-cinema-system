@@ -31,11 +31,89 @@ def get_films(base_url, cinemaid, openid, userid,  token, cversion='3.9.12', os=
 
 def load_cinemas():
     """
-    读取所有影院参数
+    读取所有影院参数 - 支持新的影院信息管理
     """
-    path = os.path.join(os.path.dirname(__file__), 'cinemas.json')
-    with open(path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    # 首先尝试从新的影院信息管理器加载
+    try:
+        from .cinema_manager import cinema_manager
+        cinema_list = cinema_manager.load_cinema_list()
+        
+        if cinema_list:
+            print(f"[影院加载] 从新影院管理器加载 {len(cinema_list)} 个影院")
+            # 转换为兼容的格式（保持向后兼容）
+            compatible_cinemas = []
+            for cinema in cinema_list:
+                compatible_cinema = {
+                    'name': cinema.get('cinemaShortName', cinema.get('cinemaName', '未知影院')),
+                    'cinemaid': cinema.get('cinemaid', ''),
+                    'base_url': cinema.get('base_url', ''),
+                    'address': cinema.get('cinemaAddress', ''),
+                    'cityName': cinema.get('cityName', ''),
+                    'cinemaName': cinema.get('cinemaName', ''),
+                    'cinemaTel': cinema.get('cinemaTel', ''),
+                    # 这些字段现在从账号信息中获取，设为空值
+                    'openid': '',
+                    'token': '',
+                    'userid': ''
+                }
+                compatible_cinemas.append(compatible_cinema)
+            return compatible_cinemas
+    except Exception as e:
+        print(f"[影院加载] 从新影院管理器加载失败: {e}")
+    
+    # 如果新的管理器没有数据，尝试从旧的 cinemas.json 加载并迁移
+    old_path = os.path.join(os.path.dirname(__file__), 'cinemas.json')
+    if os.path.exists(old_path):
+        try:
+            print(f"[影院加载] 发现旧的影院文件，正在迁移数据...")
+            with open(old_path, 'r', encoding='utf-8') as f:
+                old_cinemas = json.load(f)
+            
+            # 迁移数据到新的管理器
+            from .cinema_manager import cinema_manager
+            migrated_cinemas = []
+            
+            for old_cinema in old_cinemas:
+                # 构建新格式的影院数据
+                new_cinema = {
+                    'cinemaid': old_cinema.get('cinemaid', ''),
+                    'cityName': '未知城市',  # 旧数据没有这个字段
+                    'cinemaShortName': old_cinema.get('name', '未知影院'),
+                    'cinemaName': old_cinema.get('name', '未知影院'),
+                    'cinemaAddress': old_cinema.get('address', old_cinema.get('base_url', '地址未知')),
+                    'cinemaTel': '',
+                    'base_url': old_cinema.get('base_url', ''),
+                    'limitTicketAmount': '6',
+                    'cinemaState': 0
+                }
+                migrated_cinemas.append(new_cinema)
+            
+            # 保存到新的管理器
+            if cinema_manager.save_cinema_list(migrated_cinemas):
+                print(f"[影院加载] 成功迁移 {len(migrated_cinemas)} 个影院到新管理器")
+                
+                # 迁移成功后，重命名旧文件作为备份
+                backup_path = old_path + '.backup'
+                os.rename(old_path, backup_path)
+                print(f"[影院加载] 旧文件已备份为: {backup_path}")
+                
+                # 返回迁移后的数据
+                return load_cinemas()  # 递归调用，从新管理器加载
+            else:
+                print(f"[影院加载] 迁移失败，继续使用旧文件")
+                return old_cinemas
+                
+        except Exception as e:
+            print(f"[影院加载] 迁移旧数据失败: {e}")
+            try:
+                with open(old_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except:
+                return []
+    
+    # 如果都没有，返回空列表
+    print(f"[影院加载] 未找到影院数据，返回空列表")
+    return []
 
 def normalize_film_data(raw_data):
     """

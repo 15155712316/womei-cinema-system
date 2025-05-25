@@ -1,12 +1,12 @@
 [
   {
-    "userid": "14700283316",
-    "openid": "ohA6p7VxLxzcHoBw1_E8VcyEvVVs",
-    "token": "9de4d8353cd30172",
+    "userid": "15155712316",
+    "openid": "ohA6p7Z0kejTSi40QVYXQtMF9SDY",
+    "token": "02849a78647f5af9",
     "cinemaid": "11b7e4bcc265",
     "balance": 0,
     "points": 0,
-    "is_main": false
+    "is_main": true
   },
   {
     "userid": "14700283316",
@@ -19,13 +19,33 @@
   },
   {
     "userid": "15155712316",
-    "openid": "oEW4I7LA3s0PONMaw-36M6YalsxQ",
-    "token": "52468f74519cfbcb",
+    "openid": "ohA6p7Z0kejTSi40QVYXQtMF9SDY",
+    "token": "02849a78647f5af9",
     "cinemaid": "0f1e21d86ac8",
-    "balance": 400,
+    "balance": 400.0,
     "points": 0,
     "cardno": "15155712316",
     "score": 3833,
     "is_main": true
+  },
+  {
+    "userid": "14700283316",
+    "openid": "ohA6p7VxLxzcHoBw1_E8VcyEvVVs",
+    "token": "9de4d8353cd30172",
+    "cinemaid": "11b7e4bcc265",
+    "balance": 0,
+    "points": 0,
+    "cardno": "",
+    "score": 0
+  },
+  {
+    "userid": "15155712316",
+    "openid": "oAOCp7VbeeoqMM4yC8e2i3G3lxI8",
+    "token": "3a30b9e980892714",
+    "cinemaid": "35fec8259e74",
+    "balance": 262.8,
+    "points": 0,
+    "cardno": "15155712316",
+    "score": 0
   }
 ]

@@ -1,94 +1,59 @@
 import requests
 import urllib3
+from .api_base import api_get, api_post
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-ORDER_API_URL = "https://zcxzs7.cityfilms.cn/MiniTicket/index.php/MiniOrder/createOrder"
-
 def create_order(params: dict) -> dict:
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'xweb_xhr': '1',
-        'referer': 'https://servicewechat.com/wxaea711f302cc71ec/1/page-frame.html',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'priority': 'u=1, i'
-    }
-    response = requests.post(ORDER_API_URL, data=params, headers=headers, timeout=10, verify=False)
-    try:
-        return response.json()
-    except Exception:
-        import json
-        return json.loads(response.content.decode('utf-8-sig'))
+    """创建订单 - 使用动态base_url"""
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+    
+    return api_post('MiniTicket/index.php/MiniOrder/createOrder', cinemaid, data=params)
 
 def get_unpaid_order_detail(params: dict) -> dict:
-    import urllib3
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
-        'Accept': 'application/json',
-        'content-type': 'application/x-www-form-urlencoded',
-        'xweb_xhr': '1',
-        'referer': 'https://servicewechat.com/wxaea711f302cc71ec/1/page-frame.html',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'priority': 'u=1, i'
-    }
-    url = "https://zcxzs7.cityfilms.cn/MiniTicket/index.php/MiniOrder/getUnpaidOrderDetail"
-    response = requests.get(url, params=params, headers=headers, timeout=10, verify=False)
-    try:
-        return response.json()
-    except Exception:
-        import json
-        return json.loads(response.content.decode('utf-8-sig'))
+    """获取未支付订单详情 - 使用动态base_url"""
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+    
+    return api_get('MiniTicket/index.php/MiniOrder/getUnpaidOrderDetail', cinemaid, params=params)
 
 def get_coupons_by_order(params: dict) -> dict:
     """
-    获取指定订单的可用优惠券列表
+    获取指定订单的可用优惠券列表 - 使用动态base_url
     :param params: dict，需包含 orderno, cinemaid, userid, openid, token 等
     :return: dict，接口返回的json
     """
-    url = "https://tt7.cityfilms.cn/MiniTicket/index.php/MiniCoupon/getCouponByOrder"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'xweb_xhr': '1',
-        'referer': 'https://servicewechat.com/wx03aeb42bd6a3580e/1/page-frame.html',
-        'accept-language': 'zh-CN,zh;q=0.9',
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+    
+    # 特殊的headers for 券接口
+    special_headers = {
+        'referer': 'https://servicewechat.com/wx03aeb42bd6a3580e/1/page-frame.html'
     }
+    
     # 打印请求信息
     import urllib.parse
-    full_url = url + '?' + urllib.parse.urlencode(params)
-    print("[优惠券API请求] URL:", full_url)
-    print("[优惠券API请求] headers:", headers)
-    print("[优惠券API请求] params:", params)
-    response = requests.get(url, params=params, headers=headers, timeout=10, verify=False)
-    try:
-        return response.json()
-    except Exception:
-        import json
-        return json.loads(response.content.decode('utf-8-sig'))
+    print(f"[优惠券API请求] 影院ID: {cinemaid}")
+    print(f"[优惠券API请求] params: {params}")
+    
+    return api_get('MiniTicket/index.php/MiniCoupon/getCouponByOrder', cinemaid, params=params, headers=special_headers)
 
 def bind_coupon(params: dict) -> dict:
     """
-    绑定优惠券接口
-    :param params: dict，需包含couponcode, cinemaid, userid, openid, token等
+    绑定优惠券接口 - 使用GET请求（修复：匹配真实小程序请求方式）
+    :param params: dict，需包含 couponcode, cinemaid, userid, openid, token 等
     :return: dict，接口返回的json
     """
-    import requests
-    url = "https://zcxzs7.cityfilms.cn/MiniTicket/index.php/MiniCoupon/bindCoupon"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'xweb_xhr': '1',
-        'referer': 'https://servicewechat.com/wxaea711f302cc71ec/1/page-frame.html',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'priority': 'u=1, i',
-    }
-    resp = requests.get(url, params=params, headers=headers, verify=False, timeout=10)
-    return resp.json()
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+    
+    # 使用GET请求，参数作为查询字符串
+    return api_get('MiniTicket/index.php/MiniCoupon/bindCoupon', cinemaid, params=params)
 
 def coupon_pay_order(params: dict) -> dict:
     """
@@ -136,40 +101,32 @@ def coupon_pay_order(params: dict) -> dict:
 
 def get_order_detail(params: dict) -> dict:
     """
-    查询订单详情接口（MiniOrder/getOrderDetail）
+    查询订单详情接口（MiniOrder/getOrderDetail） - 使用动态base_url
     :param params: dict，需包含 orderno, groupid, cinemaid, cardno, userid, openid, CVersion, OS, token, source
     :return: dict，接口返回的json
     """
-    url = "https://zcxzs7.cityfilms.cn/MiniTicket/index.php/MiniOrder/getOrderDetail"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
-        'Accept': 'application/json',
-        'xweb_xhr': '1',
-        'content-type': 'application/x-www-form-urlencoded',
-        'sec-fetch-site': 'cross-site',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-dest': 'empty',
-        'referer': 'https://servicewechat.com/wxaea711f302cc71ec/1/page-frame.html',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'priority': 'u=1, i'
-    }
-    try:
-        resp = requests.get(url, params=params, headers=headers, timeout=10, verify=False)
-        try:
-            return resp.json()
-        except Exception:
-            import json
-            return json.loads(resp.content.decode('utf-8-sig'))
-    except Exception as e:
-        return {"resultCode": "-1", "resultDesc": f"查单请求异常: {str(e)}", "resultData": None}
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+    
+    return api_get('MiniTicket/index.php/MiniOrder/getOrderDetail', cinemaid, params=params)
 
-def get_order_qrcode_api(orderno: str) -> bytes:
+def get_order_qrcode_api(orderno: str, cinemaid: str) -> bytes:
     """
-    获取订单取票二维码图片（MiniTicket/Cqrcode/generateQrcode/<orderno>）
+    获取订单取票二维码图片（MiniTicket/Cqrcode/generateQrcode/<orderno>） - 使用动态base_url
     :param orderno: 订单号（字符串）
+    :param cinemaid: 影院ID
     :return: 二进制图片内容，异常时返回None
     """
-    url = f"https://zcxzs7.cityfilms.cn/MiniTicket/index.php/Cqrcode/generateQrcode/{orderno}"
+    from .api_base import api_base
+    
+    if not cinemaid:
+        print(f"[订单二维码] 缺少影院ID参数")
+        return None
+    
+    base_url = api_base.get_base_url_for_cinema(cinemaid)
+    url = api_base.build_url(base_url, f'MiniTicket/index.php/Cqrcode/generateQrcode/{orderno}')
+    
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
         'Accept': 'image/wxpic,image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
@@ -180,65 +137,40 @@ def get_order_qrcode_api(orderno: str) -> bytes:
         'accept-language': 'zh-CN,zh;q=0.9',
         'priority': 'i'
     }
+    
     try:
+        print(f"[订单二维码] 请求URL: {url}")
         resp = requests.get(url, headers=headers, timeout=10, verify=False)
         if resp.status_code == 200:
             return resp.content
         else:
+            print(f"[订单二维码] HTTP错误: {resp.status_code}")
             return None
     except Exception as e:
+        print(f"[订单二维码] 请求异常: {e}")
         return None
 
 def get_order_list(params: dict) -> dict:
     """
-    获取订单列表接口（MiniOrder/getOrderList）
+    获取订单列表接口（MiniOrder/getOrderList） - 使用动态base_url
     :param params: dict，需包含pageNo, groupid, cinemaid, cardno, userid, openid, CVersion, OS, token, source
     :return: dict，接口返回的json，异常时resultCode=-1
     """
-    url = "https://zcxzs7.cityfilms.cn/MiniTicket/index.php/MiniOrder/getOrderList"
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
-        'Accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'xweb_xhr': '1',
-        'sec-fetch-site': 'cross-site',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-dest': 'empty',
-        'referer': 'https://servicewechat.com/wxaea711f302cc71ec/1/page-frame.html',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'priority': 'u=1, i'
-    }
-    try:
-        resp = requests.post(url, data=params, headers=headers, timeout=10, verify=False)
-        try:
-            return resp.json()
-        except Exception:
-            import json
-            return json.loads(resp.content.decode('utf-8-sig'))
-    except Exception as e:
-        return {"resultCode": "-1", "resultDesc": f"订单列表请求异常: {str(e)}", "resultData": None}
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+    
+    return api_post('MiniTicket/index.php/MiniOrder/getOrderList', cinemaid, data=params)
 
 def cancel_order(params: dict) -> dict:
     """
-    取消订单接口（MiniOrder/cancelorder）
+    取消订单接口（MiniOrder/cancelorder） - 使用动态base_url
     :param params: dict，需包含 orderno, groupid, cinemaid, cardno, userid, openid, CVersion, OS, token, source
     :return: dict，接口返回的json，异常时resultCode=-1
     """
-    # 构建URL - 需要根据影院base_url动态构建
-    base_url = params.get('base_url', 'tt7.cityfilms.cn')  # 默认使用tt7
-    url = f"https://{base_url}/MiniTicket/index.php/MiniOrder/cancelorder"
-    
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
-        'Accept': 'application/json',
-        'xweb_xhr': '1',
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'sec-fetch-site': 'cross-site',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-dest': 'empty',
-        'referer': 'https://servicewechat.com/wx03aeb42bd6a3580e/1/page-frame.html',
-        'accept-language': 'zh-CN,zh;q=0.9'
-    }
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
     
     # 构建请求参数
     request_params = {
@@ -254,39 +186,28 @@ def cancel_order(params: dict) -> dict:
         'source': params.get('source', '2')
     }
     
-    print(f"[取消订单API] URL: {url}")
     print(f"[取消订单API] 订单号: {request_params['orderno']}")
+    print(f"[取消订单API] 影院ID: {request_params['cinemaid']}")
     
-    try:
-        resp = requests.get(url, params=request_params, headers=headers, timeout=10, verify=False)
-        try:
-            result = resp.json()
-            print(f"[取消订单API] 返回结果: {result}")
-            return result
-        except Exception:
-            import json
-            result = json.loads(resp.content.decode('utf-8-sig'))
-            print(f"[取消订单API] 返回结果(BOM): {result}")
-            return result
-    except Exception as e:
-        error_result = {"resultCode": "-1", "resultDesc": f"取消订单请求异常: {str(e)}", "resultData": None}
-        print(f"[取消订单API] 异常: {error_result}")
-        return error_result
+    return api_post('MiniTicket/index.php/MiniOrder/cancelorder', cinemaid, data=request_params)
 
-def cancel_all_unpaid_orders(account: dict, cinema: dict) -> dict:
+def cancel_all_unpaid_orders(account: dict, cinemaid: str) -> dict:
     """
-    取消账号下所有未付款订单
+    取消该账号在指定影院的所有未付款订单 - 使用动态base_url
     :param account: 账号信息字典
-    :param cinema: 影院信息字典
-    :return: dict，包含取消结果统计信息
+    :param cinemaid: 影院ID
+    :return: dict，包含取消结果和取消数量
     """
-    print(f"[批量取消订单] 开始检查账号 {account.get('userid')} 的未付款订单")
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
     
-    # 1. 先获取订单列表
+    print(f"[取消未付款订单] 开始取消账号 {account.get('userid')} 在影院 {cinemaid} 的所有未付款订单")
+    
+    # 首先获取订单列表
     list_params = {
         'pageNo': 1,
         'groupid': '',
-        'cinemaid': account['cinemaid'],
+        'cinemaid': cinemaid,
         'cardno': account.get('cardno', ''),
         'userid': account['userid'],
         'openid': account['openid'],
@@ -297,68 +218,82 @@ def cancel_all_unpaid_orders(account: dict, cinema: dict) -> dict:
     }
     
     order_list_result = get_order_list(list_params)
-    
     if order_list_result.get('resultCode') != '0':
-        return {
-            "resultCode": "-1", 
-            "resultDesc": f"获取订单列表失败: {order_list_result.get('resultDesc', '未知错误')}", 
-            "cancelledCount": 0,
-            "failedCount": 0,
-            "totalCount": 0
-        }
+        print(f"[取消未付款订单] 获取订单列表失败: {order_list_result.get('resultDesc')}")
+        return {"resultCode": "0", "resultDesc": "success", "cancelledCount": 0}
     
-    # 2. 提取未付款订单
-    unpaid_orders = order_list_result.get('resultData', {}).get('unpaidorders', [])
-    total_count = len(unpaid_orders)
+    orders = order_list_result.get('resultData', {}).get('orders', [])
+    unpaid_orders = [order for order in orders if order.get('orderS') == '未付款']
     
-    if total_count == 0:
-        print("[批量取消订单] 没有未付款订单，无需取消")
-        return {
-            "resultCode": "0",
-            "resultDesc": "没有未付款订单",
-            "cancelledCount": 0,
-            "failedCount": 0,
-            "totalCount": 0
-        }
+    print(f"[取消未付款订单] 找到 {len(unpaid_orders)} 个未付款订单")
     
-    print(f"[批量取消订单] 发现 {total_count} 个未付款订单，开始逐个取消")
-    
-    # 3. 逐个取消未付款订单 - 不判断返回结果，都认为成功
     cancelled_count = 0
-    
     for order in unpaid_orders:
-        orderno = order.get('orderno', '')
-        order_name = order.get('orderName', '')
-        
-        cancel_params = {
-            'orderno': orderno,
-            'groupid': '',
-            'cinemaid': account['cinemaid'],
-            'cardno': account.get('cardno', ''),
-            'userid': account['userid'],
-            'openid': account['openid'],
-            'CVersion': '3.9.12',
-            'OS': 'Windows',
-            'token': account['token'],
-            'source': '2',
-            'base_url': cinema.get('base_url', 'tt7.cityfilms.cn')  # 传递base_url
-        }
-        
-        print(f"[批量取消订单] 正在取消订单: {orderno} ({order_name})")
-        cancel_result = cancel_order(cancel_params)
-        
-        # 不管返回什么结果，都认为取消成功
-        cancelled_count += 1
-        print(f"[批量取消订单] ✓ 订单 {orderno} 已发送取消请求 (返回: {cancel_result.get('resultCode', 'unknown')})")
+        orderno = order.get('orderno')
+        if orderno:
+            cancel_result = cancel_order({
+                'orderno': orderno,
+                'groupid': '',
+                'cinemaid': cinemaid,
+                'cardno': account.get('cardno', ''),
+                'userid': account['userid'],
+                'openid': account['openid'],
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': account['token'],
+                'source': '2'
+            })
+            
+            if cancel_result.get('resultCode') == '0':
+                cancelled_count += 1
+                print(f"[取消未付款订单] 订单 {orderno} 取消成功")
+            else:
+                print(f"[取消未付款订单] 订单 {orderno} 取消失败: {cancel_result.get('resultDesc')}")
     
-    # 4. 返回统计结果 - 全部成功
-    result_desc = f"已发送取消请求给 {cancelled_count} 个订单"
+    print(f"[取消未付款订单] 总共取消了 {cancelled_count} 个订单")
+    return {"resultCode": "0", "resultDesc": "success", "cancelledCount": cancelled_count}
+
+def get_coupon_prepay_info(params: dict) -> dict:
+    """
+    获取选券后的价格信息接口（ordercouponPrepay） - 使用动态base_url
+    :param params: dict，需包含 orderno, couponcode, groupid, cinemaid, cardno, userid, openid, CVersion, OS, token, source
+    :return: dict，接口返回的json
+    """
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
     
-    return {
-        "resultCode": "0",
-        "resultDesc": result_desc,
-        "cancelledCount": cancelled_count,
-        "failedCount": 0,
-        "totalCount": total_count,
-        "failedOrders": []
-    } 
+    return api_get('MiniTicket/index.php/MiniOrder/ordercouponPrepay', cinemaid, params=params)
+
+def pay_order(params):
+    """
+    订单支付接口 - 使用券支付 - 使用动态base_url
+    """
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+    
+    # 特殊的headers for 支付接口
+    special_headers = {
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Dest': 'empty',
+        'Referer': 'https://servicewechat.com/wx03aeb42bd6a3580e/1/page-frame.html',
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+    }
+    
+    try:
+        print(f"[支付API] 开始调用支付接口")
+        print(f"[支付API] 影院ID: {cinemaid}")
+        print(f"[支付API] 订单号: {params.get('orderno')}")
+        print(f"[支付API] 券号: {params.get('couponcodes')}")
+        print(f"[支付API] 支付金额: {params.get('payprice')}")
+        
+        result = api_post('MiniTicket/index.php/MiniPay/couponPay', cinemaid, data=params, headers=special_headers)
+        
+        print(f"[支付API] 支付响应: {result}")
+        return result
+        
+    except Exception as e:
+        print(f"[支付API] 支付异常: {e}")
+        return {"resultCode": "-1", "resultDesc": f"支付异常: {e}", "resultData": None} 
