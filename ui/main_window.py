@@ -1,11 +1,12 @@
 import tkinter as tk  # 导入tkinter库，tk是Python自带的GUI库
 from tkinter import ttk, messagebox  # 导入ttk（美化控件）和messagebox（弹窗）
-from ui.login_panel import LoginPanel
 from ui.account_list_panel import AccountListPanel
 from ui.cinema_select_panel import CinemaSelectPanel
 from ui.seat_map_panel import SeatMapPanel
 # 添加用户认证相关导入
 from services.auth_service import auth_service
+# 添加UI工具类导入
+from services.ui_utils import MessageManager, CouponManager, UIConstants
 import json
 from services.order_api import create_order, get_unpaid_order_detail, get_coupons_by_order, bind_coupon, get_order_list, get_order_detail, get_order_qrcode_api, cancel_all_unpaid_orders, get_coupon_prepay_info, pay_order
 import tkinter.messagebox as mb
@@ -55,13 +56,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.account_list_frame = tk.LabelFrame(left_frame, text="账号列表区", fg="red")
         self.account_list_frame.place(x=0, y=login_h, width=left_w, height=account_h)
 
-        # 集成登录面板和账号列表面板
-        self.login_panel = LoginPanel(
-            self.login_frame,
-            get_cinemaid_func=self.get_selected_cinemaid,
-            refresh_account_list_func=self.refresh_account_list
-        )
-        self.login_panel.pack(fill=tk.BOTH, expand=True)
+        # 集成账号列表面板
         self.account_list_panel = AccountListPanel(
             self.account_list_frame,
             on_account_selected=self.set_current_account,
@@ -166,13 +161,24 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.member_info = None
         self.selected_coupons_info = None
         self.current_coupon_info = None
-
-        # 修复：初始化完成后自动加载账号列表
-        print("[程序启动] 开始自动加载账号列表...")
-        self.after_idle(self._auto_load_initial_state)
+        
+        # 添加UI状态跟踪
+        self.ui_state = "initial"  # initial, order_submitted, payment_success
+        self.show_debug = False  # 控制调试信息显示
     
     def _start_auth_check(self):
         """启动用户认证检查"""
+        # 延迟导入PyQt5登录窗口，避免与Tkinter冲突
+        import sys
+        from PyQt5.QtWidgets import QApplication
+        
+        # 检查是否已有QApplication实例
+        if not QApplication.instance():
+            # 创建QApplication实例
+            self.qt_app = QApplication(sys.argv)
+        else:
+            self.qt_app = QApplication.instance()
+        
         from ui.login_window import LoginWindow
         
         # 创建并显示登录窗口
@@ -204,19 +210,27 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
     
     def _on_user_login_success(self, user_info):
         """用户登录成功回调"""
+        print(f"[认证] 用户登录成功: {user_info.get('username', '未知用户')}")
+        
+        # 保存用户信息
         self.current_user = user_info
-        print(f"[主窗口] 用户登录成功: {user_info.get('username')}, 积分: {user_info.get('points')}")
+        
+        # 关闭登录窗口
+        if hasattr(self, 'login_window'):
+            self.login_window.close()
+        
+        # 退出Qt事件循环
+        if hasattr(self, 'qt_app'):
+            self.qt_app.quit()
         
         # 显示主窗口
         self.deiconify()
         
-        # 启动定期权限检查
+        # 启动定期认证检查
         self._start_periodic_auth_check()
         
-        # 更新窗口标题显示用户信息
-        username = user_info.get('username', '用户')
-        points = user_info.get('points', 0)
-        self.title(f"柴犬影院下单系统 - {username} (积分: {points})")
+        # 自动加载初始状态
+        self._auto_load_initial_state()
     
     def _start_periodic_auth_check(self):
         """启动定期权限检查"""
@@ -443,12 +457,22 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             messagebox.showerror("主账号设置失败", str(e))
 
     def clear_coupons(self):
+        """清空券列表 - 根据UI状态决定是否执行"""
+        CouponManager.clear_coupons_if_needed(self.ui_state, self._clear_coupons_impl)
+    
+    def _clear_coupons_impl(self):
+        """实际执行清空券列表操作"""
         self.update_coupons(None)
 
     def refresh_coupons(self):
         # 账号Tab刷新券按钮逻辑，调用独立券接口（待开发），此处先清空券列表
-        self.update_coupons(None)
-        messagebox.showinfo("刷新券", "已刷新券列表（接口待开发）")
+        if self.ui_state == "order_submitted":
+            # 只在订单提交后才刷新券
+            self.update_coupons(None)
+            if UIConstants.should_show_success_popup("coupon_refresh"):
+                MessageManager.show_info(self, "刷新券", "已刷新券列表（接口待开发）")
+        else:
+            print("[券管理] 当前状态不允许刷新券列表")
 
     def refresh_account_list(self):
         try:
@@ -499,7 +523,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.refresh_account_list()
         self.clear_coupons()
 
-    def on_seat_selected(self, selected_seats):
+    def on_seat_selected(self, event):
         print(f"[DEBUG] on_seat_selected called with {len(selected_seats)} seats")
         print(f"[DEBUG] current last_priceinfo: {getattr(self, 'last_priceinfo', None)}")
         # 修复f-string语法错误
@@ -518,42 +542,46 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         5. 查询可用券
         """
         if not selected_seats:
-            messagebox.showwarning("提示", "请先选择座位")
+            MessageManager.show_warning(self, "提示", "请先选择座位")
             return
             
         account = getattr(self, 'current_account', {})
         if not account.get('userid'):
-            messagebox.showwarning("提示", "请先选择账号")
+            MessageManager.show_warning(self, "提示", "请先选择账号")
             return
             
         cinemaid = self.get_selected_cinemaid()
         if not cinemaid:
-            messagebox.showwarning("提示", "请先选择影院")
+            MessageManager.show_warning(self, "提示", "请先选择影院")
             return
             
         print(f"[下单流程] 开始下单，座位数: {len(selected_seats)}")
         print(f"[下单流程] 当前账号: {account.get('userid')}")
         
+        # 设置UI状态为下单中
+        self.ui_state = "ordering"
+        
         try:
-            print(f"[下单流程CRITICAL] 进入try块，即将执行取消未付款订单操作...")
-            # 1. 检查并取消未付款订单
+            # 1. 取消未付款订单
             self._cancel_unpaid_orders(account, cinemaid)
-            print(f"[下单流程CRITICAL] 取消未付款订单完成，即将获取会员信息...")
             
             # 2. 获取会员信息
             self.member_info = self._get_member_info(account, cinemaid)
-            print(f"[下单流程CRITICAL] 获取会员信息完成，即将创建订单...")
             
             # 3. 创建订单
-            order_result = self._create_order(account, selected_seats, cinemaid)
+            order_result = self._create_order(account, cinemaid, selected_seats)
+            
             if order_result and order_result.get('resultCode') == '0':
-                orderno = order_result['resultData']['orderno']
-                print(f"[下单流程] 订单创建成功，订单号: {orderno}")
+                # 下单成功，设置UI状态为已提交订单
+                self.ui_state = "order_submitted"
+                print(f"[下单流程] 下单成功，状态更新为: {self.ui_state}")
                 
-                # 4. 获取未支付订单详情
+                orderno = order_result['resultData']['orderno']
+                print(f"[下单流程] 订单号: {orderno}")
+                
+                # 4. 查询未支付订单详情
                 try:
-                    from services.order_api import get_unpaid_order_detail
-                    unpaid_detail_params = {
+                    detail_params = {
                         'orderno': orderno,
                         'groupid': '',
                         'cinemaid': cinemaid,
@@ -566,7 +594,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                         'source': '2'
                     }
                     
-                    unpaid_detail = get_unpaid_order_detail(unpaid_detail_params)
+                    unpaid_detail = get_unpaid_order_detail(detail_params)
                     print(f"[下单流程] 未支付订单详情: {unpaid_detail}")
                     
                     if unpaid_detail and unpaid_detail.get('resultCode') == '0':
@@ -611,15 +639,19 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                     self.current_order = order_result
                     self.show_order_detail(order_result)
             elif order_result:
-                # 下单失败，显示错误信息
+                # 下单失败，恢复初始状态
+                self.ui_state = "initial"
                 error_msg = order_result.get('resultDesc', '下单失败')
-                messagebox.showerror("下单失败", error_msg)
+                MessageManager.show_error(self, "下单失败", error_msg)
             else:
-                messagebox.showerror("下单失败", "未收到有效的响应")
+                self.ui_state = "initial"
+                MessageManager.show_error(self, "下单失败", "未收到有效的响应")
                 
         except Exception as e:
+            # 异常时恢复初始状态
+            self.ui_state = "initial"
             print(f"[下单流程] 异常: {e}")
-            messagebox.showerror("下单失败", f"下单过程中发生错误: {e}")
+            MessageManager.show_error(self, "下单失败", f"下单过程中发生错误: {e}")
     
     def _cancel_unpaid_orders(self, account, cinemaid):
         """取消未付款订单"""
@@ -649,7 +681,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             print(f"[下单流程] 获取会员信息异常: {e}")
             return None
     
-    def _create_order(self, account, selected_seats, cinemaid):
+    def _create_order(self, account, cinemaid, selected_seats):
         """创建订单"""
         # 获取场次和影片信息
         session = self.cinema_panel.get_current_session_info()
@@ -966,7 +998,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                     # 查询失败，清空选择
                     self.current_coupon_info = None
                     self.selected_coupons = []
-                    messagebox.showwarning("选券失败", coupon_info.get('resultDesc', '未知错误'))
+                    MessageManager.show_warning(self, "选券失败", coupon_info.get('resultDesc', '未知错误'))
                     # 取消选择
                     for i in idxs:
                         self.coupon_listbox.selection_clear(i)
@@ -1141,15 +1173,17 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         
         # 完成提示
         if success > 0:
-            mb.showinfo("绑定完成", f"成功绑定{success}张券，失败{fail}张券")
+            if UIConstants.should_show_success_popup("bind_coupon"):
+                MessageManager.show_info(self, "绑定完成", f"成功绑定{success}张券，失败{fail}张券")
         else:
-            mb.showwarning("绑定失败", f"所有{fail}张券绑定失败，请检查账号状态和券号")
+            MessageManager.show_warning(self, "绑定失败", f"所有{fail}张券绑定失败，请检查账号状态和券号")
 
     def copy_bind_log(self):
         log = self.bind_log_text.get("1.0", "end").strip()
         self.clipboard_clear()
         self.clipboard_append(log)
-        mb.showinfo("复制成功", "日志内容已复制到剪贴板！")
+        if UIConstants.should_show_success_popup("copy_log"):
+            MessageManager.show_info(self, "复制成功", "日志内容已复制到剪贴板！")
 
     def build_order_list_tab(self, tab):
         # 顶部刷新按钮
@@ -1210,11 +1244,11 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         film, cinema, status, orderno = values
         
         if status != "未付款":
-            messagebox.showwarning("无法取消", "只能取消未付款订单")
+            MessageManager.show_warning(self, "无法取消", "只能取消未付款订单")
             return
             
         # 确认取消
-        result = messagebox.askyesno("确认取消", f"确定要取消订单 {orderno} 吗？\n影片：{film}")
+        result = MessageManager.show_question(self, "确认取消", f"确定要取消订单 {orderno} 吗？\n影片：{film}")
         if not result:
             return
             
@@ -1222,7 +1256,7 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         account = getattr(self, 'current_account', None)
         cinemaid = self.get_selected_cinemaid()
         if not account or not cinemaid:
-            messagebox.showwarning("取消失败", "请先选择账号和影院")
+            MessageManager.show_warning(self, "取消失败", "请先选择账号和影院")
             return
             
         try:
@@ -1245,12 +1279,13 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             cancel_order(cancel_params)
             
             # 提示用户并刷新列表
-            messagebox.showinfo("取消成功", f"已发送取消请求\n订单号：{orderno}")
+            if UIConstants.should_show_success_popup("cancel_order"):
+                MessageManager.show_info(self, "取消成功", f"已发送取消请求\n订单号：{orderno}")
             self.refresh_order_list()
             
         except Exception as e:
             print(f"[右键取消订单] 取消订单异常: {e}")
-            messagebox.showerror("取消失败", f"取消订单时发生错误：{e}")
+            MessageManager.show_error(self, "取消失败", f"取消订单时发生错误：{e}")
 
     def refresh_order_list(self):
         # 校验影院和账号
@@ -1531,21 +1566,21 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
     def on_one_click_pay(self):
         """一键支付功能"""
         if not self.current_order:
-            messagebox.showwarning("提示", "请先下单")
+            MessageManager.show_warning(self, "提示", "请先下单")
             return
             
         # 获取当前账号和影院信息
         account = getattr(self, 'current_account', None)
         cinemaid = self.get_selected_cinemaid()
         if not account or not cinemaid:
-            messagebox.showwarning("支付失败", "请先选择账号和影院")
+            MessageManager.show_warning(self, "支付失败", "请先选择账号和影院")
             return
             
         # 获取订单信息
         order_data = self.current_order.get('resultData', {})
         orderno = order_data.get('orderno', '')
         if not orderno:
-            messagebox.showwarning("支付失败", "无效的订单号")
+            MessageManager.show_warning(self, "支付失败", "无效的订单号")
             return
             
         # 获取选中的券号
@@ -1619,10 +1654,11 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             print(f"[一键支付] 支付结果: {pay_result}")
             
             if pay_result and pay_result.get('resultCode') == '0':
-                payment_desc = f"券支付（已使用{len(selected_coupons)}张券）" if use_coupon else "原价支付（未使用券）"
-                messagebox.showinfo("支付成功", f"订单 {orderno} 支付成功！\n支付方式：{payment_desc}")
+                # 支付成功，设置UI状态
+                self.ui_state = "payment_success"
+                print(f"[支付成功] 状态更新为: {self.ui_state}")
                 
-                # 支付成功后自动获取订单详情和二维码
+                # 不显示支付成功弹窗，直接获取订单详情和二维码
                 try:
                     # 1. 获取已支付订单详情
                     from services.order_api import get_order_detail, get_order_qrcode_api
@@ -2273,6 +2309,14 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         if hasattr(self, 'coupon_stats_label'):
             self.coupon_stats_label.config(text="")
         self.exchange_coupons_data = []
+
+    def on_seat_selection_changed(self, selected_seats):
+        """座位选择变化回调"""
+        if self.show_debug:
+            print(f"[UI状态] 座位选择变化，已选座位: {len(selected_seats)}")
+        
+        # 选座操作不改变UI状态，不清空券列表
+        # 保持当前的ui_state不变
 
 if __name__ == "__main__":  # 程序入口
     app = CinemaOrderSimulatorUI()  # 创建主窗口对象

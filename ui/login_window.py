@@ -6,6 +6,7 @@
 
 import sys
 import os
+import json
 from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QLineEdit, QPushButton, QMessageBox, 
                              QFrame, QProgressBar, QTextEdit)
@@ -16,6 +17,7 @@ from PyQt5.QtGui import QFont, QPalette, QColor, QIcon, QClipboard
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.auth_service import auth_service
+from services.ui_utils import MessageManager, UIConstants
 
 class LoginThread(QThread):
     """登录验证线程"""
@@ -43,7 +45,9 @@ class LoginWindow(QWidget):
         super().__init__()
         self.login_thread = None
         self.machine_code = auth_service.get_machine_code()  # 预先获取机器码
+        self.login_history_file = "data/login_history.json"  # 登录历史文件
         self.init_ui()
+        self.load_login_history()  # 加载登录历史
     
     def init_ui(self):
         """初始化用户界面"""
@@ -220,6 +224,40 @@ class LoginWindow(QWidget):
             }
         """)
     
+    def load_login_history(self):
+        """加载登录历史，自动填入上次登录的手机号"""
+        try:
+            # 确保data目录存在
+            os.makedirs("data", exist_ok=True)
+            
+            if os.path.exists(self.login_history_file):
+                with open(self.login_history_file, 'r', encoding='utf-8') as f:
+                    history = json.load(f)
+                    last_phone = history.get('last_phone', '')
+                    if last_phone and len(last_phone) == 11:
+                        self.phone_input.setText(last_phone)
+                        print(f"[登录历史] 已自动填入上次登录手机号: {last_phone}")
+        except Exception as e:
+            print(f"[登录历史] 加载登录历史失败: {e}")
+    
+    def save_login_history(self, phone: str):
+        """保存登录历史"""
+        try:
+            # 确保data目录存在
+            os.makedirs("data", exist_ok=True)
+            
+            history = {
+                'last_phone': phone,
+                'last_login_time': QTimer().currentTime().toString("yyyy-MM-dd hh:mm:ss")
+            }
+            
+            with open(self.login_history_file, 'w', encoding='utf-8') as f:
+                json.dump(history, f, ensure_ascii=False, indent=2)
+            
+            print(f"[登录历史] 已保存登录历史: {phone}")
+        except Exception as e:
+            print(f"[登录历史] 保存登录历史失败: {e}")
+    
     def center_window(self):
         """窗口居中显示"""
         screen = QApplication.desktop().screenGeometry()
@@ -250,12 +288,12 @@ class LoginWindow(QWidget):
         phone = self.phone_input.text().strip()
         
         if not phone:
-            QMessageBox.warning(self, "输入错误", "请输入手机号")
+            MessageManager.show_warning(self, "输入错误", "请输入手机号")
             self.phone_input.setFocus()
             return
         
         if len(phone) != 11 or not phone.isdigit():
-            QMessageBox.warning(self, "输入错误", "请输入正确的11位手机号")
+            MessageManager.show_warning(self, "输入错误", "请输入正确的11位手机号")
             self.phone_input.setFocus()
             return
         
@@ -273,19 +311,24 @@ class LoginWindow(QWidget):
         self.set_login_state(False)
         
         if success:
-            # 登录成功
-            user_name = user_info.get('username', '用户')
-            phone = user_info.get('phone', '')
-            points = user_info.get('points', 0)
+            # 登录成功 - 保存登录历史
+            phone = self.phone_input.text().strip()
+            self.save_login_history(phone)
             
-            QMessageBox.information(
-                self, 
-                "登录成功", 
-                f"欢迎回来，{user_name}！\n\n"
-                f"手机号: {phone}\n"
-                f"当前积分: {points}\n"
-                f"账号状态: 正常"
-            )
+            # 只有登录成功需要弹窗提示
+            if UIConstants.should_show_success_popup("login_success"):
+                user_name = user_info.get('username', '用户')
+                phone = user_info.get('phone', '')
+                points = user_info.get('points', 0)
+                
+                MessageManager.show_info(
+                    self, 
+                    "登录成功", 
+                    f"欢迎回来，{user_name}！\n\n"
+                    f"手机号: {phone}\n"
+                    f"当前积分: {points}\n"
+                    f"账号状态: 正常"
+                )
             
             # 发送登录成功信号
             self.login_success.emit(user_info)
@@ -294,7 +337,7 @@ class LoginWindow(QWidget):
             self.close()
         else:
             # 登录失败
-            QMessageBox.critical(self, "登录失败", f"{message}\n\n请检查手机号或联系管理员")
+            MessageManager.show_error(self, "登录失败", f"{message}\n\n请检查手机号或联系管理员")
             self.phone_input.clear()
             self.phone_input.setFocus()
     

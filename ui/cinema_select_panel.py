@@ -1,10 +1,12 @@
-import ttkbootstrap as tb
-import tkinter as tk  # 新增
-from services.film_service import load_cinemas, get_films, normalize_film_data, get_plan_seat_info
+import tkinter as tk
+from tkinter import ttk  # 使用标准ttk替代ttkbootstrap
+from services.cinema_manager import cinema_manager
+from services.film_service import get_films, load_cinemas, normalize_film_data, get_plan_seat_info
+from services.ui_utils import MessageManager
 import json
 import os
 
-class CinemaSelectPanel(tb.Frame):
+class CinemaSelectPanel(tk.Frame):  # 使用标准tk.Frame
     def __init__(self, master, on_cinema_changed=None):
         super().__init__(master)
         self.pack_propagate(False)
@@ -24,72 +26,67 @@ class CinemaSelectPanel(tb.Frame):
         cinema_names = [c['name'] for c in self.cinemas]
 
         # ========== 行1：影院下拉 ==========
-        row1 = tb.Frame(self)
+        row1 = tk.Frame(self)  # 使用标准tk.Frame
         row1.pack(fill="x", padx=row_padx, pady=row_pady)
-        tb.Label(row1, text="影院：", font=combo_font).pack(side="left", padx=(0, 2))
-        self.cinema_var = tb.StringVar()
-        self.cinema_combo = tb.Combobox(
-            row1, textvariable=self.cinema_var, values=cinema_names, font=combo_font, bootstyle="secondary", state="readonly"
+        tk.Label(row1, text="影院：", font=combo_font).pack(side="left", padx=(0, 2))  # 使用标准tk.Label
+        self.cinema_var = tk.StringVar()  # 使用标准tk.StringVar
+        self.cinema_combo = ttk.Combobox(  # 使用标准ttk.Combobox
+            row1, textvariable=self.cinema_var, values=cinema_names, font=combo_font, state="readonly"
         )
         self.cinema_combo.pack(side="left", fill="x", expand=True)
         self.cinema_combo.bind('<<ComboboxSelected>>', self.on_cinema_select)
 
         # ========== 行2：电影下拉 ==========
-        row2 = tb.Frame(self)
+        row2 = tk.Frame(self)
         row2.pack(fill="x", padx=row_padx, pady=row_pady)
-        tb.Label(row2, text="影片：", font=combo_font).pack(side="left", padx=(0, 2))
-        self.movie_var = tb.StringVar()
-        self.movie_combo = tb.Combobox(
-            row2, textvariable=self.movie_var, values=[], font=combo_font, bootstyle="secondary", state="readonly"
+        tk.Label(row2, text="影片：", font=combo_font).pack(side="left", padx=(0, 2))
+        self.movie_var = tk.StringVar()
+        self.movie_combo = ttk.Combobox(
+            row2, textvariable=self.movie_var, values=[], font=combo_font, state="readonly"
         )
         self.movie_combo.pack(side="left", fill="x", expand=True)
         self.movie_combo.bind('<<ComboboxSelected>>', self.on_movie_select)
 
         # ========== 行3：日期下拉 ==========
-        row3 = tb.Frame(self)
+        row3 = tk.Frame(self)
         row3.pack(fill="x", padx=row_padx, pady=row_pady)
-        tb.Label(row3, text="日期：", font=combo_font).pack(side="left", padx=(0, 2))
-        self.date_var = tb.StringVar()
-        self.date_combo = tb.Combobox(
-            row3, textvariable=self.date_var, values=[], font=combo_font, bootstyle="secondary", state="readonly"
+        tk.Label(row3, text="日期：", font=combo_font).pack(side="left", padx=(0, 2))
+        self.date_var = tk.StringVar()
+        self.date_combo = ttk.Combobox(
+            row3, textvariable=self.date_var, values=[], font=combo_font, state="readonly"
         )
         self.date_combo.pack(side="left", fill="x", expand=True)
         self.date_combo.bind('<<ComboboxSelected>>', self.on_date_select)
 
         # ========== 行4：场次下拉 ==========
-        row4 = tb.Frame(self)
+        row4 = tk.Frame(self)
         row4.pack(fill="x", padx=row_padx, pady=row_pady)
-        tb.Label(row4, text="场次：", font=combo_font).pack(side="left", padx=(0, 2))
-        self.session_var = tb.StringVar()
-        self.session_combo = tb.Combobox(
-            row4, textvariable=self.session_var, values=[], font=combo_font, bootstyle="secondary", state="readonly"
+        tk.Label(row4, text="场次：", font=combo_font).pack(side="left", padx=(0, 2))
+        self.session_var = tk.StringVar()
+        self.session_combo = ttk.Combobox(
+            row4, textvariable=self.session_var, values=[], font=combo_font, state="readonly"
         )
         self.session_combo.pack(side="left", fill="x", expand=True)
         self.session_combo.bind('<<ComboboxSelected>>', self.on_session_select)
 
         # ========== 行5：操作按钮 ==========
-        row5 = tb.Frame(self)
+        row5 = tk.Frame(self)
         row5.pack(fill="x", padx=row_padx, pady=row_pady+1)
-        tb.Button(row5, text="打开选座 获取可用券", bootstyle="secondary", width=18, style="Heavy.TButton")\
+        tk.Button(row5, text="打开选座 获取可用券", font=btn_font, width=18)\
             .pack(fill="x", pady=0)
         # 当前账号显示区
-        self.current_account_label = tb.Label(self, text="当前账号：-", font=("微软雅黑", 11, "bold"), foreground="red")
+        self.current_account_label = tk.Label(self, text="当前账号：-", font=("微软雅黑", 11, "bold"), fg="red")
         self.current_account_label.pack(fill="x", padx=8, pady=(2, 0))
 
         # ========== 行6：券列表区 ==========
-        row6 = tb.Frame(self)
+        row6 = tk.Frame(self)
         row6.pack(fill="both", padx=row_padx, pady=row_pady, expand=True)
-        tb.Label(row6, text="可用券列表：", font=combo_font).pack(anchor="w")
+        tk.Label(row6, text="可用券列表：", font=combo_font).pack(anchor="w")
         self.coupon_listbox = tk.Listbox(row6, selectmode="single", font=("微软雅黑", 10), activestyle="dotbox")
         self.coupon_listbox.pack(fill="both", expand=True, padx=2, pady=2)
         self.coupon_listbox.bind('<<ListboxSelect>>', self.on_coupon_select)
         self.coupons_data = []  # 存储当前券数据
         self.selected_coupon = None
-
-        # 美化：按钮纯黑字、加粗
-        style = tb.Style()
-        style.configure("Heavy.TButton", background="#fff", foreground="#000", font=btn_font, borderwidth=2)
-        style.map("Heavy.TButton", foreground=[("active", "#000")], background=[("active", "#f0f0f0")])
 
     def set_main_window(self, main_window):
         """
@@ -147,8 +144,7 @@ class CinemaSelectPanel(tb.Frame):
         
         if not current_account:
             print("[DEBUG] current_account为空，显示登录提示")
-            import tkinter.messagebox as mb
-            mb.showwarning("登录提示", "请先登录账号后再选择影院")
+            MessageManager.show_warning(self.master, "登录提示", "请先登录账号后再选择影院")
             return
             
         print("[DEBUG] 账号验证通过，继续执行...")
@@ -243,8 +239,7 @@ class CinemaSelectPanel(tb.Frame):
         # 修复：使用新的获取当前账号的方法
         current_account = self.get_current_account()
         if not current_account:
-            import tkinter.messagebox as mb
-            mb.showwarning("登录提示", "请先登录账号后再查看座位")
+            MessageManager.show_warning(self.master, "登录提示", "请先登录账号后再查看座位")
             return
             
         userid = current_account.get('userid', '')
@@ -274,8 +269,6 @@ class CinemaSelectPanel(tb.Frame):
         if hasattr(self.master.master, 'current_account'):
             self.master.master.current_account = getattr(self.master.master, 'current_account', None)
         if not seats_data or 'resultData' not in seats_data or not seats_data['resultData']:
-            import tkinter.messagebox as mb
-            
             # 分析具体的错误类型
             result_code = seats_data.get('resultCode', '') if seats_data else ''
             result_desc = seats_data.get('resultDesc', '') if seats_data else ''
@@ -284,21 +277,21 @@ class CinemaSelectPanel(tb.Frame):
             
             # 修复：检查resultDesc中是否包含"已过场"关键词（无论resultCode是什么）
             if '过期' in result_desc or '已过场' in result_desc or '时间' in result_desc:
-                mb.showwarning("已过场", "该场次已过场，无法选座")
+                MessageManager.show_warning(self.master, "已过场", "该场次已过场，无法选座")
             elif seats_data and result_code == '500':
                 # 500错误但不是过场问题
-                mb.showwarning("获取座位失败", f"无法获取座位信息：{result_desc}")
+                MessageManager.show_warning(self.master, "获取座位失败", f"无法获取座位信息：{result_desc}")
             elif seats_data and result_code == '400':
                 if 'TOKEN_INVALID' in result_desc:
-                    mb.showwarning("登录失效", "登录信息已失效，请重新登录")
+                    MessageManager.show_warning(self.master, "登录失效", "登录信息已失效，请重新登录")
                 else:
-                    mb.showwarning("获取座位失败", "座位信息暂时无法获取，请稍后重试")
+                    MessageManager.show_warning(self.master, "获取座位失败", "座位信息暂时无法获取，请稍后重试")
             elif seats_data and seats_data.get('error'):
                 # 网络错误或接口错误
-                mb.showwarning("网络错误", f"座位接口请求失败：{seats_data.get('error', '未知错误')}")
+                MessageManager.show_warning(self.master, "网络错误", f"座位接口请求失败：{seats_data.get('error', '未知错误')}")
             else:
                 # 其他未知错误
-                mb.showwarning("获取座位失败", "座位信息获取失败，请检查网络连接或稍后重试")
+                MessageManager.show_warning(self.master, "获取座位失败", "座位信息获取失败，请检查网络连接或稍后重试")
             
             self.seat_panel.update_seats([])
             return

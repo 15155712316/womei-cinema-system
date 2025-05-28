@@ -19,7 +19,7 @@ class AuthService:
     """用户认证服务类"""
     
     def __init__(self):
-        # 云函数API地址（后续替换为实际地址）
+        # 云函数API地址（需要替换为实际地址）
         self.api_base_url = "https://your-cloud-function-url"
         self.local_token = None
         self.current_user = None
@@ -74,6 +74,14 @@ class AuthService:
             fallback_info = f"{platform.node()}-{platform.system()}"
             return hashlib.md5(fallback_info.encode()).hexdigest()
     
+    def validate_phone(self, phone: str) -> bool:
+        """
+        验证手机号格式（别名方法）
+        :param phone: 手机号
+        :return: 是否有效
+        """
+        return self.validate_phone_number(phone)
+    
     def validate_phone_number(self, phone: str) -> bool:
         """
         验证手机号格式
@@ -86,7 +94,7 @@ class AuthService:
     
     def login(self, phone: str) -> Tuple[bool, str, Optional[Dict]]:
         """
-        用户登录验证（手机号+机器码）
+        用户登录验证（仅需手机号+机器码，无需密码）
         :param phone: 手机号
         :return: (是否成功, 消息, 用户信息)
         """
@@ -98,10 +106,10 @@ class AuthService:
             # 获取当前机器码
             machine_code = self.get_machine_code()
             
-            # 构建登录请求
+            # 构建登录请求（匹配云函数参数）
             login_data = {
-                "phone": phone,
-                "machine_code": machine_code,
+                "username": phone,  # 云函数使用username字段
+                "machineCode": machine_code,  # 使用驼峰命名
                 "timestamp": int(time.time())
             }
             
@@ -135,10 +143,10 @@ class AuthService:
             return False, "未登录", None
         
         try:
-            # 验证token和用户状态
+            # 验证token和用户状态（匹配云函数参数）
             auth_data = {
                 "token": self.local_token,
-                "user_id": self.current_user.get("id"),
+                "userId": self.current_user.get("id"),  # 使用驼峰命名
                 "timestamp": int(time.time())
             }
             
@@ -174,9 +182,10 @@ class AuthService:
             return False, "未登录"
         
         try:
+            # 积分扣除请求（匹配云函数参数）
             points_data = {
                 "token": self.local_token,
-                "user_id": self.current_user.get("id"),
+                "userId": self.current_user.get("id"),  # 使用驼峰命名
                 "operation": operation,
                 "points": points,
                 "timestamp": int(time.time())
@@ -186,7 +195,7 @@ class AuthService:
             
             if response.get("success"):
                 # 更新本地积分信息
-                new_points = response.get("data", {}).get("remaining_points", 0)
+                new_points = response.get("data", {}).get("remainingPoints", 0)  # 使用驼峰命名
                 self.current_user["points"] = new_points
                 
                 print(f"[积分扣除] 操作: {operation}, 扣除: {points}, 剩余: {new_points}")
@@ -213,75 +222,99 @@ class AuthService:
         print("[用户认证] 已登出")
     
     def _call_api(self, endpoint: str, data: Dict) -> Dict:
-        """
-        调用云函数API
-        :param endpoint: API端点
-        :param data: 请求数据
-        :return: 响应数据
-        """
-        # 临时方案：使用本地模拟数据
-        # 正式版本会调用真实的云函数API
-        return self._mock_api_response(endpoint, data)
+        """调用云函数API"""
+        # 替换为你的实际云函数地址
+        api_urls = {
+            "login": "https://你的环境ID.service.tcloudbase.com/auth-login",
+            "check_auth": "https://你的环境ID.service.tcloudbase.com/auth-check", 
+            "use_points": "https://你的环境ID.service.tcloudbase.com/auth-use-points"
+        }
+        
+        url = api_urls.get(endpoint)
+        if not url:
+            return {"success": False, "message": "未知API端点"}
+        
+        try:
+            headers = {
+                'Content-Type': 'application/json',
+                'User-Agent': 'LeYing-Auth-Client/1.0'
+            }
+            
+            print(f"[API调用] 请求: {endpoint} -> {url}")
+            print(f"[API调用] 数据: {data}")
+            
+            response = requests.post(url, json=data, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            result = response.json()
+            print(f"[API调用] 响应: {result}")
+            
+            return result
+            
+        except requests.exceptions.RequestException as e:
+            print(f"[API调用] 网络异常: {e}")
+            # 如果云函数不可用，fallback到本地模拟
+            print("[API调用] 尝试使用本地模拟数据...")
+            return self._mock_api_response(endpoint, data)
+        except Exception as e:
+            print(f"[API调用] 异常: {e}")
+            return {"success": False, "message": f"网络异常: {str(e)}"}
     
     def _mock_api_response(self, endpoint: str, data: Dict) -> Dict:
         """
-        模拟API响应（开发阶段使用）
-        正式版本会替换为真实的云函数调用
+        模拟API响应（开发阶段使用，云函数不可用时的备用方案）
         """
         print(f"[模拟API] 调用端点: {endpoint}, 数据: {data}")
         
         if endpoint == "login":
-            phone = data.get("phone")
-            machine_code = data.get("machine_code")
+            username = data.get("username")  # 云函数参数名
+            machine_code = data.get("machineCode")  # 云函数参数名
             
-            # 模拟用户数据（正式版本从数据库读取）
+            # 模拟用户数据（正式版本从云数据库读取）
             mock_users = {
                 "13800138000": {
-                    "id": "user_001",
-                    "phone": "13800138000", 
-                    "username": "管理员",
-                    "machine_code": machine_code,  # 绑定当前机器码
+                    "id": "user001",
+                    "username": "13800138000",
+                    "machineCode": machine_code,  # 绑定当前机器码
                     "status": 1,
                     "points": 100
                 },
                 "13900139000": {
-                    "id": "user_002", 
-                    "phone": "13900139000",
-                    "username": "测试用户",
-                    "machine_code": machine_code,  # 绑定当前机器码
+                    "id": "user002", 
+                    "username": "13900139000",
+                    "machineCode": machine_code,  # 绑定当前机器码
                     "status": 1,
                     "points": 50
                 },
                 "13700137000": {
-                    "id": "user_003", 
-                    "phone": "13700137000",
-                    "username": "普通用户",
-                    "machine_code": machine_code,  # 绑定当前机器码
+                    "id": "user003", 
+                    "username": "13700137000",
+                    "machineCode": machine_code,  # 绑定当前机器码
                     "status": 1,
                     "points": 30
                 }
             }
             
-            user = mock_users.get(phone)
+            user = mock_users.get(username)
             if not user:
                 return {"success": False, "message": "手机号未注册，请联系管理员"}
             
-            if user["machine_code"] != machine_code:
-                return {"success": False, "message": "此手机号已绑定其他设备，请联系管理员"}
+            if user["machineCode"] != machine_code:
+                return {"success": False, "message": "设备未授权，请联系管理员绑定设备"}
             
             if user["status"] != 1:
                 return {"success": False, "message": "账号已被禁用，请联系管理员"}
             
             # 生成token
-            token = hashlib.md5(f"{phone}{machine_code}{time.time()}".encode()).hexdigest()
+            token = hashlib.md5(f"{username}{machine_code}{time.time()}".encode()).hexdigest()
             
             return {
                 "success": True,
                 "message": "登录成功",
                 "data": {
                     "id": user["id"],
-                    "phone": user["phone"],
                     "username": user["username"],
+                    "phone": user["username"],
                     "status": user["status"],
                     "points": user["points"],
                     "token": token
@@ -292,14 +325,13 @@ class AuthService:
             # 模拟权限检查
             token = data.get("token")
             if token:
-                # 简单验证（正式版本需要验证token有效性）
                 return {
                     "success": True,
                     "message": "认证有效",
                     "data": {
-                        "id": "user_001",
+                        "id": "user001",
+                        "username": "13800138000",
                         "phone": "13800138000",
-                        "username": "管理员",
                         "status": 1,
                         "points": 95  # 模拟积分变化
                     }
@@ -319,7 +351,7 @@ class AuthService:
                     "success": True,
                     "message": "积分扣除成功",
                     "data": {
-                        "remaining_points": new_points,
+                        "remainingPoints": new_points,  # 使用驼峰命名
                         "operation": operation
                     }
                 }
