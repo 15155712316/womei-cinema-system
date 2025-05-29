@@ -5,82 +5,69 @@
 定义基础的插件接口和通信协议
 """
 
-from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional
 from PyQt5.QtWidgets import QWidget
 from PyQt5.QtCore import QObject, pyqtSignal
 
 
-class IPluginInterface(ABC):
-    """插件接口抽象基类"""
+class IPluginInterface:
+    """插件接口基类"""
     
-    @abstractmethod
     def get_name(self) -> str:
         """返回插件名称"""
-        pass
+        raise NotImplementedError("子类必须实现get_name方法")
     
-    @abstractmethod
     def get_version(self) -> str:
         """返回插件版本"""
-        pass
+        raise NotImplementedError("子类必须实现get_version方法")
     
-    @abstractmethod
     def load(self, parent: QWidget) -> QWidget:
         """加载插件并返回主界面组件"""
-        pass
+        raise NotImplementedError("子类必须实现load方法")
     
-    @abstractmethod
     def unload(self) -> bool:
         """卸载插件"""
-        pass
+        raise NotImplementedError("子类必须实现unload方法")
     
-    @abstractmethod
     def get_config(self) -> Dict[str, Any]:
         """获取插件配置"""
-        pass
+        raise NotImplementedError("子类必须实现get_config方法")
     
-    @abstractmethod
     def set_config(self, config: Dict[str, Any]) -> bool:
         """设置插件配置"""
-        pass
+        raise NotImplementedError("子类必须实现set_config方法")
 
 
-class IWidgetInterface(ABC):
-    """UI组件接口抽象基类"""
+class IWidgetInterface:
+    """UI组件接口基类"""
     
-    @abstractmethod
     def initialize(self) -> None:
         """初始化组件"""
-        pass
+        raise NotImplementedError("子类必须实现initialize方法")
     
-    @abstractmethod
     def cleanup(self) -> None:
         """清理组件资源"""
-        pass
+        raise NotImplementedError("子类必须实现cleanup方法")
     
-    @abstractmethod
     def get_widget(self) -> QWidget:
         """获取Qt组件"""
-        pass
+        raise NotImplementedError("子类必须实现get_widget方法")
 
 
-class IServiceInterface(ABC):
-    """业务服务接口抽象基类"""
+class IServiceInterface:
+    """业务服务接口基类"""
     
-    @abstractmethod
     def start_service(self) -> bool:
         """启动服务"""
-        pass
+        raise NotImplementedError("子类必须实现start_service方法")
     
-    @abstractmethod
     def stop_service(self) -> bool:
         """停止服务"""
-        pass
+        raise NotImplementedError("子类必须实现stop_service方法")
     
-    @abstractmethod
     def is_running(self) -> bool:
         """检查服务是否运行中"""
-        pass
+        raise NotImplementedError("子类必须实现is_running方法")
 
 
 class EventBus(QObject):
