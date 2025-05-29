@@ -47,5 +47,16 @@
     "points": 0,
     "cardno": "15155712316",
     "score": 0
+  },
+  {
+    "userid": "14700283316",
+    "openid": "oAOCp7fvQZ57uCG-5H0XZyUSbO-4",
+    "token": "a53201ca598cfcc8",
+    "cinemaid": "35fec8259e74",
+    "balance": 0,
+    "points": 0,
+    "cardno": "",
+    "score": 0,
+    "is_main": false
   }
 ]

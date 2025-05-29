@@ -59,6 +59,9 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.account_list_frame = tk.LabelFrame(left_frame, text="账号列表区", fg="red")
         self.account_list_frame.place(x=0, y=login_h, width=left_w, height=account_h)
 
+        # 添加账号登录区内容
+        self._build_login_area()
+
         # 集成账号列表面板
         self.account_list_panel = AccountListPanel(
             self.account_list_frame,
@@ -338,49 +341,75 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             return False
 
     def _auto_load_initial_state(self):
-        """
-        自动加载初始状态：
-        1. 加载账号列表（无需选择影院）
-        2. 自动选择主账号
-        3. 如果有主账号，自动选择对应影院
-        """
-        print("[程序启动] 执行自动加载初始状态...")
-        
+        """自动加载初始状态"""
         try:
-            # 1. 加载所有账号（无需先选择影院）
-            with open("data/accounts.json", "r", encoding="utf-8") as f:
-                all_accounts = json.load(f)
-            
-            if not all_accounts:
-                print("[程序启动] 无账号数据")
-                return
-            
-            # 2. 找到主账号
-            main_accounts = [acc for acc in all_accounts if acc.get('is_main')]
-            if not main_accounts:
-                print("[程序启动] 无主账号，使用第一个账号")
-                main_account = all_accounts[0]
-            else:
-                main_account = main_accounts[0]
-                print(f"[程序启动] 找到主账号: {main_account.get('userid')} @ {main_account.get('cinemaid')}")
-            
-            # 3. 根据主账号的影院ID自动选择影院
-            main_cinemaid = main_account.get('cinemaid')
-            if main_cinemaid and hasattr(self.cinema_panel, 'cinemas'):
-                for i, cinema in enumerate(self.cinema_panel.cinemas):
-                    if cinema.get('cinemaid') == main_cinemaid:
-                        print(f"[程序启动] 自动选择影院: {cinema.get('name', '未知影院')}")
-                        self.cinema_panel.cinema_combo.current(i)
-                        # 注意：不触发on_cinema_select，避免循环调用
-                        break
-            
-            # 4. 刷新账号列表（现在有了选中的影院）
+            # 加载账号列表
             self.refresh_account_list()
             
-            print("[程序启动] 自动加载初始状态完成")
+            # 加载影院列表
+            if hasattr(self, 'cinema_panel'):
+                self.cinema_panel.load_cinemas()
+                
+            print("[初始化] 自动加载完成")
             
         except Exception as e:
-            print(f"[程序启动] 自动加载初始状态异常: {e}")
+            print(f"[初始化] 自动加载失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _build_login_area(self):
+        """构建影院账号登录区界面"""
+        # 标题
+        title_frame = tk.Frame(self.login_frame, bg="#f0f0f0")
+        title_frame.pack(fill=tk.X, padx=5, pady=(5, 10))
+        tk.Label(title_frame, text="影院账号登录", bg="#f0f0f0", 
+                font=("微软雅黑", 12, "bold"), fg="blue").pack(anchor="w")
+        
+        # 输入框区域
+        input_frame = tk.Frame(self.login_frame, bg="#f0f0f0")
+        input_frame.pack(fill=tk.X, padx=5, pady=5)
+        
+        # 手机号输入
+        tk.Label(input_frame, text="手机号:", bg="#f0f0f0", font=("微软雅黑", 10)).grid(row=0, column=0, sticky="w", pady=2)
+        self.phone_entry = tk.Entry(input_frame, font=("微软雅黑", 10), width=20)
+        self.phone_entry.grid(row=0, column=1, sticky="ew", padx=(5, 0), pady=2)
+        
+        # OpenID输入
+        tk.Label(input_frame, text="OpenID:", bg="#f0f0f0", font=("微软雅黑", 10)).grid(row=1, column=0, sticky="w", pady=2)
+        self.openid_entry = tk.Entry(input_frame, font=("微软雅黑", 10), width=20)
+        self.openid_entry.grid(row=1, column=1, sticky="ew", padx=(5, 0), pady=2)
+        
+        # Token输入
+        tk.Label(input_frame, text="Token:", bg="#f0f0f0", font=("微软雅黑", 10)).grid(row=2, column=0, sticky="w", pady=2)
+        self.token_entry = tk.Entry(input_frame, font=("微软雅黑", 10), width=20)
+        self.token_entry.grid(row=2, column=1, sticky="ew", padx=(5, 0), pady=2)
+        
+        # 配置列权重
+        input_frame.columnconfigure(1, weight=1)
+        
+        # 按钮区域
+        button_frame = tk.Frame(self.login_frame, bg="#f0f0f0")
+        button_frame.pack(fill=tk.X, padx=5, pady=(10, 5))
+        
+        # 登录按钮
+        self.cinema_login_btn = tk.Button(button_frame, text="登录影院账号", 
+                                        command=self.on_cinema_account_login,
+                                        bg="#007acc", fg="white", font=("微软雅黑", 10, "bold"))
+        self.cinema_login_btn.pack(side=tk.LEFT, padx=(0, 5))
+        
+        # 清空按钮
+        self.clear_inputs_btn = tk.Button(button_frame, text="清空", 
+                                        command=self.clear_login_inputs,
+                                        bg="#6c757d", fg="white", font=("微软雅黑", 10))
+        self.clear_inputs_btn.pack(side=tk.LEFT)
+        
+        # 状态显示
+        self.login_status_frame = tk.Frame(self.login_frame, bg="#f0f0f0")
+        self.login_status_frame.pack(fill=tk.X, padx=5, pady=(5, 0))
+        
+        self.login_status_label = tk.Label(self.login_status_frame, text="请输入影院账号信息", 
+                                         bg="#f0f0f0", font=("微软雅黑", 9), fg="gray")
+        self.login_status_label.pack(anchor="w")
 
     def _build_account_area(self):  # 构建账号管理区
         # 账号输入
@@ -443,6 +472,8 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.update_bind_account_info()
         # 更新兑换券界面的账号信息
         self.update_exchange_account_info()
+        # 账号切换时清空券列表
+        self.clear_coupons()
 
     def set_main_account(self, account):
         # 设置主账号并保存到accounts.json
@@ -2402,6 +2433,186 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             # 销毁主窗口
             self.destroy()
             print("[程序关闭] 主窗口已销毁")
+
+    def clear_login_inputs(self):
+        """清空登录输入框"""
+        self.phone_entry.delete(0, tk.END)
+        self.openid_entry.delete(0, tk.END)
+        self.token_entry.delete(0, tk.END)
+        self.login_status_label.config(text="请输入影院账号信息", fg="gray")
+
+    def on_cinema_account_login(self):
+        """影院账号登录处理"""
+        # 获取输入的信息
+        phone = self.phone_entry.get().strip()
+        openid = self.openid_entry.get().strip()
+        token = self.token_entry.get().strip()
+        
+        # 验证输入
+        if not phone:
+            messagebox.showwarning("输入错误", "请输入手机号！")
+            self.phone_entry.focus()
+            return
+            
+        if not openid:
+            messagebox.showwarning("输入错误", "请输入OpenID！")
+            self.openid_entry.focus()
+            return
+            
+        if not token:
+            messagebox.showwarning("输入错误", "请输入Token！")
+            self.token_entry.focus()
+            return
+        
+        # 检查是否选择了影院
+        cinemaid = self.get_selected_cinemaid()
+        if not cinemaid:
+            messagebox.showwarning("未选择影院", "请先在影院选择区选择影院！")
+            return
+        
+        # 更新状态
+        self.login_status_label.config(text="正在登录...", fg="blue")
+        self.cinema_login_btn.config(state="disabled", text="登录中...")
+        
+        try:
+            # 调用影院账号登录接口
+            success, result = self.cinema_account_login_api(phone, openid, token, cinemaid)
+            
+            if success:
+                # 登录成功，保存账号信息到accounts.json
+                account_data = {
+                    "userid": phone,
+                    "openid": openid,
+                    "token": token,
+                    "cinemaid": cinemaid,
+                    "balance": result.get('balance', 0),
+                    "points": result.get('points', 0),
+                    "cardno": result.get('cardno', phone),
+                    "score": result.get('score', 0),
+                    "is_main": False  # 新账号默认不是主账号
+                }
+                
+                # 保存到accounts.json
+                self.save_cinema_account(account_data)
+                
+                # 更新状态显示
+                self.login_status_label.config(text=f"登录成功: {phone}", fg="green")
+                
+                # 刷新账号列表
+                self.refresh_account_list()
+                
+                # 清空输入框
+                self.clear_login_inputs()
+                
+                messagebox.showinfo("登录成功", f"影院账号 {phone} 登录成功！\n余额: {account_data['balance']}\n积分: {account_data['score']}")
+                
+            else:
+                # 登录失败
+                error_msg = result if isinstance(result, str) else "登录失败"
+                self.login_status_label.config(text=f"登录失败: {error_msg}", fg="red")
+                messagebox.showerror("登录失败", f"影院账号登录失败：{error_msg}")
+                
+        except Exception as e:
+            print(f"[影院账号登录] 异常: {e}")
+            self.login_status_label.config(text=f"登录异常: {e}", fg="red")
+            messagebox.showerror("登录异常", f"登录过程中发生错误：{e}")
+            
+        finally:
+            # 恢复按钮状态
+            self.cinema_login_btn.config(state="normal", text="登录影院账号")
+
+    def cinema_account_login_api(self, phone, openid, token, cinemaid):
+        """
+        调用影院账号登录接口验证账号信息
+        参数：
+            phone: 手机号
+            openid: OpenID
+            token: Token
+            cinemaid: 影院ID
+        返回：
+            tuple: (是否成功, 结果信息)
+        """
+        try:
+            # 获取当前选择的影院信息
+            cinema_idx = self.cinema_panel.cinema_combo.current()
+            if cinema_idx < 0:
+                return False, "未选择影院"
+            
+            cinema = self.cinema_panel.cinemas[cinema_idx]
+            base_url = cinema['base_url']
+            
+            print(f"[影院账号登录] 开始验证账号: {phone} @ {cinemaid}")
+            print(f"[影院账号登录] 使用API: {base_url}")
+            
+            # 调用会员信息接口验证账号
+            from services.member_service import member_service
+            
+            # 构建临时账号信息用于验证
+            temp_account = {
+                'userid': phone,
+                'openid': openid,
+                'token': token,
+                'cinemaid': cinemaid
+            }
+            
+            # 调用会员服务验证账号
+            member_info = member_service(temp_account, cinemaid)
+            
+            if member_info:
+                print(f"[影院账号登录] 账号验证成功: {member_info}")
+                return True, member_info
+            else:
+                print(f"[影院账号登录] 账号验证失败")
+                return False, "账号信息无效或网络错误"
+                
+        except Exception as e:
+            print(f"[影院账号登录] API调用异常: {e}")
+            return False, f"接口调用失败: {e}"
+
+    def save_cinema_account(self, account_data):
+        """
+        保存影院账号到accounts.json
+        参数：
+            account_data: 账号数据字典
+        """
+        try:
+            # 读取现有账号列表
+            try:
+                with open("data/accounts.json", "r", encoding="utf-8") as f:
+                    accounts = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                accounts = []
+            
+            # 检查是否已存在相同的账号
+            userid = account_data['userid']
+            cinemaid = account_data['cinemaid']
+            
+            # 查找是否已存在
+            existing_index = -1
+            for i, acc in enumerate(accounts):
+                if acc.get('userid') == userid and acc.get('cinemaid') == cinemaid:
+                    existing_index = i
+                    break
+            
+            if existing_index >= 0:
+                # 更新现有账号
+                accounts[existing_index].update(account_data)
+                print(f"[保存账号] 更新现有账号: {userid} @ {cinemaid}")
+            else:
+                # 添加新账号
+                accounts.append(account_data)
+                print(f"[保存账号] 添加新账号: {userid} @ {cinemaid}")
+            
+            # 保存到文件
+            os.makedirs("data", exist_ok=True)
+            with open("data/accounts.json", "w", encoding="utf-8") as f:
+                json.dump(accounts, f, ensure_ascii=False, indent=2)
+            
+            print(f"[保存账号] 账号信息已保存到 accounts.json")
+            
+        except Exception as e:
+            print(f"[保存账号] 保存失败: {e}")
+            raise Exception(f"保存账号信息失败: {e}")
 
 if __name__ == "__main__":  # 程序入口
     app = CinemaOrderSimulatorUI()  # 创建主窗口对象

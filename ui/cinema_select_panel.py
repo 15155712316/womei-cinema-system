@@ -58,35 +58,23 @@ class CinemaSelectPanel(tk.Frame):  # 使用标准tk.Frame
         self.date_combo.pack(side="left", fill="x", expand=True)
         self.date_combo.bind('<<ComboboxSelected>>', self.on_date_select)
 
-        # ========== 行4：场次下拉 ==========
-        row4 = tk.Frame(self)
-        row4.pack(fill="x", padx=row_padx, pady=row_pady)
-        tk.Label(row4, text="场次：", font=combo_font).pack(side="left", padx=(0, 2))
-        self.session_var = tk.StringVar()
-        self.session_combo = ttk.Combobox(
-            row4, textvariable=self.session_var, values=[], font=combo_font, state="readonly"
-        )
-        self.session_combo.pack(side="left", fill="x", expand=True)
-        self.session_combo.bind('<<ComboboxSelected>>', self.on_session_select)
-
-        # ========== 行5：操作按钮 ==========
+        # ========== 行5：场次选择 ==========
         row5 = tk.Frame(self)
-        row5.pack(fill="x", padx=row_padx, pady=row_pady+1)
-        tk.Button(row5, text="打开选座 获取可用券", font=btn_font, width=18)\
+        row5.pack(fill="x", padx=row_padx, pady=row_pady)
+        tk.Label(row5, text="场次：", font=combo_font).pack(anchor="w")
+        self.session_var = tk.StringVar()
+        self.session_combo = ttk.Combobox(row5, textvariable=self.session_var, state="readonly", font=combo_font)
+        self.session_combo.pack(fill="x", padx=2, pady=2)
+        self.session_combo.bind("<<ComboboxSelected>>", self.on_session_select)
+
+        # ========== 行6：操作按钮 ==========
+        row6 = tk.Frame(self)
+        row6.pack(fill="x", padx=row_padx, pady=row_pady+1)
+        tk.Button(row6, text="打开选座 获取可用券", font=btn_font, width=18)\
             .pack(fill="x", pady=0)
         # 当前账号显示区
         self.current_account_label = tk.Label(self, text="当前账号：-", font=("微软雅黑", 11, "bold"), fg="red")
         self.current_account_label.pack(fill="x", padx=8, pady=(2, 0))
-
-        # ========== 行6：券列表区 ==========
-        row6 = tk.Frame(self)
-        row6.pack(fill="both", padx=row_padx, pady=row_pady, expand=True)
-        tk.Label(row6, text="可用券列表：", font=combo_font).pack(anchor="w")
-        self.coupon_listbox = tk.Listbox(row6, selectmode="single", font=("微软雅黑", 10), activestyle="dotbox")
-        self.coupon_listbox.pack(fill="both", expand=True, padx=2, pady=2)
-        self.coupon_listbox.bind('<<ListboxSelect>>', self.on_coupon_select)
-        self.coupons_data = []  # 存储当前券数据
-        self.selected_coupon = None
 
     def set_main_window(self, main_window):
         """
@@ -124,6 +112,10 @@ class CinemaSelectPanel(tk.Frame):  # 使用标准tk.Frame
         """
         print("[DEBUG] on_cinema_select 被触发")
         print(f"[DEBUG] event: {event}")
+        
+        # 清空券列表
+        if hasattr(self.main_window, 'clear_coupons'):
+            self.main_window.clear_coupons()
         
         idx = self.cinema_combo.current()
         print(f"[DEBUG] cinema_combo.current() = {idx}")
@@ -177,6 +169,10 @@ class CinemaSelectPanel(tk.Frame):  # 使用标准tk.Frame
         参数：
             event: 事件对象（可为None）
         """
+        # 清空券列表
+        if hasattr(self.main_window, 'clear_coupons'):
+            self.main_window.clear_coupons()
+            
         film_name = self.movie_var.get()
         film_key = self.film_key_map.get(film_name)
         if not film_key or film_key not in self.shows:
@@ -199,6 +195,10 @@ class CinemaSelectPanel(tk.Frame):  # 使用标准tk.Frame
         参数：
             event: 事件对象（可为None）
         """
+        # 清空券列表
+        if hasattr(self.main_window, 'clear_coupons'):
+            self.main_window.clear_coupons()
+            
         date = self.date_var.get()
         film_key = getattr(self, 'current_film_key', None)
         if not film_key or not date or film_key not in self.shows:
@@ -220,6 +220,10 @@ class CinemaSelectPanel(tk.Frame):  # 使用标准tk.Frame
         参数：
             idx_or_event: 事件对象或场次索引
         """
+        # 清空券列表
+        if hasattr(self.main_window, 'clear_coupons'):
+            self.main_window.clear_coupons()
+            
         # 支持事件或索引
         if isinstance(idx_or_event, int):
             idx = idx_or_event
@@ -367,83 +371,16 @@ class CinemaSelectPanel(tk.Frame):  # 使用标准tk.Frame
 
     def set_current_account(self, account):
         """
-        设置当前账号信息，并在界面上显示。
+        设置当前账号并更新显示
         参数：
             account: 账号信息字典
         """
         if account:
-            text = (
-                f"当前账号：{account.get('userid', '-')}\n"
-                f"余额：{account.get('balance', 0)}  积分：{account.get('score', 0)}"
-            )
+            userid = account.get('userid', '')
+            cinemaid = account.get('cinemaid', '')
+            self.current_account_label.config(text=f"当前账号：{userid}@{cinemaid}")
         else:
-            text = "当前账号：-"
-        self.current_account_label.config(text=text)
-
-    def update_coupons(self, coupon_result):
-        """
-        更新可用券列表区的内容，并高亮首个可用券。
-        参数：
-            coupon_result: 券接口返回的结果字典
-        """
-        self.coupon_listbox.delete(0, 'end')
-        self.coupons_data = []
-        
-        # 修复：增强对None和无效结果的检查
-        if coupon_result is None:
-            self.coupon_listbox.insert('end', 'API无响应')
-            return
-        
-        if not isinstance(coupon_result, dict) or coupon_result.get('resultCode') != '0':
-            self.coupon_listbox.insert('end', '无可用优惠券')
-            return
-        
-        # 获取券数据 - 增加安全检查
-        result_data = coupon_result.get('resultData')
-        if result_data is None:
-            self.coupon_listbox.insert('end', '券数据为空')
-            return
-        
-        vouchers = result_data.get('vouchers', [])
-        vouchers.sort(key=lambda v: v.get('expireddate', ''))
-        
-        for v in vouchers:
-            # 安全检查：确保v是字典类型
-            if not isinstance(v, dict):
-                continue
-                
-            name = v.get('couponname', v.get('voucherName', ''))
-            expire = v.get('expireddate', '')
-            code = v.get('couponcode', v.get('voucherCode', ''))
-            display = f"{name} | 有效期至 {expire} | 券号 {code}"
-            self.coupon_listbox.insert('end', display)
-            self.coupons_data.append(v)
-        
-        if vouchers:
-            self.coupon_listbox.selection_set(0)
-            self.selected_coupon = self.coupons_data[0]
-        else:
-            self.selected_coupon = None
-
-    def on_coupon_select(self, event):
-        """
-        券列表区选中事件，更新当前选中的券。
-        参数：
-            event: 事件对象
-        """
-        idx = self.coupon_listbox.curselection()
-        if idx:
-            self.selected_coupon = self.coupons_data[idx[0]]
-        else:
-            self.selected_coupon = None
-
-    def get_selected_coupon(self):
-        """
-        获取当前选中的券对象。
-        返回：
-            dict: 当前选中的券信息字典
-        """
-        return self.selected_coupon
+            self.current_account_label.config(text="当前账号：-")
 
     def get_current_session_info(self):
         """

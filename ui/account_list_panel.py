@@ -16,9 +16,6 @@ class AccountListPanel(tk.Frame):
         self.search_entry = tk.Entry(search_frame)
         self.search_entry.pack(side=tk.LEFT, padx=(5, 2), fill=tk.X, expand=True)
         tk.Button(search_frame, text="模糊搜索", width=8).pack(side=tk.LEFT, padx=2)
-        # 刷新券按钮
-        self.refresh_btn = tk.Button(search_frame, text="刷新券", width=8, command=self.on_refresh_coupons)
-        self.refresh_btn.pack(side=tk.LEFT, padx=2)
 
         # 账号列表
         columns = ("账号", "余额", "积分")
