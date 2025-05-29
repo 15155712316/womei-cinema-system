@@ -329,8 +329,17 @@ class AccountWidget(QWidget):
         return self.current_account
     
     def get_accounts_data(self) -> List[Dict]:
-        """获取所有账号数据"""
-        return self.accounts_data.copy()
+        """获取账号数据"""
+        return self.accounts_data
+    
+    def update_account_list(self, accounts: List[Dict]):
+        """更新账号列表"""
+        try:
+            self.accounts_data = accounts
+            self._update_account_table(accounts)
+            print(f"[账号组件] 更新账号列表完成，共{len(accounts)}个账号")
+        except Exception as e:
+            print(f"[账号组件] 更新账号列表错误: {e}")
     
     def set_cinema_name_resolver(self, resolver_func):
         """设置影院名称解析函数"""

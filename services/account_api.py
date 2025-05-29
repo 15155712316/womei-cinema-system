@@ -66,4 +66,62 @@ def extract_params_from_url(url: str) -> dict:
     :return: 参数字典
     """
     parsed = urlparse(url)
-    return {k: v[0] for k, v in parse_qs(parsed.query).items()} 
+    return {k: v[0] for k, v in parse_qs(parsed.query).items()}
+
+
+# 账号管理相关函数
+import json
+import os
+
+def get_account_list():
+    """获取账号列表"""
+    try:
+        accounts_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'accounts.json')
+        if os.path.exists(accounts_file):
+            with open(accounts_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+    except Exception as e:
+        print(f"[账号API] 获取账号列表错误: {e}")
+        return []
+
+def save_account(account):
+    """保存账号"""
+    try:
+        accounts = get_account_list()
+        
+        # 检查是否已存在
+        for i, existing_account in enumerate(accounts):
+            if existing_account.get('userid') == account.get('userid'):
+                accounts[i] = account
+                break
+        else:
+            accounts.append(account)
+        
+        # 保存到文件
+        accounts_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'accounts.json')
+        os.makedirs(os.path.dirname(accounts_file), exist_ok=True)
+        
+        with open(accounts_file, 'w', encoding='utf-8') as f:
+            json.dump(accounts, f, ensure_ascii=False, indent=2)
+        
+        return True
+    except Exception as e:
+        print(f"[账号API] 保存账号错误: {e}")
+        return False
+
+def delete_account(userid):
+    """删除账号"""
+    try:
+        accounts = get_account_list()
+        accounts = [acc for acc in accounts if acc.get('userid') != userid]
+        
+        # 保存到文件
+        accounts_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'accounts.json')
+        with open(accounts_file, 'w', encoding='utf-8') as f:
+            json.dump(accounts, f, ensure_ascii=False, indent=2)
+        
+        return True
+    except Exception as e:
+        print(f"[账号API] 删除账号错误: {e}")
+        return False 

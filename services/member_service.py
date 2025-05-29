@@ -88,4 +88,15 @@ def member_service(account, cinemaid):
     返回：
         dict: 会员信息
     """
-    return get_member_info(account, cinemaid) 
+    return get_member_info(account, cinemaid)
+
+
+class MemberService:
+    """会员服务类，封装会员相关功能"""
+    
+    def __init__(self):
+        pass
+    
+    def get_member_info(self, account, cinemaid):
+        """获取会员信息"""
+        return get_member_info(account, cinemaid) 

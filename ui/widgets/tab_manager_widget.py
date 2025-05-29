@@ -435,6 +435,8 @@ class TabManagerWidget(QWidget):
                 
                 # 发出影院选择信号
                 self.cinema_selected.emit(cinema_text)
+                
+                print(f"[Tab管理器] 影院切换: {cinema_text}")
         except Exception as e:
             print(f"[Tab管理器] 影院选择错误: {e}")
     
