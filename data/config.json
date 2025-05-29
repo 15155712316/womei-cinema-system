@@ -1,0 +1,46 @@
+{
+  "app": {
+    "name": "柴犬影院下单系统",
+    "version": "2.0.0",
+    "debug": false,
+    "auto_save": true
+  },
+  "window": {
+    "width": 1400,
+    "height": 900,
+    "min_width": 1200,
+    "min_height": 800,
+    "center_on_start": true,
+    "remember_position": true,
+    "remember_size": true
+  },
+  "theme": {
+    "current": "light",
+    "auto_dark_mode": false,
+    "custom_theme_path": ""
+  },
+  "network": {
+    "timeout": 30,
+    "retry_count": 3,
+    "verify_ssl": false,
+    "api_base_url": "http://43.142.19.28:5000"
+  },
+  "auth": {
+    "auto_login": true,
+    "remember_phone": true,
+    "auth_check_interval": 300,
+    "login_timeout": 60
+  },
+  "business": {
+    "auto_cancel_unpaid": true,
+    "max_seat_selection": 8,
+    "price_display_format": "¥{:.2f}",
+    "auto_refresh_coupons": true
+  },
+  "logging": {
+    "level": "INFO",
+    "max_log_files": 10,
+    "max_file_size": "10MB",
+    "console_output": true
+  }
+}
