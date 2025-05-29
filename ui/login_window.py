@@ -46,6 +46,11 @@ class LoginWindow(QWidget):
         self.login_thread = None
         self.machine_code = auth_service.get_machine_code()  # 预先获取机器码
         self.login_history_file = "data/login_history.json"  # 登录历史文件
+        
+        # 输出机器码信息，方便用户确认
+        print(f"[机器码生成] 当前设备机器码: {self.machine_code}")
+        print(f"[登录窗口] 机器码已显示在界面上，可点击复制按钮复制")
+        
         self.init_ui()
         self.load_login_history()  # 加载登录历史
     
@@ -149,49 +154,67 @@ class LoginWindow(QWidget):
         """)
         
         # 机器码显示区域 - 直接添加，不要空白间隔
-        machine_code_label = QLabel("当前设备机器码")
+        machine_code_label = QLabel("设备机器码验证")
         machine_code_label.setFont(QFont("微软雅黑", 12, QFont.Bold))
         machine_code_label.setStyleSheet("""
             QLabel {
                 color: #1a1a1a; 
                 background-color: transparent;
-                margin: 15px 0px 8px 0px;
+                margin: 15px 0px 5px 0px;
                 padding: 0px;
             }
         """)
         machine_code_label.setAlignment(Qt.AlignCenter)
         
+        # 机器码说明
+        machine_code_info = QLabel("当前设备机器码如下，管理员需将此码录入系统后方可登录")
+        machine_code_info.setFont(QFont("微软雅黑", 9))
+        machine_code_info.setStyleSheet("""
+            QLabel {
+                color: #666; 
+                background-color: transparent;
+                margin: 0px 5px 8px 5px;
+                padding: 0px;
+            }
+        """)
+        machine_code_info.setAlignment(Qt.AlignCenter)
+        machine_code_info.setWordWrap(True)
+        
         # 机器码显示文本框（只读，可选中复制）
         self.machine_code_display = QTextEdit()
         self.machine_code_display.setPlainText(self.machine_code)
-        self.machine_code_display.setFont(QFont("Consolas", 10))
+        self.machine_code_display.setFont(QFont("Consolas", 11))
         self.machine_code_display.setStyleSheet("""
             QTextEdit {
                 background: #f8f9fa;
                 border: 2px solid #e9ecef;
                 border-radius: 6px;
-                padding: 8px;
+                padding: 12px;
                 color: #333;
                 line-height: 1.2;
+                font-weight: bold;
+            }
+            QTextEdit:focus {
+                border-color: #3498db;
             }
         """)
         self.machine_code_display.setReadOnly(True)
-        self.machine_code_display.setFixedHeight(60)  # 固定高度
+        self.machine_code_display.setFixedHeight(65)  # 稍微增加高度
         self.machine_code_display.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.machine_code_display.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
         # 复制按钮
-        copy_button = QPushButton("复制机器码")
+        copy_button = QPushButton("📋 复制机器码")
         copy_button.setFont(QFont("微软雅黑", 10))
         copy_button.setStyleSheet("""
             QPushButton {
                 background-color: #6c757d;
                 color: white;
                 border: none;
-                padding: 8px 15px;
+                padding: 10px 20px;
                 border-radius: 6px;
-                font-size: 10px;
-                min-height: 18px;
+                font-size: 11px;
+                min-height: 20px;
             }
             QPushButton:hover {
                 background-color: #5a6268;
@@ -207,7 +230,8 @@ class LoginWindow(QWidget):
         main_layout.addWidget(self.phone_input)
         main_layout.addWidget(self.login_button)
         main_layout.addWidget(self.progress_bar)
-        main_layout.addWidget(machine_code_label)  # 直接添加，不要空白
+        main_layout.addWidget(machine_code_label)  # 标题
+        main_layout.addWidget(machine_code_info)   # 说明文字
         main_layout.addWidget(self.machine_code_display)
         main_layout.addWidget(copy_button)
         main_layout.addStretch()  # 底部留少量空白
@@ -246,15 +270,19 @@ class LoginWindow(QWidget):
             # 确保data目录存在
             os.makedirs("data", exist_ok=True)
             
+            # 修复：使用datetime模块获取当前时间
+            import datetime
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
             history = {
                 'last_phone': phone,
-                'last_login_time': QTimer().currentTime().toString("yyyy-MM-dd hh:mm:ss")
+                'last_login_time': current_time
             }
             
             with open(self.login_history_file, 'w', encoding='utf-8') as f:
                 json.dump(history, f, ensure_ascii=False, indent=2)
             
-            print(f"[登录历史] 已保存登录历史: {phone}")
+            print(f"[登录历史] 已保存登录历史: {phone} at {current_time}")
         except Exception as e:
             print(f"[登录历史] 保存登录历史失败: {e}")
     
@@ -274,13 +302,19 @@ class LoginWindow(QWidget):
         # 临时改变按钮文本提示复制成功
         copy_button = self.sender()
         original_text = copy_button.text()
-        copy_button.setText("已复制!")
-        copy_button.setStyleSheet(copy_button.styleSheet().replace("#6c757d", "#28a745"))
+        original_style = copy_button.styleSheet()
         
-        # 2秒后恢复原样
-        QTimer.singleShot(2000, lambda: [
+        # 设置成功状态
+        copy_button.setText("✅ 已复制!")
+        success_style = original_style.replace("#6c757d", "#28a745")
+        copy_button.setStyleSheet(success_style)
+        
+        print(f"[复制机器码] 机器码已复制到剪贴板: {self.machine_code}")
+        
+        # 2.5秒后恢复原样
+        QTimer.singleShot(2500, lambda: [
             copy_button.setText(original_text),
-            copy_button.setStyleSheet(copy_button.styleSheet().replace("#28a745", "#6c757d"))
+            copy_button.setStyleSheet(original_style)
         ])
     
     def login(self):

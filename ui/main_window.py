@@ -31,6 +31,9 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.configure(bg="#f8f8f8")  # 设置窗口背景色
         self.last_priceinfo = {}
 
+        # 绑定窗口关闭事件
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
         # 初始化时隐藏主窗口，等待用户登录
         self.withdraw()
         
@@ -252,13 +255,13 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
                     points = user_info.get('points', 0)
                     self.title(f"柴犬影院下单系统 - {username} (积分: {points})")
                 
-                # 继续定期检查
-                self.auth_check_timer = self.after(30000, check_auth)  # 30秒检查一次
+                # 继续定期检查 - 改为5分钟检查一次，减少资源消耗
+                self.auth_check_timer = self.after(300000, check_auth)  # 5分钟检查一次
                 
             except Exception as e:
                 print(f"[权限检查] 检查异常: {e}")
                 # 出现异常也继续检查
-                self.auth_check_timer = self.after(60000, check_auth)  # 1分钟后再检查
+                self.auth_check_timer = self.after(300000, check_auth)  # 5分钟后再检查
         
         # 首次检查延迟5秒
         self.auth_check_timer = self.after(5000, check_auth)
@@ -898,12 +901,22 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         # 确保Listbox为多选模式
         self.coupon_listbox.config(selectmode="multiple")
         
-        if not coupon_result or coupon_result.get('resultCode') != '0':
+        # 修复：增强对None和无效结果的检查
+        if coupon_result is None:
+            self.coupon_listbox.insert('end', 'API无响应')
+            return
+        
+        if not isinstance(coupon_result, dict) or coupon_result.get('resultCode') != '0':
             self.coupon_listbox.insert('end', '无可用优惠券')
             return
             
-        # 获取券数据
-        vouchers = coupon_result.get('resultData', {}).get('vouchers', [])
+        # 获取券数据 - 增加安全检查
+        result_data = coupon_result.get('resultData')
+        if result_data is None:
+            self.coupon_listbox.insert('end', '券数据为空')
+            return
+        
+        vouchers = result_data.get('vouchers', [])
         
         if not vouchers:
             self.coupon_listbox.insert('end', '暂无可用优惠券')
@@ -914,6 +927,10 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         
         # 添加券到列表
         for i, v in enumerate(vouchers):
+            # 安全检查：确保v是字典类型
+            if not isinstance(v, dict):
+                continue
+                
             # 获取券名 - 尝试多个字段
             name = v.get('couponname') or v.get('voucherName') or v.get('name', f'券{i+1}')
             
@@ -2196,7 +2213,12 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
             
             print(f"[兑换券刷新] 券列表结果: {result}")
             
-            if result.get('resultCode') == '0':
+            # 修复：检查result是否为None
+            if result is None:
+                print(f"[兑换券刷新] API返回None，可能是网络异常或服务器无响应")
+                messagebox.showwarning("获取券列表失败", "API无响应，请检查网络连接或稍后重试")
+                self.clear_exchange_coupon_list()
+            elif result.get('resultCode') == '0':
                 self.update_exchange_coupon_list(result)
                 print(f"[兑换券刷新] 成功获取券列表")
             else:
@@ -2222,18 +2244,33 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.exchange_coupon_listbox.delete(0, 'end')
         self.exchange_coupons_data = []
         
-        if not coupon_result or coupon_result.get('resultCode') != '0':
-            self.exchange_coupon_listbox.insert('end', '获取券列表失败')
-            self.coupon_stats_label.config(text="")
+        # 修复：增强对None和无效结果的检查
+        if coupon_result is None:
+            self.exchange_coupon_listbox.insert('end', 'API无响应')
+            if hasattr(self, 'coupon_stats_label'):
+                self.coupon_stats_label.config(text="API无响应", fg="red")
             return
         
-        # 获取券数据 - 适配不同的数据结构
-        coupon_data = coupon_result.get('resultData', {})
+        if not isinstance(coupon_result, dict) or coupon_result.get('resultCode') != '0':
+            self.exchange_coupon_listbox.insert('end', '获取券列表失败')
+            if hasattr(self, 'coupon_stats_label'):
+                self.coupon_stats_label.config(text="获取失败", fg="red")
+            return
+        
+        # 获取券数据 - 适配不同的数据结构，增加安全检查
+        coupon_data = coupon_result.get('resultData')
+        if coupon_data is None:
+            self.exchange_coupon_listbox.insert('end', '券数据为空')
+            if hasattr(self, 'coupon_stats_label'):
+                self.coupon_stats_label.config(text="券数据为空", fg="orange")
+            return
+        
         vouchers = coupon_data.get('vouchers', []) or coupon_data.get('coupons', []) or coupon_data.get('data', [])
         
         if not vouchers:
             self.exchange_coupon_listbox.insert('end', '暂无可用优惠券')
-            self.coupon_stats_label.config(text="券数量：0张")
+            if hasattr(self, 'coupon_stats_label'):
+                self.coupon_stats_label.config(text="券数量：0张", fg="blue")
             return
         
         # 过滤券：只保留未使用且未过期的券
@@ -2243,6 +2280,10 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         expired_count = 0
         
         for voucher in vouchers:
+            # 安全检查：确保voucher是字典类型
+            if not isinstance(voucher, dict):
+                continue
+                
             # 检查是否已使用 (redeemed=1表示已使用)
             is_used = str(voucher.get('redeemed', '0')) == '1'
             # 检查是否已过期 (expired=1表示已过期)
@@ -2258,7 +2299,8 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         
         if not valid_vouchers:
             self.exchange_coupon_listbox.insert('end', '暂无可用优惠券')
-            self.coupon_stats_label.config(text=f"总券数：{total_count}张 (已使用:{used_count}张, 已过期:{expired_count}张, 可用:0张)")
+            if hasattr(self, 'coupon_stats_label'):
+                self.coupon_stats_label.config(text=f"总券数：{total_count}张 (已使用:{used_count}张, 已过期:{expired_count}张, 可用:0张)", fg="blue")
             return
         
         # 按有效期分组统计
@@ -2298,7 +2340,8 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         else:
             stats_text = f"可用券：{len(valid_vouchers)}张 | 总计:{total_count}张 (已用:{used_count}张, 过期:{expired_count}张)"
         
-        self.coupon_stats_label.config(text=stats_text)
+        if hasattr(self, 'coupon_stats_label'):
+            self.coupon_stats_label.config(text=stats_text, fg="blue")
         print(f"[兑换券列表] 更新完成，总计 {total_count} 张券，可用 {len(valid_vouchers)} 张券，已使用 {used_count} 张，已过期 {expired_count} 张")
     
     def clear_exchange_coupon_list(self):
@@ -2317,6 +2360,48 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         
         # 选座操作不改变UI状态，不清空券列表
         # 保持当前的ui_state不变
+
+    def on_closing(self):
+        """窗口关闭事件处理"""
+        print("[程序关闭] 开始清理资源...")
+        
+        try:
+            # 停止定期认证检查
+            if hasattr(self, 'auth_check_timer') and self.auth_check_timer:
+                self.after_cancel(self.auth_check_timer)
+                self.auth_check_timer = None
+                print("[程序关闭] 已停止认证检查定时器")
+            
+            # 清除用户信息
+            if hasattr(self, 'current_user'):
+                self.current_user = None
+                print("[程序关闭] 已清除用户信息")
+            
+            # 关闭登录窗口（如果存在）
+            if hasattr(self, 'login_window'):
+                try:
+                    self.login_window.close()
+                    print("[程序关闭] 已关闭登录窗口")
+                except:
+                    pass
+            
+            # 退出Qt应用程序（如果存在）
+            if hasattr(self, 'qt_app'):
+                try:
+                    self.qt_app.quit()
+                    print("[程序关闭] 已退出Qt应用程序")
+                except:
+                    pass
+            
+            print("[程序关闭] 资源清理完成")
+            
+        except Exception as e:
+            print(f"[程序关闭] 清理资源时发生错误: {e}")
+        
+        finally:
+            # 销毁主窗口
+            self.destroy()
+            print("[程序关闭] 主窗口已销毁")
 
 if __name__ == "__main__":  # 程序入口
     app = CinemaOrderSimulatorUI()  # 创建主窗口对象

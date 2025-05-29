@@ -26,53 +26,115 @@ class AuthService:
         
     def get_machine_code(self) -> str:
         """
-        获取机器码（基于硬件信息生成唯一标识）
+        获取机器码（基于硬件信息生成真实机器码）
         :return: 机器码字符串
         """
         try:
-            # 获取主板序列号
-            if platform.system() == "Windows":
-                # Windows系统获取主板序列号
-                result = subprocess.run(
-                    ['wmic', 'baseboard', 'get', 'serialnumber'], 
-                    capture_output=True, 
-                    text=True
-                )
-                board_serial = result.stdout.strip().split('\n')[-1].strip()
-                
-                # 获取CPU序列号
-                result = subprocess.run(
-                    ['wmic', 'cpu', 'get', 'processorid'], 
-                    capture_output=True, 
-                    text=True
-                )
-                cpu_serial = result.stdout.strip().split('\n')[-1].strip()
-                
-                # 获取硬盘序列号
-                result = subprocess.run(
-                    ['wmic', 'diskdrive', 'get', 'serialnumber'], 
-                    capture_output=True, 
-                    text=True
-                )
-                disk_serial = result.stdout.strip().split('\n')[-1].strip()
-                
-                # 组合生成机器码
-                machine_info = f"{board_serial}-{cpu_serial}-{disk_serial}-{platform.node()}"
-                
-            else:
-                # Linux/Mac系统的实现（备用方案）
-                machine_info = f"{platform.node()}-{platform.machine()}-{platform.processor()}"
+            # 获取硬件信息用于生成机器码 - 使用有序字典确保顺序一致
+            hardware_info = {}
             
-            # 生成MD5哈希作为机器码
-            machine_code = hashlib.md5(machine_info.encode()).hexdigest()
-            print(f"[机器码] 生成的机器码: {machine_code}")
+            # 1. 获取计算机名
+            try:
+                computer_name = platform.node()
+                hardware_info["computer"] = computer_name
+                print(f"[机器码生成] 计算机名: {computer_name}")
+            except Exception as e:
+                print(f"[机器码生成] 获取计算机名失败: {e}")
+            
+            # 2. 获取处理器信息
+            try:
+                processor = platform.processor()
+                hardware_info["processor"] = processor
+                print(f"[机器码生成] 处理器: {processor}")
+            except Exception as e:
+                print(f"[机器码生成] 获取处理器信息失败: {e}")
+            
+            # 3. 获取系统信息（固定格式）
+            try:
+                system_info = f"{platform.system()}-{platform.machine()}"  # 移除release，因为可能变化
+                hardware_info["system"] = system_info
+                print(f"[机器码生成] 系统信息: {system_info}")
+            except Exception as e:
+                print(f"[机器码生成] 获取系统信息失败: {e}")
+            
+            # 4. Windows平台特定信息
+            if platform.system().lower() == 'windows':
+                try:
+                    # 获取主板序列号
+                    result = subprocess.run(['wmic', 'baseboard', 'get', 'serialnumber'], 
+                                          capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        lines = result.stdout.strip().split('\n')
+                        for line in lines:
+                            if line.strip() and 'SerialNumber' not in line:
+                                board_serial = line.strip()
+                                hardware_info["board"] = board_serial
+                                print(f"[机器码生成] 主板序列号: {board_serial}")
+                                break
+                except Exception as e:
+                    print(f"[机器码生成] 获取主板序列号失败: {e}")
+                
+                try:
+                    # 获取CPU序列号
+                    result = subprocess.run(['wmic', 'cpu', 'get', 'processorid'], 
+                                          capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        lines = result.stdout.strip().split('\n')
+                        for line in lines:
+                            if line.strip() and 'ProcessorId' not in line:
+                                cpu_id = line.strip()
+                                hardware_info["cpu"] = cpu_id
+                                print(f"[机器码生成] CPU ID: {cpu_id}")
+                                break
+                except Exception as e:
+                    print(f"[机器码生成] 获取CPU ID失败: {e}")
+                
+                try:
+                    # 获取硬盘序列号
+                    result = subprocess.run(['wmic', 'diskdrive', 'get', 'serialnumber'], 
+                                          capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0:
+                        lines = result.stdout.strip().split('\n')
+                        for line in lines:
+                            if line.strip() and 'SerialNumber' not in line and line.strip() != '':
+                                disk_serial = line.strip()
+                                hardware_info["disk"] = disk_serial
+                                print(f"[机器码生成] 硬盘序列号: {disk_serial}")
+                                break
+                except Exception as e:
+                    print(f"[机器码生成] 获取硬盘序列号失败: {e}")
+            
+            # 5. 如果没有获取到足够的硬件信息，使用MAC地址作为补充
+            if len(hardware_info) < 2:
+                try:
+                    mac_address = hex(uuid.getnode())
+                    hardware_info["mac"] = mac_address
+                    print(f"[机器码生成] MAC地址: {mac_address}")
+                except Exception as e:
+                    print(f"[机器码生成] 获取MAC地址失败: {e}")
+            
+            # 6. 按键名排序并组合所有硬件信息，确保顺序一致
+            sorted_keys = sorted(hardware_info.keys())
+            combined_parts = []
+            for key in sorted_keys:
+                combined_parts.append(f"{key}:{hardware_info[key]}")
+            
+            combined_info = "|".join(combined_parts)
+            print(f"[机器码生成] 组合硬件信息: {combined_info}")
+            
+            # 7. 生成MD5哈希并取前16位作为机器码
+            machine_code = hashlib.md5(combined_info.encode('utf-8')).hexdigest()[:16].upper()
+            print(f"[机器码生成] 生成的机器码: {machine_code}")
+            
             return machine_code
             
         except Exception as e:
-            print(f"[机器码] 获取机器码失败: {e}")
-            # 备用方案：使用计算机名称生成
-            fallback_info = f"{platform.node()}-{platform.system()}"
-            return hashlib.md5(fallback_info.encode()).hexdigest()
+            print(f"[机器码生成] 生成机器码时出现异常: {e}")
+            # 如果生成失败，使用系统信息的简单哈希作为备用（不使用时间戳）
+            fallback_info = f"{platform.node()}-{platform.system()}-{platform.machine()}"
+            fallback_code = hashlib.md5(fallback_info.encode('utf-8')).hexdigest()[:16].upper()
+            print(f"[机器码生成] 使用备用机器码: {fallback_code}")
+            return fallback_code
     
     def validate_phone(self, phone: str) -> bool:
         """
@@ -106,22 +168,28 @@ class AuthService:
             # 获取当前机器码
             machine_code = self.get_machine_code()
             
-            # 构建登录请求（匹配云函数参数）
+            # 构建登录请求（匹配API服务器参数）
             login_data = {
-                "username": phone,  # 云函数使用username字段
+                "phone": phone,  # API服务器使用phone字段
                 "machineCode": machine_code,  # 使用驼峰命名
                 "timestamp": int(time.time())
             }
             
             print(f"[登录验证] 手机号: {phone}, 机器码: {machine_code}")
             
-            # 发送登录请求到云函数
+            # 发送登录请求到API服务器
             response = self._call_api("login", login_data)
             
             if response.get("success"):
                 user_info = response.get("data", {})
+                
+                # 确保用户信息包含username字段（兼容主窗口显示）
+                if "username" not in user_info:
+                    user_info["username"] = user_info.get("phone", phone)
+                
+                # 保存登录状态
                 self.current_user = user_info
-                self.local_token = user_info.get("token")
+                self.local_token = f"token_{phone}_{int(time.time())}"  # 生成本地token
                 
                 print(f"[登录验证] 登录成功，用户状态: {user_info.get('status')}, 积分: {user_info.get('points')}")
                 return True, "登录成功", user_info
@@ -136,39 +204,54 @@ class AuthService:
     
     def check_auth(self) -> Tuple[bool, str, Optional[Dict]]:
         """
-        检查用户认证状态和权限
+        检查用户认证状态和权限 - 使用真实登录API验证
         :return: (是否有效, 消息, 用户信息)
         """
-        if not self.local_token or not self.current_user:
+        # 检查本地登录状态
+        if not self.current_user:
             return False, "未登录", None
         
         try:
-            # 验证token和用户状态（匹配云函数参数）
-            auth_data = {
-                "token": self.local_token,
-                "userId": self.current_user.get("id"),  # 使用驼峰命名
+            # 使用真实的登录API进行认证检查
+            phone = self.current_user.get("phone") or self.current_user.get("username")
+            if not phone:
+                return False, "用户信息不完整", None
+            
+            # 获取当前机器码
+            machine_code = self.get_machine_code()
+            
+            # 构建登录请求（与登录时相同的参数）
+            login_data = {
+                "phone": phone,
+                "machineCode": machine_code,
                 "timestamp": int(time.time())
             }
             
-            response = self._call_api("check_auth", auth_data)
+            print(f"[认证检查] 使用登录API验证: {phone}, 机器码: {machine_code}")
+            
+            # 调用登录API进行验证
+            response = self._call_api("login", login_data)
             
             if response.get("success"):
+                # 验证成功，更新用户信息
                 user_info = response.get("data", {})
                 
-                # 检查账号状态
-                if user_info.get("status") != 1:
-                    return False, "账号已被禁用", None
+                # 确保用户信息包含username字段
+                if "username" not in user_info:
+                    user_info["username"] = user_info.get("phone", phone)
                 
                 # 更新本地用户信息
                 self.current_user = user_info
+                
+                print(f"[认证检查] 验证成功，用户状态: {user_info.get('status')}, 积分: {user_info.get('points')}")
                 return True, "认证有效", user_info
             else:
-                # 认证失败，清除本地信息
-                self.logout()
-                return False, response.get("message", "认证失败"), None
+                error_msg = response.get("message", "认证失败")
+                print(f"[认证检查] 认证失败: {error_msg}")
+                return False, error_msg, None
                 
         except Exception as e:
-            print(f"[权限验证] 验证异常: {e}")
+            print(f"[认证检查] 验证异常: {e}")
             return False, f"验证异常: {str(e)}", None
     
     def use_points(self, operation: str, points: int) -> Tuple[bool, str]:
@@ -178,31 +261,22 @@ class AuthService:
         :param points: 要扣除的积分数
         :return: (是否成功, 消息)
         """
-        if not self.local_token or not self.current_user:
+        if not self.current_user:
             return False, "未登录"
         
         try:
-            # 积分扣除请求（匹配云函数参数）
-            points_data = {
-                "token": self.local_token,
-                "userId": self.current_user.get("id"),  # 使用驼峰命名
-                "operation": operation,
-                "points": points,
-                "timestamp": int(time.time())
-            }
+            current_points = self.current_user.get("points", 0)
             
-            response = self._call_api("use_points", points_data)
+            # 检查积分是否足够
+            if current_points < points:
+                return False, f"积分不足，当前积分: {current_points}，需要: {points}"
             
-            if response.get("success"):
-                # 更新本地积分信息
-                new_points = response.get("data", {}).get("remainingPoints", 0)  # 使用驼峰命名
-                self.current_user["points"] = new_points
-                
-                print(f"[积分扣除] 操作: {operation}, 扣除: {points}, 剩余: {new_points}")
-                return True, f"扣除成功，剩余积分: {new_points}"
-            else:
-                error_msg = response.get("message", "积分扣除失败")
-                return False, error_msg
+            # 扣除积分（本地处理，实际应用中可调用API更新服务器积分）
+            new_points = current_points - points
+            self.current_user["points"] = new_points
+            
+            print(f"[积分扣除] 操作: {operation}, 扣除: {points}, 剩余: {new_points}")
+            return True, f"扣除成功，剩余积分: {new_points}"
                 
         except Exception as e:
             print(f"[积分扣除] 扣除异常: {e}")
@@ -222,17 +296,14 @@ class AuthService:
         print("[用户认证] 已登出")
     
     def _call_api(self, endpoint: str, data: Dict) -> Dict:
-        """调用云函数API"""
-        # 替换为你的实际云函数地址
-        api_urls = {
-            "login": "https://你的环境ID.service.tcloudbase.com/auth-login",
-            "check_auth": "https://你的环境ID.service.tcloudbase.com/auth-check", 
-            "use_points": "https://你的环境ID.service.tcloudbase.com/auth-use-points"
-        }
+        """调用API服务器"""
+        # 只处理login端点，其他端点不再调用服务器
+        if endpoint != "login":
+            return {"success": False, "message": f"端点 {endpoint} 暂不支持服务器调用"}
         
-        url = api_urls.get(endpoint)
-        if not url:
-            return {"success": False, "message": "未知API端点"}
+        # 使用真实的API服务器地址
+        api_base_url = "http://43.142.19.28:5000"
+        url = f"{api_base_url}/login"
         
         try:
             headers = {
@@ -243,7 +314,7 @@ class AuthService:
             print(f"[API调用] 请求: {endpoint} -> {url}")
             print(f"[API调用] 数据: {data}")
             
-            response = requests.post(url, json=data, headers=headers, timeout=10)
+            response = requests.post(url, json=data, headers=headers, timeout=10, verify=False)
             response.raise_for_status()
             
             result = response.json()
@@ -253,12 +324,11 @@ class AuthService:
             
         except requests.exceptions.RequestException as e:
             print(f"[API调用] 网络异常: {e}")
-            # 如果云函数不可用，fallback到本地模拟
-            print("[API调用] 尝试使用本地模拟数据...")
-            return self._mock_api_response(endpoint, data)
+            # 网络异常时返回错误，不再fallback到本地模拟
+            return {"success": False, "message": f"无法连接到服务器: {str(e)}"}
         except Exception as e:
             print(f"[API调用] 异常: {e}")
-            return {"success": False, "message": f"网络异常: {str(e)}"}
+            return {"success": False, "message": f"请求异常: {str(e)}"}
     
     def _mock_api_response(self, endpoint: str, data: Dict) -> Dict:
         """
@@ -292,6 +362,13 @@ class AuthService:
                     "machineCode": machine_code,  # 绑定当前机器码
                     "status": 1,
                     "points": 30
+                },
+                "15155712316": {
+                    "id": "user004", 
+                    "username": "15155712316",
+                    "machineCode": machine_code,  # 绑定当前机器码
+                    "status": 1,
+                    "points": 80
                 }
             }
             

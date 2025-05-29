@@ -14,8 +14,8 @@ class MessageManager:
     def show_info(parent: Optional[tk.Widget], title: str, message: str) -> None:
         """显示信息提示"""
         try:
-            if parent:
-                # 将消息框居中到父窗口
+            if parent and hasattr(parent, 'update_idletasks'):
+                # 只对tkinter窗口进行居中处理
                 parent.update_idletasks()
                 x = parent.winfo_x() + parent.winfo_width() // 2 - 150
                 y = parent.winfo_y() + parent.winfo_height() // 2 - 50
@@ -31,7 +31,7 @@ class MessageManager:
     def show_warning(parent: Optional[tk.Widget], title: str, message: str) -> None:
         """显示警告提示"""
         try:
-            if parent:
+            if parent and hasattr(parent, 'update_idletasks'):
                 parent.update_idletasks()
                 x = parent.winfo_x() + parent.winfo_width() // 2 - 150
                 y = parent.winfo_y() + parent.winfo_height() // 2 - 50
@@ -47,7 +47,7 @@ class MessageManager:
     def show_error(parent: Optional[tk.Widget], title: str, message: str) -> None:
         """显示错误提示"""
         try:
-            if parent:
+            if parent and hasattr(parent, 'update_idletasks'):
                 parent.update_idletasks()
                 x = parent.winfo_x() + parent.winfo_width() // 2 - 150
                 y = parent.winfo_y() + parent.winfo_height() // 2 - 50
@@ -63,7 +63,7 @@ class MessageManager:
     def ask_yes_no(parent: Optional[tk.Widget], title: str, message: str) -> bool:
         """显示确认对话框"""
         try:
-            if parent:
+            if parent and hasattr(parent, 'update_idletasks'):
                 parent.update_idletasks()
                 x = parent.winfo_x() + parent.winfo_width() // 2 - 150
                 y = parent.winfo_y() + parent.winfo_height() // 2 - 50

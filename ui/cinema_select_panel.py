@@ -388,18 +388,37 @@ class CinemaSelectPanel(tk.Frame):  # 使用标准tk.Frame
         """
         self.coupon_listbox.delete(0, 'end')
         self.coupons_data = []
-        if not coupon_result or coupon_result.get('resultCode') != '0':
+        
+        # 修复：增强对None和无效结果的检查
+        if coupon_result is None:
+            self.coupon_listbox.insert('end', 'API无响应')
+            return
+        
+        if not isinstance(coupon_result, dict) or coupon_result.get('resultCode') != '0':
             self.coupon_listbox.insert('end', '无可用优惠券')
             return
-        vouchers = coupon_result['resultData'].get('vouchers', [])
+        
+        # 获取券数据 - 增加安全检查
+        result_data = coupon_result.get('resultData')
+        if result_data is None:
+            self.coupon_listbox.insert('end', '券数据为空')
+            return
+        
+        vouchers = result_data.get('vouchers', [])
         vouchers.sort(key=lambda v: v.get('expireddate', ''))
+        
         for v in vouchers:
+            # 安全检查：确保v是字典类型
+            if not isinstance(v, dict):
+                continue
+                
             name = v.get('couponname', v.get('voucherName', ''))
             expire = v.get('expireddate', '')
             code = v.get('couponcode', v.get('voucherCode', ''))
             display = f"{name} | 有效期至 {expire} | 券号 {code}"
             self.coupon_listbox.insert('end', display)
             self.coupons_data.append(v)
+        
         if vouchers:
             self.coupon_listbox.selection_set(0)
             self.selected_coupon = self.coupons_data[0]
