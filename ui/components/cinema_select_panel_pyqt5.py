@@ -17,7 +17,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
 from services.cinema_manager import cinema_manager
-from services.film_service import get_films, load_cinemas, normalize_film_data, get_plan_seat_info
+from services.film_service import get_films, load_cinemas, get_plan_seat_info
 from services.ui_utils import MessageManager
 
 class CinemaSelectPanelPyQt5(QWidget):
@@ -301,7 +301,7 @@ class CinemaSelectPanelPyQt5(QWidget):
         userid = current_account.get('userid', '')
         
         try:
-            # 获取接口数据并标准化
+            # 获取接口数据，直接使用原始数据（与tkinter版本保持一致）
             raw_data = get_films(base_url, cinemaid, openid, userid, token)
             self.films = raw_data['films']
             self.shows = raw_data['shows']
@@ -380,10 +380,14 @@ class CinemaSelectPanelPyQt5(QWidget):
         session_list = []
         
         for session in sessions:
-            start_time = session.get('st', '')
-            end_time = session.get('et', '')
-            cinema_hall = session.get('cn', '')
-            session_display = f"{start_time}-{end_time} {cinema_hall}"
+            # 使用正确的字段名，与原始tkinter版本保持一致
+            start_time = session.get('q', '')  # 开始时间
+            hall_name = session.get('t', '')   # 厅名
+            hall_info = session.get('r', '')   # 其他信息（厅类型等）
+            ticket_price = session.get('tbprice', '0')  # 票价
+            
+            # 构建显示格式：时间 厅名 厅信息 票价:价格
+            session_display = f"{start_time} {hall_name} {hall_info} 票价:{ticket_price}"
             session_list.append(session_display)
         
         # 更新场次下拉框
@@ -452,20 +456,54 @@ class CinemaSelectPanelPyQt5(QWidget):
             token = current_account.get('token', '')
             userid = current_account.get('userid', '')
             
-            # 调用座位信息API
-            planid = session_info.get('pi', '')
-            if not planid:
-                print("[DEBUG] 缺少planid，无法获取座位信息")
+            # 使用正确的字段名，与原始tkinter版本保持一致
+            showCode = session_info.get('g', '')           # 场次唯一编码
+            hallCode = session_info.get('j', '')           # 影厅编码
+            filmCode = session_info.get('h', self.current_film_key)  # 影片编码
+            showDate = session_info.get('k', '').split(' ')[0] if session_info.get('k') else ''  # 放映日期
+            startTime = session_info.get('q', '')          # 放映开始时间
+            
+            # 获取影片No
+            filmNo = ''
+            if self.current_film_key and self.current_film_key in self.films_map:
+                filmNo = self.films_map[self.current_film_key].get('fno', '')
+            
+            if not showCode:
+                print("[DEBUG] 缺少showCode，无法获取座位信息")
                 return
             
-            print(f"[DEBUG] 获取座位信息: planid={planid}")
+            print(f"[DEBUG] 获取座位信息参数:")
+            print(f"  showCode={showCode}, hallCode={hallCode}")
+            print(f"  filmCode={filmCode}, filmNo={filmNo}")
+            print(f"  showDate={showDate}, startTime={startTime}")
             
             # 获取座位数据
-            seat_data = get_plan_seat_info(base_url, cinemaid, planid, openid, userid, token)
+            seat_data = get_plan_seat_info(
+                base_url, showCode, hallCode, filmCode, filmNo, 
+                showDate, startTime, userid, openid, token, cinemaid
+            )
             
-            # 更新座位面板
-            if self.seat_panel:
-                self.seat_panel.update_seat_data(seat_data)
+            # 检查API返回
+            if isinstance(seat_data, dict):
+                if seat_data.get('resultCode') == '400':
+                    error_msg = seat_data.get('resultDesc', '未知错误')
+                    print(f"[DEBUG] 座位API错误: {error_msg}")
+                    QMessageBox.warning(self, "API错误", f"获取座位信息失败: {error_msg}\n\n这通常是因为：\n1. 账号token已过期\n2. 账号权限不足\n3. 场次信息无效")
+                    return
+                elif seat_data.get('resultCode') == '0' and 'resultData' in seat_data:
+                    # 成功获取数据
+                    result_data = seat_data['resultData']
+                    print(f"[DEBUG] 成功获取座位数据")
+                    
+                    # 更新座位面板
+                    if self.seat_panel:
+                        self.seat_panel.update_seat_data(result_data)
+                else:
+                    print(f"[DEBUG] 未知的API响应格式: {seat_data}")
+                    QMessageBox.warning(self, "数据错误", "获取到的座位数据格式异常")
+            else:
+                print(f"[DEBUG] API返回非字典类型数据: {type(seat_data)}")
+                QMessageBox.warning(self, "响应错误", "座位API返回数据格式错误")
             
         except Exception as e:
             print(f"加载座位信息失败: {e}")

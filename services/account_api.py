@@ -66,7 +66,7 @@ def extract_params_from_url(url: str) -> dict:
     :return: 参数字典
     """
     parsed = urlparse(url)
-    return {k: v[0] for k, v in parse_qs(parsed.query).items()}
+    return {k: v[0] for k, v in parse_qs(parsed.query).items()} 
 
 
 # 账号管理相关函数

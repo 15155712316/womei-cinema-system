@@ -9,10 +9,10 @@ import random
 import time
 from typing import Dict, List, Optional, Any
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QMessageBox, QDialog, QDialogButtonBox
+    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QMessageBox, QDialog, QDialogButtonBox, QMenu, QFrame, QScrollArea
 )
-from PyQt5.QtCore import pyqtSignal, Qt
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import pyqtSignal, Qt, QTimer
+from PyQt5.QtGui import QColor, QFont
 
 # 导入自定义组件
 from ui.widgets.classic_components import (
@@ -20,6 +20,9 @@ from ui.widgets.classic_components import (
     ClassicComboBox, ClassicTableWidget, ClassicTextEdit, ClassicLabel, ClassicListWidget
 )
 from ui.interfaces.plugin_interface import IWidgetInterface, event_bus
+
+# 导入消息管理器
+from services.ui_utils import MessageManager
 
 
 class TabManagerWidget(QWidget):
@@ -30,6 +33,7 @@ class TabManagerWidget(QWidget):
     order_submitted = pyqtSignal(dict)  # 订单提交信号
     coupon_bound = pyqtSignal(dict)  # 券绑定信号
     coupon_exchanged = pyqtSignal(dict)  # 兑换券信号
+    session_selected = pyqtSignal(dict)  # 🆕 场次选择信号，用于触发座位图加载
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -38,6 +42,9 @@ class TabManagerWidget(QWidget):
         self.current_account = None
         self.cinemas_data = []
         self.current_points = 0
+        
+        # 添加数据缓存
+        self.order_data_cache = []
         
         # 实现IWidgetInterface接口
         self._widget_interface = IWidgetInterface()
@@ -196,111 +203,584 @@ class TabManagerWidget(QWidget):
         layout.addWidget(self.coupon_list)
     
     def _build_bind_coupon_tab(self):
-        """构建绑券Tab页面"""
-        layout = QVBoxLayout(self.bind_coupon_tab)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
-        
-        # 当前账号信息显示
-        self.bind_account_label = ClassicLabel("当前账号: 未选择", "info")
-        layout.addWidget(self.bind_account_label)
-        
-        # 主要内容区域
-        content_layout = QHBoxLayout()
+        """构建绑券Tab页面 - 直接从第二部分文档复制并适配PyQt5"""
+        main_layout = QHBoxLayout(self.bind_coupon_tab)
         
         # 左侧输入区
-        left_group = ClassicGroupBox("每行一个券号：")
-        left_layout = QVBoxLayout(left_group)
+        input_frame = QWidget()
+        input_layout = QVBoxLayout(input_frame)
         
-        self.coupon_input = ClassicTextEdit()
-        self.coupon_input.setPlaceholderText("请在此输入券号，每行一个券号")
-        left_layout.addWidget(self.coupon_input)
+        # 当前账号信息显示
+        self.bind_account_info = ClassicLabel("当前账号：未选择")
+        self.bind_account_info.setFont(QFont("Microsoft YaHei", 10, QFont.Bold))
+        self.bind_account_info.setStyleSheet("QLabel { color: red; background-color: #fff; padding: 10px; border: 1px solid #ddd; }")
+        self.bind_account_info.setWordWrap(True)
+        input_layout.addWidget(self.bind_account_info)
         
-        self.bind_coupon_btn = ClassicButton("绑定当前账号", "success")
-        self.bind_coupon_btn.setMinimumHeight(35)
-        left_layout.addWidget(self.bind_coupon_btn)
+        # 提示标签
+        input_layout.addWidget(ClassicLabel("每行一个券号："))
         
-        content_layout.addWidget(left_group, 1)
+        # 券号输入框
+        self.coupon_text = ClassicTextEdit()
+        self.coupon_text.setFixedHeight(200)
+        self.coupon_text.setPlaceholderText("请在此输入券号，每行一个\n例如：\nAB1234567890\nCD2345678901\nEF3456789012")
+        input_layout.addWidget(self.coupon_text)
+        
+        # 绑定按钮
+        bind_btn = ClassicButton("绑定当前账号", "success")
+        bind_btn.setMinimumHeight(35)
+        bind_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4caf50;
+                color: white;
+                font: bold 11px "Microsoft YaHei";
+                padding: 10px;
+                border: none;
+                border-radius: 5px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+        """)
+        bind_btn.clicked.connect(self.on_bind_coupons)
+        input_layout.addWidget(bind_btn)
+        
+        main_layout.addWidget(input_frame)
         
         # 右侧日志区
-        right_group = ClassicGroupBox("绑定日志：")
-        right_layout = QVBoxLayout(right_group)
+        log_frame = QWidget()
+        log_layout = QVBoxLayout(log_frame)
         
-        self.bind_log = ClassicTextEdit(read_only=True)
-        self.bind_log.setPlaceholderText("绑定日志将在此显示...")
-        right_layout.addWidget(self.bind_log)
+        log_layout.addWidget(ClassicLabel("绑定日志："))
         
-        copy_log_layout = QHBoxLayout()
-        copy_log_layout.addStretch()
-        self.copy_log_btn = ClassicButton("复制日志", "default")
-        self.copy_log_btn.setMaximumWidth(80)
-        copy_log_layout.addWidget(self.copy_log_btn)
-        right_layout.addLayout(copy_log_layout)
+        self.bind_log_text = ClassicTextEdit(read_only=True)
+        self.bind_log_text.setStyleSheet("QTextEdit { background-color: #f8f9fa; }")
+        log_layout.addWidget(self.bind_log_text)
         
-        content_layout.addWidget(right_group, 1)
+        copy_log_btn = ClassicButton("复制日志", "default")
+        copy_log_btn.clicked.connect(self.copy_bind_log)
+        log_layout.addWidget(copy_log_btn)
         
-        layout.addLayout(content_layout)
-    
+        main_layout.addWidget(log_frame)
+        
+        # 设置左右区域比例
+        main_layout.setStretch(0, 1)  # 左侧占1份
+        main_layout.setStretch(1, 1)  # 右侧占1份
+
+    def on_bind_coupons(self):
+        """绑券功能 - 直接从源代码复制核心逻辑"""
+        account = getattr(self, 'current_account', None)
+        if not account:
+            MessageManager.show_error(self, "未选中账号", "请先在左侧账号列表选择要绑定的账号！", auto_close=False)
+            return
+        
+        # 验证账号信息完整性
+        required_fields = ['cinemaid', 'userid', 'openid', 'token']
+        for field in required_fields:
+            if not account.get(field):
+                MessageManager.show_error(self, "账号信息不完整", f"当前账号缺少{field}字段，请重新登录！", auto_close=False)
+                return
+        
+        print(f"[券绑定] 使用账号: {account.get('userid')} @ {account.get('cinemaid')}")
+        print(f"[券绑定] Token: {account.get('token', '')[:10]}...")
+        
+        coupon_codes = self.coupon_text.toPlainText().strip().split('\n')
+        coupon_codes = [c.strip() for c in coupon_codes if c.strip()]
+        if not coupon_codes:
+            MessageManager.show_error(self, "无券号", "请输入至少一个券号！", auto_close=False)
+            return
+        
+        # 添加进度提示
+        MessageManager.show_info(self, "开始绑定", f"即将绑定{len(coupon_codes)}张券，每张券间隔0.2秒，请稍候...", auto_close=True)
+        
+        # 执行绑定
+        self.perform_batch_bind(account, coupon_codes)
+
+    def perform_batch_bind(self, account, coupon_codes):
+        """执行批量绑券 - 基于现有API"""
+        log_lines = []
+        success, fail = 0, 0
+        fail_codes = []
+        
+        # 导入现有的绑券API
+        from services.order_api import bind_coupon
+        from PyQt5.QtWidgets import QApplication
+        
+        for i, code in enumerate(coupon_codes, 1):
+            params = {
+                'couponcode': code,
+                'cinemaid': account['cinemaid'],
+                'userid': account['userid'],
+                'openid': account['openid'],
+                'token': account['token'],
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'source': '2',
+                'groupid': '',
+                'cardno': account.get('cardno', '')
+            }
+            
+            print(f"[券绑定] 正在绑定第{i}/{len(coupon_codes)}张券: {code}")
+            
+            try:
+                res = bind_coupon(params)
+                print(f"[券绑定] 券{code}绑定结果: {res}")
+                
+                if res.get('resultCode') == '0':
+                    log_lines.append(f"券{code} 绑定成功")
+                    success += 1
+                else:
+                    error_desc = res.get('resultDesc', '未知错误')
+                    log_lines.append(f"券{code} 绑定失败：{error_desc}")
+                    fail += 1
+                    fail_codes.append(code)
+                    
+                    # 特殊处理token失效问题
+                    if 'TOKEN_INVALID' in error_desc:
+                        log_lines.append(f"  -> Token可能已失效，建议重新登录账号")
+                        
+            except Exception as e:
+                error_msg = str(e)
+                log_lines.append(f"券{code} 绑定失败：{error_msg}")
+                fail += 1
+                fail_codes.append(code)
+                print(f"[券绑定] 券{code}绑定异常: {e}")
+            
+            # 添加0.2秒延迟（除了最后一张券）
+            if i < len(coupon_codes):
+                print(f"[券绑定] 等待0.2秒后绑定下一张券...")
+                QApplication.processEvents()  # 处理界面事件
+                time.sleep(0.2)
+        
+        # 更新UI并显示总结
+        self.update_bind_log(log_lines, success, fail, fail_codes, len(coupon_codes))
+
+    def update_bind_log(self, log_lines, success, fail, fail_codes, total):
+        """更新绑定日志显示"""
+        log_lines.append(f"\n=== 绑定完成 ===")
+        log_lines.append(f"共{total}张券，绑定成功{success}，失败{fail}")
+        if fail_codes:
+            log_lines.append(f"失败券号：{', '.join(fail_codes)}")
+        
+        # 如果全部失败且都是TOKEN_INVALID，给出建议
+        if fail == total and all('TOKEN_INVALID' in line for line in log_lines if '绑定失败' in line):
+            log_lines.append(f"\n*** 建议 ***")
+            log_lines.append(f"所有券都显示TOKEN_INVALID错误")
+            log_lines.append(f"请尝试：")
+            log_lines.append(f"1. 重新登录当前账号")
+            log_lines.append(f"2. 检查账号是否在对应影院有效")
+            log_lines.append(f"3. 确认券号格式是否正确")
+        
+        self.bind_log_text.setPlainText("\n".join(log_lines))
+        
+        # 完成提示
+        if success > 0:
+            MessageManager.show_success(self, "绑定完成", f"成功绑定{success}张券，失败{fail}张券", auto_close=True)
+        else:
+            MessageManager.show_error(self, "绑定失败", f"所有{fail}张券绑定失败，请检查账号状态和券号", auto_close=False)
+
+    def copy_bind_log(self):
+        """复制绑定日志"""
+        log = self.bind_log_text.toPlainText().strip()
+        if log:
+            from PyQt5.QtWidgets import QApplication
+            clipboard = QApplication.clipboard()
+            clipboard.setText(log)
+            MessageManager.show_success(self, "复制成功", "日志内容已复制到剪贴板！", auto_close=True)
+        else:
+            MessageManager.show_error(self, "无内容", "没有日志内容可复制", auto_close=False)
+
+    def update_bind_account_info(self):
+        """更新券绑定界面的账号信息显示"""
+        account = getattr(self, 'current_account', None)
+        if hasattr(self, 'bind_account_info'):
+            if account:
+                # 获取影院名称
+                cinema_name = "未知影院"
+                try:
+                    from services.cinema_manager import cinema_manager
+                    cinemas = cinema_manager.load_cinema_list()
+                    for cinema in cinemas:
+                        if cinema.get('cinemaid') == account.get('cinemaid'):
+                            cinema_name = cinema.get('cinemaShortName', '未知影院')
+                            break
+                except:
+                    pass
+                
+                info_text = (f"当前账号：{account['userid']}\n"
+                           f"影院：{cinema_name}\n"
+                           f"余额：{account.get('balance', 0)}  积分：{account.get('score', 0)}")
+                self.bind_account_info.setText(info_text)
+                self.bind_account_info.setStyleSheet("QLabel { color: blue; background-color: #fff; padding: 10px; border: 1px solid #ddd; }")
+            else:
+                self.bind_account_info.setText("请先选择账号和影院")
+                self.bind_account_info.setStyleSheet("QLabel { color: red; background-color: #fff; padding: 10px; border: 1px solid #ddd; }")
+
     def _build_exchange_coupon_tab(self):
-        """构建兑换券Tab页面"""
+        """构建兑换券Tab页面 - 基于第二部分文档完整实现"""
         layout = QVBoxLayout(self.exchange_coupon_tab)
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
         
-        # 当前账号信息显示
-        self.exchange_account_label = ClassicLabel("当前账号: 未选择", "info")
-        layout.addWidget(self.exchange_account_label)
+        # 账号信息显示区
+        account_info_frame = QWidget()
+        account_info_frame.setStyleSheet("QWidget { background-color: #f0f8ff; padding: 10px; border: 1px solid #ddd; }")
+        account_info_layout = QHBoxLayout(account_info_frame)
         
-        # 兑换功能区域
-        exchange_group = ClassicGroupBox("积分兑换券")
-        exchange_layout = QGridLayout(exchange_group)
+        self.exchange_account_info = ClassicLabel("当前账号：未选择")
+        self.exchange_account_info.setFont(QFont("Microsoft YaHei", 10, QFont.Bold))
+        account_info_layout.addWidget(self.exchange_account_info)
+        layout.addWidget(account_info_frame)
         
-        # 积分信息
-        points_label = ClassicLabel("当前积分:")
-        self.points_display = ClassicLabel("0")
-        self.points_display.setStyleSheet("font: bold 14px 'Microsoft YaHei'; color: #ff6600;")
+        # 控制按钮区
+        control_frame = QWidget()
+        control_layout = QHBoxLayout(control_frame)
         
-        exchange_layout.addWidget(points_label, 0, 0)
-        exchange_layout.addWidget(self.points_display, 0, 1)
+        refresh_btn = ClassicButton("刷新券列表", "default")
+        refresh_btn.clicked.connect(self.refresh_coupon_exchange_list)
+        control_layout.addWidget(refresh_btn)
         
-        # 兑换选项
-        exchange_type_label = ClassicLabel("兑换类型:")
-        self.exchange_type_combo = ClassicComboBox()
-        self.exchange_type_combo.addItems([
-            "请选择兑换类型",
-            "10元代金券 (需要100积分)",
-            "5折优惠券 (需要200积分)",
-            "买一送一券 (需要300积分)"
-        ])
+        # 券类型筛选
+        control_layout.addWidget(ClassicLabel("券类型:"))
+        self.coupon_type_combo = ClassicComboBox()
+        self.coupon_type_combo.addItems(["全部", "代金券", "优惠券", "免费券"])
+        self.coupon_type_combo.currentTextChanged.connect(self.filter_exchange_coupons)
+        control_layout.addWidget(self.coupon_type_combo)
         
-        exchange_layout.addWidget(exchange_type_label, 1, 0)
-        exchange_layout.addWidget(self.exchange_type_combo, 1, 1)
+        # 状态筛选
+        control_layout.addWidget(ClassicLabel("状态:"))
+        self.coupon_status_combo = ClassicComboBox()
+        self.coupon_status_combo.addItems(["全部", "可兑换", "已兑换", "已过期"])
+        self.coupon_status_combo.currentTextChanged.connect(self.filter_exchange_coupons)
+        control_layout.addWidget(self.coupon_status_combo)
         
-        # 兑换数量
-        quantity_label = ClassicLabel("兑换数量:")
-        self.exchange_quantity = ClassicLineEdit("1")
-        self.exchange_quantity.setMaximumWidth(100)
+        control_layout.addStretch()
+        layout.addWidget(control_frame)
         
-        exchange_layout.addWidget(quantity_label, 2, 0)
-        exchange_layout.addWidget(self.exchange_quantity, 2, 1)
+        # 可兑换券列表表格
+        self.exchange_coupon_table = ClassicTableWidget()
+        self.exchange_coupon_table.setColumnCount(5)
+        self.exchange_coupon_table.setHorizontalHeaderLabels(["券名称", "券码", "面值", "状态", "操作"])
         
-        # 兑换按钮
-        self.exchange_btn = ClassicButton("立即兑换", "warning")
-        self.exchange_btn.setMinimumHeight(35)
-        exchange_layout.addWidget(self.exchange_btn, 3, 0, 1, 2)
+        # 设置列宽
+        header = self.exchange_coupon_table.horizontalHeader()
+        header.resizeSection(0, 150)  # 券名称
+        header.resizeSection(1, 120)  # 券码
+        header.resizeSection(2, 80)   # 面值
+        header.resizeSection(3, 80)   # 状态
+        header.resizeSection(4, 80)   # 操作
         
-        layout.addWidget(exchange_group)
+        layout.addWidget(self.exchange_coupon_table)
         
-        # 兑换记录
-        record_group = ClassicGroupBox("兑换记录")
-        record_layout = QVBoxLayout(record_group)
+        # 兑换记录区
+        record_frame = QWidget()
+        record_layout = QVBoxLayout(record_frame)
+        record_layout.addWidget(ClassicLabel("兑换记录:"))
         
-        self.exchange_record = ClassicTextEdit(read_only=True)
-        self.exchange_record.setPlaceholderText("兑换记录将在此显示...")
-        record_layout.addWidget(self.exchange_record)
+        self.exchange_record_text = ClassicTextEdit(read_only=True)
+        self.exchange_record_text.setMaximumHeight(100)
+        record_layout.addWidget(self.exchange_record_text)
         
-        layout.addWidget(record_group)
-    
+        layout.addWidget(record_frame)
+        
+        # 初始化数据
+        self.exchange_coupon_data = []
+
+    def refresh_coupon_exchange_list(self):
+        """刷新可兑换券列表 - 基于真实API实现"""
+        # 🔍 步骤1：参数校验
+        account = getattr(self, 'current_account', None)
+        if not account:
+            MessageManager.show_error(self, "未选择账号", "请先选择账号！", auto_close=False)
+            return
+        
+        cinemaid = self.get_selected_cinemaid()
+        if not cinemaid:
+            MessageManager.show_error(self, "未选择影院", "请先选择影院！", auto_close=False)
+            return
+        
+        # 检查账号必要字段
+        required_fields = ['userid', 'token', 'openid', 'cinemaid']
+        for field in required_fields:
+            if not account.get(field):
+                MessageManager.show_error(self, "账号信息不完整", f"账号缺少{field}字段，请重新登录！", auto_close=False)
+                return
+        
+        print(f"[券列表刷新] 开始获取券列表")
+        print(f"[券列表刷新] 账号: {account.get('userid')} @ 影院: {cinemaid}")
+        
+        # 防止重复请求
+        if getattr(self, '_coupon_refreshing', False):
+            print(f"[券列表] 正在刷新中，跳过重复请求")
+            return
+        
+        self._coupon_refreshing = True
+        
+        try:
+            # 🎨 步骤2：UI状态更新
+            refresh_btn = self.sender()  # 获取触发的按钮
+            if refresh_btn:
+                refresh_btn.setText("刷新中...")
+                refresh_btn.setEnabled(False)
+            
+            # 表格显示加载状态
+            self.exchange_coupon_table.setRowCount(1)
+            loading_item = self.exchange_coupon_table.__class__.createItem("正在获取券列表，请稍候...")
+            loading_item.setBackground(QColor('#e3f2fd'))
+            self.exchange_coupon_table.setItem(0, 0, loading_item)
+            self.exchange_coupon_table.setSpan(0, 0, 1, 5)  # 合并所有列
+            
+            # 强制UI更新
+            from PyQt5.QtWidgets import QApplication
+            QApplication.processEvents()
+            
+            # 🌐 步骤3：调用真实API接口
+            try:
+                from services.order_api import get_coupon_list
+                
+                # 构建API请求参数（与现有API完全对接）
+                params = {
+                    'voucherType': 0,        # 券类型：0=全部
+                    'pageNo': 1,             # 页码
+                    'groupid': '',           # 集团ID（通常为空）
+                    'cinemaid': cinemaid,    # 影院ID
+                    'cardno': account.get('cardno', ''),  # 会员卡号
+                    'userid': account['userid'],          # 用户ID（手机号）
+                    'openid': account['openid'],          # 微信openid
+                    'CVersion': '3.9.12',    # 客户端版本
+                    'OS': 'Windows',         # 操作系统
+                    'token': account['token'],            # 访问令牌
+                    'source': '2'           # 来源：2=小程序
+                }
+                
+                print(f"[券列表API] 请求参数: {params}")
+                
+                # 调用API（这是关键步骤）
+                coupon_result = get_coupon_list(params)
+                
+                print(f"[券列表API] 响应结果: {coupon_result}")
+                
+                # 🔄 步骤4：处理API响应
+                if coupon_result and coupon_result.get('resultCode') == '0':
+                    # 成功获取券列表
+                    result_data = coupon_result.get('resultData', {})
+                    vouchers = result_data.get('vouchers', [])
+                    
+                    print(f"[券列表解析] 获取到 {len(vouchers)} 张券")
+                    
+                    # 数据验证和清洗
+                    valid_vouchers = []
+                    for voucher in vouchers:
+                        if self.validate_voucher_data(voucher):
+                            valid_vouchers.append(voucher)
+                        else:
+                            print(f"[券列表解析] 跳过无效券数据: {voucher}")
+                    
+                    # 更新券列表显示
+                    self.update_coupon_table(valid_vouchers)
+                    
+                    # 更新状态信息
+                    status_text = f"获取成功：共{len(valid_vouchers)}张券"
+                    if len(vouchers) != len(valid_vouchers):
+                        status_text += f"（已过滤{len(vouchers) - len(valid_vouchers)}张无效券）"
+                    
+                    # 更新账号兑换记录
+                    self.add_exchange_record_info(f"刷新券列表成功 - {status_text}")
+                    
+                else:
+                    # API调用失败的处理
+                    error_msg = coupon_result.get('resultDesc', '未知错误') if coupon_result else '网络连接失败'
+                    print(f"[券列表API] 失败: {error_msg}")
+                    
+                    # 显示错误信息
+                    self.show_coupon_error(error_msg)
+                    status_text = f"获取失败：{error_msg}"
+                    
+                    # 记录错误
+                    self.add_exchange_record_info(f"刷新券列表失败 - {error_msg}")
+                    
+            except Exception as api_error:
+                error_msg = f"API调用异常：{str(api_error)}"
+                print(f"[券列表API] 异常: {api_error}")
+                self.show_coupon_error(error_msg)
+                status_text = error_msg
+                self.add_exchange_record_info(f"刷新券列表异常 - {error_msg}")
+            
+            # 恢复UI状态
+            self.restore_coupon_ui_state(status_text)
+            
+        finally:
+            self._coupon_refreshing = False
+
+    def validate_voucher_data(self, voucher):
+        """验证券数据的完整性"""
+        if not isinstance(voucher, dict):
+            return False
+        
+        # 必要字段检查
+        required_fields = ['couponname', 'couponcode']
+        for field in required_fields:
+            if not voucher.get(field):
+                print(f"[券数据验证] 缺少必要字段: {field}")
+                return False
+        
+        # 有效期检查（如果有的话）
+        if 'expireddate' in voucher:
+            expire_date = voucher.get('expireddate', '')
+            try:
+                from datetime import datetime
+                expire_datetime = datetime.strptime(expire_date, '%Y-%m-%d')
+                current_datetime = datetime.now()
+                
+                # 标记过期状态
+                voucher['is_expired'] = expire_datetime < current_datetime
+            except ValueError:
+                print(f"[券数据验证] 无效的有效期格式: {expire_date}")
+                voucher['is_expired'] = True
+        else:
+            voucher['is_expired'] = False
+        
+        # 设置默认状态
+        if 'status' not in voucher:
+            voucher['status'] = 'available'
+        
+        # 设置默认面值
+        if 'faceValue' not in voucher:
+            voucher['faceValue'] = 0.0
+        
+        return True
+
+    def show_coupon_error(self, error_msg):
+        """显示券列表获取错误"""
+        self.exchange_coupon_table.setRowCount(1)
+        self.exchange_coupon_table.clearSpans()
+        
+        # 根据错误类型显示不同的提示
+        if 'TOKEN_INVALID' in error_msg or 'token' in error_msg.lower():
+            display_msg = "登录状态已失效，请重新登录账号"
+            suggestion = "建议：点击账号列表中的'重新登录'按钮"
+        elif 'NETWORK' in error_msg or '网络' in error_msg:
+            display_msg = "网络连接失败，请检查网络"
+            suggestion = "建议：检查网络连接后重试"
+        elif 'PERMISSION' in error_msg or '权限' in error_msg:
+            display_msg = "账号权限不足或影院不匹配"
+            suggestion = "建议：确认账号是否属于当前影院"
+        else:
+            display_msg = f"获取失败：{error_msg}"
+            suggestion = ""
+        
+        error_item = self.exchange_coupon_table.__class__.createItem(display_msg)
+        error_item.setBackground(QColor('#f8d7da'))  # 红色背景
+        self.exchange_coupon_table.setItem(0, 0, error_item)
+        self.exchange_coupon_table.setSpan(0, 0, 1, 5)
+        
+        if suggestion:
+            self.exchange_coupon_table.setRowCount(2)
+            suggestion_item = self.exchange_coupon_table.__class__.createItem(suggestion)
+            suggestion_item.setBackground(QColor('#fff3cd'))  # 黄色背景
+            self.exchange_coupon_table.setItem(1, 0, suggestion_item)
+            self.exchange_coupon_table.setSpan(1, 0, 1, 5)
+
+    def add_exchange_record_info(self, message):
+        """添加兑换记录信息"""
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        record = f"• {timestamp} - {message}"
+        
+        current_text = self.exchange_record_text.toPlainText()
+        new_text = record + "\n" + current_text if current_text else record
+        self.exchange_record_text.setPlainText(new_text)
+
+    def restore_coupon_ui_state(self, status_text=""):
+        """恢复UI状态"""
+        # 查找刷新按钮并恢复状态
+        for child in self.exchange_coupon_tab.findChildren(ClassicButton):
+            if child.text() in ["刷新中...", "刷新券列表"]:
+                child.setText("刷新券列表")
+                child.setEnabled(True)
+                break
+        
+        # 清除表格合并
+        self.exchange_coupon_table.clearSpans()
+        
+        print(f"[券列表刷新] 完成 - {status_text}")
+
+    def update_coupon_table(self, vouchers):
+        """更新券列表表格显示"""
+        # 清空加载状态
+        self.exchange_coupon_table.setRowCount(0)
+        self.exchange_coupon_table.clearSpans()
+        
+        if not vouchers:
+            # 无券的情况
+            self.exchange_coupon_table.setRowCount(1)
+            no_coupon_item = self.exchange_coupon_table.__class__.createItem("暂无可用优惠券")
+            no_coupon_item.setBackground(QColor('#f8f9fa'))
+            self.exchange_coupon_table.setItem(0, 0, no_coupon_item)
+            self.exchange_coupon_table.setSpan(0, 0, 1, 5)
+            return
+        
+        # 按有效期排序（即将过期的在前）
+        vouchers.sort(key=lambda v: v.get('expireddate', '9999-12-31'))
+        
+        # 设置表格行数
+        self.exchange_coupon_table.setRowCount(len(vouchers))
+        
+        # 填充券数据
+        for row, voucher in enumerate(vouchers):
+            # 券名称
+            name = voucher.get('couponname', '未知券')
+            name_item = self.exchange_coupon_table.__class__.createItem(name)
+            self.exchange_coupon_table.setItem(row, 0, name_item)
+            
+            # 券码
+            code = voucher.get('couponcode', '无券码')
+            code_item = self.exchange_coupon_table.__class__.createItem(code)
+            self.exchange_coupon_table.setItem(row, 1, code_item)
+            
+            # 面值（如果有）
+            face_value = voucher.get('faceValue', 0)
+            if face_value > 0:
+                value_text = f"¥{face_value:.1f}"
+            else:
+                value_text = "待查询"
+            value_item = self.exchange_coupon_table.__class__.createItem(value_text)
+            self.exchange_coupon_table.setItem(row, 2, value_item)
+            
+            # 有效期
+            expire_date = voucher.get('expireddate', '未知')
+            expire_item = self.exchange_coupon_table.__class__.createItem(expire_date)
+            self.exchange_coupon_table.setItem(row, 3, expire_item)
+            
+            # 状态
+            is_expired = voucher.get('is_expired', False)
+            if is_expired:
+                status_text = "❌ 已过期"
+                status_color = QColor('#f8d7da')  # 红色背景
+            else:
+                status_text = "✅ 可用"
+                status_color = QColor('#d4edda')  # 绿色背景
+            
+            status_item = self.exchange_coupon_table.__class__.createItem(status_text)
+            status_item.setBackground(status_color)
+            self.exchange_coupon_table.setItem(row, 4, status_item)
+        
+        # 保存券数据到缓存
+        self.exchange_coupon_data = vouchers
+        
+        print(f"[券列表UI] 表格更新完成，显示 {len(vouchers)} 张券")
+
+    def filter_exchange_coupons(self):
+        """筛选兑换券"""
+        # 简化实现，实际应该根据筛选条件过滤数据
+        pass
+
+    def update_exchange_account_info(self):
+        """更新兑换界面的账号信息"""
+        if self.current_account:
+            info_text = f"当前账号：{self.current_account.get('userid', 'N/A')} (积分：{self.current_account.get('score', 0)})"
+            self.exchange_account_info.setText(info_text)
+
     def _build_order_tab(self):
         """构建订单Tab页面"""
         layout = QVBoxLayout(self.order_tab)
@@ -329,416 +809,297 @@ class TabManagerWidget(QWidget):
         # 设置行高
         self.order_table.verticalHeader().setDefaultSectionSize(36)
         
+        # 设置右键菜单
+        self.order_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        
         layout.addWidget(self.order_table)
         
         # 加载示例订单数据
         self._load_sample_orders()
-    
-    def _build_cinema_tab(self):
-        """构建影院Tab页面"""
-        layout = QVBoxLayout(self.cinema_tab)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
+
+    def _on_add_cinema(self):
+        """添加影院功能 - 直接从源代码复制"""
+        # 创建添加影院对话框
+        add_dialog = QDialog(self)
+        add_dialog.setWindowTitle("添加影院")
+        add_dialog.setFixedSize(400, 300)
         
-        # 操作按钮区
+        # 对话框布局
+        layout = QVBoxLayout(add_dialog)
+        
+        # 影院名称输入
+        name_layout = QHBoxLayout()
+        name_layout.addWidget(ClassicLabel("影院名称:"))
+        name_input = ClassicLineEdit()
+        name_input.setPlaceholderText("例如：万友影城")
+        name_layout.addWidget(name_input)
+        layout.addLayout(name_layout)
+        
+        # 域名输入
+        domain_layout = QHBoxLayout()
+        domain_layout.addWidget(ClassicLabel("API域名:"))
+        domain_input = ClassicLineEdit()
+        domain_input.setPlaceholderText("例如：api.cinema.com")
+        domain_layout.addWidget(domain_input)
+        layout.addLayout(domain_layout)
+        
+        # 影院ID输入
+        id_layout = QHBoxLayout()
+        id_layout.addWidget(ClassicLabel("影院ID:"))
+        id_input = ClassicLineEdit()
+        id_input.setPlaceholderText("例如：11b7e4bcc265")
+        id_layout.addWidget(id_input)
+        layout.addLayout(id_layout)
+        
+        # 按钮
         button_layout = QHBoxLayout()
-        self.cinema_refresh_btn = ClassicButton("刷新影院列表", "default")
-        self.add_cinema_btn = ClassicButton("添加影院", "success")
-        self.delete_cinema_btn = ClassicButton("删除影院", "warning")
-        
-        button_layout.addWidget(self.cinema_refresh_btn)
-        button_layout.addWidget(self.add_cinema_btn)
-        button_layout.addWidget(self.delete_cinema_btn)
-        button_layout.addStretch()
+        confirm_btn = ClassicButton("确认添加", "success")
+        cancel_btn = ClassicButton("取消", "default")
+        button_layout.addWidget(confirm_btn)
+        button_layout.addWidget(cancel_btn)
         layout.addLayout(button_layout)
         
-        # 影院表格
-        self.cinema_table = ClassicTableWidget()
-        self.cinema_table.setColumnCount(3)
-        self.cinema_table.setHorizontalHeaderLabels(["影院名称", "影院ID", "地址"])
-        
-        # 设置列宽
-        header = self.cinema_table.horizontalHeader()
-        header.resizeSection(0, 200)  # 影院名称
-        header.resizeSection(1, 150)  # 影院ID
-        
-        layout.addWidget(self.cinema_table)
-        
-        # 加载示例影院数据
-        self._load_sample_cinemas()
-    
-    def _connect_signals(self):
-        """连接信号槽"""
-        # 出票Tab信号
-        self.cinema_combo.currentTextChanged.connect(self._on_cinema_changed)
-        self.movie_combo.currentTextChanged.connect(self._on_movie_changed)
-        self.date_combo.currentTextChanged.connect(self._on_date_changed)
-        self.session_combo.currentTextChanged.connect(self._on_session_changed)
-        self.submit_order_btn.clicked.connect(self._on_submit_order)
-        
-        # 绑券Tab信号
-        self.bind_coupon_btn.clicked.connect(self._on_bind_coupon)
-        self.copy_log_btn.clicked.connect(self._on_copy_bind_log)
-        
-        # 兑换券Tab信号
-        self.exchange_btn.clicked.connect(self._on_exchange_coupon)
-        
-        # 订单Tab信号
-        self.order_refresh_btn.clicked.connect(self._on_refresh_orders)
-        
-        # 影院Tab信号
-        self.cinema_refresh_btn.clicked.connect(self._on_refresh_cinemas)
-        self.add_cinema_btn.clicked.connect(self._on_add_cinema)
-        self.delete_cinema_btn.clicked.connect(self._on_delete_cinema)
-    
-    def _connect_global_events(self):
-        """连接全局事件"""
-        # 监听账号切换事件
-        event_bus.account_changed.connect(self._on_account_changed)
-    
-    def _on_account_changed(self, account_data: dict):
-        """账号切换处理"""
-        try:
-            self.current_account = account_data
-            userid = account_data.get("userid", "未知账号")
-            balance = account_data.get("balance", 0)
+        # 事件绑定
+        def validate_and_add():
+            name = name_input.text().strip()
+            domain = domain_input.text().strip()
+            cinema_id = id_input.text().strip()
             
-            # 更新各Tab页面的账号显示
-            account_info = f"当前账号: {userid} (余额:{balance})"
-            self.current_account_label.setText(account_info)
-            self.bind_account_label.setText(account_info)
-            self.exchange_account_label.setText(account_info)
-            
-            # 更新积分显示
-            self.current_points = account_data.get("points", 0)
-            self.points_display.setText(str(self.current_points))
-            
-            # 重新检查提交订单按钮状态
-            self._check_submit_order_enabled()
-            
-            print(f"[Tab管理器] 账号切换: {userid}")
-            
-        except Exception as e:
-            print(f"[Tab管理器] 账号切换错误: {e}")
-    
-    def _on_cinema_changed(self, cinema_text: str):
-        """影院选择变化处理"""
-        try:
-            if cinema_text and cinema_text != "加载中...":
-                # 模拟加载电影
-                self.movie_combo.clear()
-                self.movie_combo.addItems([
-                    "阿凡达：水之道",
-                    "流浪地球2",
-                    "满江红"
-                ])
-                
-                # 发出影院选择信号
-                self.cinema_selected.emit(cinema_text)
-                
-                print(f"[Tab管理器] 影院切换: {cinema_text}")
-        except Exception as e:
-            print(f"[Tab管理器] 影院选择错误: {e}")
-    
-    def _on_movie_changed(self, movie_text: str):
-        """影片选择变化处理"""
-        try:
-            if movie_text and movie_text not in ["请先选择影院"]:
-                # 模拟加载日期
-                self.date_combo.clear()
-                self.date_combo.addItems([
-                    "2024-12-27",
-                    "2024-12-28", 
-                    "2024-12-29"
-                ])
-        except Exception as e:
-            print(f"[Tab管理器] 影片选择错误: {e}")
-    
-    def _on_date_changed(self, date_text: str):
-        """日期选择变化处理"""
-        try:
-            if date_text and date_text not in ["请先选择影片"]:
-                # 模拟加载场次
-                self.session_combo.clear()
-                self.session_combo.addItems([
-                    "10:30",
-                    "14:20",
-                    "18:45",
-                    "21:30"
-                ])
-        except Exception as e:
-            print(f"[Tab管理器] 日期选择错误: {e}")
-    
-    def _on_session_changed(self, session_text: str):
-        """场次选择变化处理"""
-        try:
-            if session_text and session_text not in ["请先选择日期"]:
-                print(f"[Tab管理器] 选择场次: {session_text}")
-                # 当选择了场次后，启用提交订单按钮
-                self._check_submit_order_enabled()
-            else:
-                self.submit_order_btn.setEnabled(False)
-        except Exception as e:
-            print(f"[Tab管理器] 场次选择错误: {e}")
-    
-    def _check_submit_order_enabled(self):
-        """检查是否可以启用提交订单按钮"""
-        try:
-            cinema = self.cinema_combo.currentText()
-            movie = self.movie_combo.currentText()
-            date = self.date_combo.currentText()
-            session = self.session_combo.currentText()
-            
-            # 检查是否都已选择且不是默认提示文本
-            enabled = (
-                cinema and cinema not in ["加载中..."] and
-                movie and movie not in ["请先选择影院"] and
-                date and date not in ["请先选择影片"] and
-                session and session not in ["请先选择日期"] and
-                self.current_account is not None  # 必须选择了账号
-            )
-            
-            self.submit_order_btn.setEnabled(enabled)
-            
-        except Exception as e:
-            print(f"[Tab管理器] 检查提交按钮状态错误: {e}")
-            self.submit_order_btn.setEnabled(False)
-    
-    def _on_submit_order(self):
-        """提交订单处理"""
-        try:
-            # 获取选择的信息
-            cinema = self.cinema_combo.currentText()
-            movie = self.movie_combo.currentText()
-            date = self.date_combo.currentText()
-            session = self.session_combo.currentText()
-            
-            if not self.current_account:
-                QMessageBox.warning(self, "提交失败", "请先选择账号")
+            # 验证输入
+            if not all([name, domain, cinema_id]):
+                QMessageBox.warning(add_dialog, "输入错误", "请填写完整的影院信息！")
                 return
+                
+            # 验证域名格式
+            if not domain.startswith(('http://', 'https://')):
+                domain = f"https://{domain}"
+                
+            # 验证影院ID格式
+            if len(cinema_id) != 12:
+                QMessageBox.warning(add_dialog, "格式错误", "影院ID必须是12位字符！")
+                return
+                
+            # 添加到影院列表
+            self.add_cinema_to_list(name, domain, cinema_id)
+            add_dialog.accept()
+        
+        confirm_btn.clicked.connect(validate_and_add)
+        cancel_btn.clicked.connect(add_dialog.reject)
+        
+        add_dialog.exec_()
+
+    def add_cinema_to_list(self, name, domain, cinema_id):
+        """添加影院到数据文件 - 基于现有cinema_manager"""
+        try:
+            # 使用现有的cinema_manager
+            from services.cinema_manager import cinema_manager
+            from datetime import datetime
             
-            # 创建订单数据
-            order_data = {
-                "order_id": f"ORDER{int(time.time())}",
-                "account": self.current_account,
-                "cinema": cinema,
-                "movie": movie,
-                "date": date,
-                "session": session,
-                "seats": "",  # 座位需要在座位选择区域输入
-                "status": "待选座",
-                "amount": 0.0,  # 价格需要根据座位数量计算
-                "create_time": time.strftime("%Y-%m-%d %H:%M:%S"),
-                "phone": self.current_account.get("phone", self.current_account.get("userid", ""))
+            # 新影院数据
+            new_cinema = {
+                "cinemaShortName": name,
+                "domain": domain,
+                "cinemaid": cinema_id,
+                "status": "active",
+                "addTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
-            # 发出订单提交信号
-            self.order_submitted.emit(order_data)
+            # 加载现有影院列表
+            cinemas = cinema_manager.load_cinema_list()
             
-            # 发布全局订单创建事件
-            event_bus.order_created.emit(order_data)
+            # 检查是否已存在
+            for cinema in cinemas:
+                if cinema.get('cinemaid') == cinema_id:
+                    QMessageBox.warning(self, "添加失败", f"影院ID {cinema_id} 已存在！")
+                    return False
             
-            QMessageBox.information(
-                self, "订单创建成功", 
-                f"订单已创建！\n"
-                f"订单号：{order_data['order_id']}\n"
-                f"影院：{cinema}\n"
-                f"影片：{movie}\n"
-                f"场次：{date} {session}\n\n"
-                f"请在座位选择区域选择座位"
-            )
+            # 添加新影院
+            cinemas.append(new_cinema)
             
-            print(f"[Tab管理器] 订单创建成功: {order_data['order_id']}")
+            # 保存到文件
+            cinema_manager.save_cinema_list(cinemas)
             
-        except Exception as e:
-            QMessageBox.critical(self, "提交错误", f"提交订单失败: {str(e)}")
-            print(f"[Tab管理器] 提交订单错误: {e}")
-    
-    def _on_bind_coupon(self):
-        """绑定券处理"""
-        try:
-            coupon_text = self.coupon_input.toPlainText().strip()
-            if not coupon_text:
-                QMessageBox.warning(self, "输入错误", "请输入要绑定的券号")
-                return
+            # 立即刷新界面显示
+            self._refresh_cinema_table_display()
             
-            if not self.current_account:
-                QMessageBox.warning(self, "账号错误", "请先选择账号")
-                return
+            # 更新统计信息
+            self._update_cinema_stats()
             
-            # 按行分割券号
-            coupon_lines = [line.strip() for line in coupon_text.split('\n') if line.strip()]
-            
-            # 模拟绑定处理
-            success_count = 0
-            fail_count = 0
-            log_text = f"开始绑定 {len(coupon_lines)} 个券号...\n"
-            
-            for coupon_code in coupon_lines:
-                # 模拟绑定结果
-                is_success = random.choice([True, True, False])  # 2/3概率成功
-                
-                if is_success:
-                    success_count += 1
-                    log_text += f"✅ 券号 {coupon_code} 绑定成功\n"
-                else:
-                    fail_count += 1
-                    log_text += f"❌ 券号 {coupon_code} 绑定失败：券号无效或已使用\n"
-            
-            log_text += f"\n绑定完成：成功 {success_count} 个，失败 {fail_count} 个"
-            
-            # 更新日志
-            self.bind_log.setPlainText(log_text)
-            
-            # 清空输入框
-            self.coupon_input.clear()
-            
-            # 发出绑定信号
-            bind_data = {
-                "account": self.current_account,
-                "success_count": success_count,
-                "fail_count": fail_count
-            }
-            self.coupon_bound.emit(bind_data)
-            
-            QMessageBox.information(self, "绑定完成", f"券绑定完成\n成功：{success_count} 个\n失败：{fail_count} 个")
+            QMessageBox.information(self, "添加成功", f"影院 {name} 已成功添加！")
+            return True
             
         except Exception as e:
-            QMessageBox.critical(self, "绑定错误", f"券绑定失败: {str(e)}")
-    
-    def _on_copy_bind_log(self):
-        """复制绑定日志"""
-        try:
-            log_text = self.bind_log.toPlainText()
-            if log_text:
-                from PyQt5.QtWidgets import QApplication
-                clipboard = QApplication.clipboard()
-                clipboard.setText(log_text)
-                QMessageBox.information(self, "复制成功", "绑定日志已复制到剪贴板")
-            else:
-                QMessageBox.warning(self, "无内容", "没有日志内容可复制")
-        except Exception as e:
-            QMessageBox.critical(self, "复制错误", f"复制日志失败: {str(e)}")
-    
-    def _on_exchange_coupon(self):
-        """兑换券处理"""
-        try:
-            exchange_type = self.exchange_type_combo.currentText()
-            if exchange_type == "请选择兑换类型":
-                QMessageBox.warning(self, "选择错误", "请选择兑换类型")
-                return
-            
-            quantity_text = self.exchange_quantity.text().strip()
-            try:
-                quantity = int(quantity_text)
-                if quantity <= 0:
-                    raise ValueError("数量必须大于0")
-            except ValueError:
-                QMessageBox.warning(self, "输入错误", "请输入有效的兑换数量")
-                return
-            
-            # 解析所需积分
-            required_points = 0
-            if "100积分" in exchange_type:
-                required_points = 100
-            elif "200积分" in exchange_type:
-                required_points = 200
-            elif "300积分" in exchange_type:
-                required_points = 300
-            
-            total_required = required_points * quantity
-            
-            if self.current_points < total_required:
-                QMessageBox.warning(
-                    self, "积分不足", 
-                    f"积分不足！\n当前积分：{self.current_points}\n需要积分：{total_required}"
-                )
-                return
-            
-            # 确认兑换
-            reply = QMessageBox.question(
-                self, "确认兑换",
-                f"确认兑换 {quantity} 个 {exchange_type.split('(')[0]}？\n"
-                f"将消耗 {total_required} 积分",
-                QMessageBox.Yes | QMessageBox.No
-            )
-            
-            if reply == QMessageBox.Yes:
-                # 模拟兑换成功
-                self.current_points -= total_required
-                self.points_display.setText(str(self.current_points))
-                
-                # 更新兑换记录
-                timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
-                record_text = self.exchange_record.toPlainText()
-                new_record = f"[{timestamp}] 兑换 {quantity} 个 {exchange_type.split('(')[0]}，消耗 {total_required} 积分\n"
-                self.exchange_record.setPlainText(new_record + record_text)
-                
-                # 发出兑换信号
-                exchange_data = {
-                    "type": exchange_type,
-                    "quantity": quantity,
-                    "points_used": total_required
-                }
-                self.coupon_exchanged.emit(exchange_data)
-                
-                QMessageBox.information(self, "兑换成功", f"成功兑换 {quantity} 个券！")
-            
-        except Exception as e:
-            QMessageBox.critical(self, "兑换错误", f"券兑换失败: {str(e)}")
-    
-    def _on_refresh_orders(self):
-        """刷新订单列表"""
-        try:
-            self._load_sample_orders()
-            QMessageBox.information(self, "刷新成功", "订单列表已刷新")
-        except Exception as e:
-            QMessageBox.critical(self, "刷新错误", f"刷新订单失败: {str(e)}")
-    
-    def _on_refresh_cinemas(self):
-        """刷新影院列表"""
-        try:
-            self._load_sample_cinemas()
-            QMessageBox.information(self, "刷新成功", "影院列表已刷新")
-        except Exception as e:
-            QMessageBox.critical(self, "刷新错误", f"刷新影院失败: {str(e)}")
-    
-    def _on_add_cinema(self):
-        """添加影院"""
-        QMessageBox.information(self, "功能提示", "添加影院功能待实现")
+            QMessageBox.critical(self, "添加失败", f"添加影院时发生错误：{str(e)}")
+            return False
     
     def _on_delete_cinema(self):
-        """删除影院"""
+        """删除选中的影院 - 基于现有逻辑"""
+        # 获取选中的影院
+        selected_items = self.cinema_table.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "未选择影院", "请先选择要删除的影院！")
+            return
+        
+        # 获取选中行的影院ID
+        row = self.cinema_table.currentRow()
+        if row < 0:
+            return
+            
+        cinema_id_item = self.cinema_table.item(row, 1)  # 影院ID在第1列
+        cinema_name_item = self.cinema_table.item(row, 0)  # 影院名称在第0列
+        
+        if not cinema_id_item or not cinema_name_item:
+            return
+            
+        cinema_id = cinema_id_item.text()
+        cinema_name = cinema_name_item.text()
+        
+        # 确认删除
+        reply = QMessageBox.question(
+            self, "确认删除", 
+            f"确定要删除影院 {cinema_name} ({cinema_id}) 吗？\n\n注意：删除后该影院的所有账号也将失效！",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            self.delete_cinema_from_list(cinema_id, cinema_name)
+
+    def delete_cinema_from_list(self, cinema_id, cinema_name):
+        """从数据文件中删除影院"""
         try:
-            current_row = self.cinema_table.currentRow()
-            if current_row < 0:
-                QMessageBox.warning(self, "选择错误", "请选择要删除的影院")
-                return
+            from services.cinema_manager import cinema_manager
             
-            cinema_name = self.cinema_table.item(current_row, 0).text()
+            # 加载影院列表
+            cinemas = cinema_manager.load_cinema_list()
             
-            reply = QMessageBox.question(
-                self, "确认删除",
-                f"确认删除影院 {cinema_name}？",
-                QMessageBox.Yes | QMessageBox.No
-            )
+            # 查找并删除影院
+            original_count = len(cinemas)
+            cinemas = [c for c in cinemas if c.get('cinemaid') != cinema_id]
             
-            if reply == QMessageBox.Yes:
-                self.cinema_table.removeRow(current_row)
-                QMessageBox.information(self, "删除成功", f"已删除影院：{cinema_name}")
+            if len(cinemas) == original_count:
+                QMessageBox.warning(self, "删除失败", f"未找到影院ID {cinema_id}！")
+                return False
+            
+            # 保存更新后的列表
+            cinema_manager.save_cinema_list(cinemas)
+            
+            # 同时清理该影院的账号数据
+            self.cleanup_cinema_accounts(cinema_id)
+            
+            # 立即刷新界面 - 修复显示问题
+            self._refresh_cinema_table_display()
+            
+            # 更新统计信息
+            self._update_cinema_stats()
+            
+            QMessageBox.information(self, "删除成功", f"影院 {cinema_name} 已删除！")
+            return True
+            
+        except Exception as e:
+            QMessageBox.critical(self, "删除失败", f"删除影院时发生错误：{str(e)}")
+            return False
+
+    def cleanup_cinema_accounts(self, cinema_id):
+        """清理删除影院的相关账号"""
+        try:
+            import json
+            import os
+            
+            accounts_file = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'accounts.json')
+            
+            if os.path.exists(accounts_file):
+                with open(accounts_file, "r", encoding="utf-8") as f:
+                    accounts = json.load(f)
+                
+                # 过滤掉该影院的账号
+                filtered_accounts = [acc for acc in accounts if acc.get('cinemaid') != cinema_id]
+                
+                with open(accounts_file, "w", encoding="utf-8") as f:
+                    json.dump(filtered_accounts, f, ensure_ascii=False, indent=2)
+                    
+                print(f"[Tab管理器] 已清理影院 {cinema_id} 的相关账号")
                 
         except Exception as e:
-            QMessageBox.critical(self, "删除错误", f"删除影院失败: {str(e)}")
+            print(f"[Tab管理器] 清理账号数据时出错: {e}")
+    
+    def _refresh_cinema_table_display(self):
+        """刷新影院表格显示"""
+        try:
+            from services.cinema_manager import cinema_manager
+            cinemas = cinema_manager.load_cinema_list()
+            
+            # 清空表格
+            self.cinema_table.setRowCount(0)
+            
+            # 重新填充数据
+            for i, cinema in enumerate(cinemas):
+                self.cinema_table.insertRow(i)
+                
+                # 影院名称
+                name_item = self.cinema_table.__class__.createItem(cinema.get('cinemaShortName', '未知影院'))
+                self.cinema_table.setItem(i, 0, name_item)
+                
+                # 影院ID
+                id_item = self.cinema_table.__class__.createItem(cinema.get('cinemaid', ''))
+                self.cinema_table.setItem(i, 1, id_item)
+                
+                # 操作
+                operation_item = self.cinema_table.__class__.createItem("详情")
+                self.cinema_table.setItem(i, 2, operation_item)
+            
+            print(f"[Tab管理器] 影院表格已刷新，当前显示 {len(cinemas)} 个影院")
+            
+        except Exception as e:
+            print(f"[Tab管理器] 刷新影院表格错误: {e}")
+
+    def _update_cinema_stats(self):
+        """更新影院统计信息"""
+        try:
+            from services.cinema_manager import cinema_manager
+            cinemas = cinema_manager.load_cinema_list()
+            
+            total_count = len(cinemas)
+            active_count = sum(1 for c in cinemas if c.get('status', 'active') == 'active')
+            
+            stats_text = f"总影院数: {total_count} | 活跃影院: {active_count} | 最后更新: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+            self.cinema_stats_label.setText(stats_text)
+            
+        except Exception as e:
+            self.cinema_stats_label.setText(f"统计信息获取失败: {str(e)}")
     
     def _load_sample_data(self):
-        """加载示例数据"""
-        # 加载示例影院
-        self.cinema_combo.clear()
-        self.cinema_combo.addItems([
-            "华夏优加金太都会",
-            "深影国际影城(佐伦虹湾购物中心店)",
-            "深圳万友影城BCMall店"
-        ])
+        """加载真实影院数据"""
+        try:
+            # 从影院管理器加载真实数据
+            from services.cinema_manager import cinema_manager
+            cinemas = cinema_manager.load_cinema_list()
+            
+            self.cinema_combo.clear()
+            self.cinemas_data = cinemas  # 保存完整的影院数据
+            
+            if cinemas:
+                print(f"[Tab管理器] 加载了 {len(cinemas)} 个真实影院")
+                for cinema in cinemas:
+                    cinema_name = cinema.get('cinemaShortName', '未知影院')
+                    self.cinema_combo.addItem(cinema_name)
+            else:
+                print("[Tab管理器] 未找到影院数据，加载示例数据")
+                self.cinema_combo.addItems([
+                    "华夏优加金太都会",
+                    "深影国际影城(佐伦虹湾购物中心店)",
+                    "深圳万友影城BCMall店"
+                ])
+                
+        except Exception as e:
+            print(f"[Tab管理器] 加载影院数据错误: {e}")
+            # 加载示例数据作为后备
+            self.cinema_combo.clear()
+            self.cinema_combo.addItems([
+                "华夏优加金太都会", 
+                "深影国际影城(佐伦虹湾购物中心店)",
+                "深圳万友影城BCMall店"
+            ])
     
     def _load_sample_orders(self):
         """加载示例订单数据"""
@@ -827,4 +1188,935 @@ class TabManagerWidget(QWidget):
                     self.cinema_combo.addItem(name)
             
         except Exception as e:
-            print(f"[Tab管理器] 更新影院列表错误: {e}") 
+            print(f"[Tab管理器] 更新影院列表错误: {e}")
+
+    def _show_order_context_menu(self, position):
+        """显示订单右键菜单"""
+        menu = QMenu()
+        menu.addAction("查看详情", self._show_order_details)
+        menu.addAction("取消订单", self._cancel_order)
+        menu.exec_(self.order_table.viewport().mapToGlobal(position))
+
+    def _show_order_details(self):
+        """显示订单详情"""
+        selected_items = self.order_table.selectedIndexes()
+        if selected_items:
+            row = selected_items[0].row()
+            order = self.order_data_cache[row]
+            self._show_order_details_dialog(order)
+
+    def _show_order_details_dialog(self, order):
+        """显示订单详情对话框"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("订单详情")
+        layout = QVBoxLayout(dialog)
+        
+        # 添加订单详情到对话框
+        for key, value in order.items():
+            if key != "account":
+                label = ClassicLabel(f"{key}:")
+                value_label = ClassicLabel(str(value))
+                layout.addWidget(label)
+                layout.addWidget(value_label)
+        
+        # 添加按钮
+        button_layout = QHBoxLayout()
+        confirm_btn = ClassicButton("确认", "success")
+        cancel_btn = ClassicButton("取消", "default")
+        button_layout.addWidget(confirm_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+        
+        # 事件绑定
+        confirm_btn.clicked.connect(dialog.accept)
+        cancel_btn.clicked.connect(dialog.reject)
+        
+        dialog.exec_()
+
+    def _cancel_order(self):
+        """取消订单"""
+        selected_items = self.order_table.selectedIndexes()
+        if selected_items:
+            row = selected_items[0].row()
+            order = self.order_data_cache[row]
+            self._cancel_order_dialog(order)
+
+    def _cancel_order_dialog(self, order):
+        """显示取消订单对话框"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("取消订单")
+        layout = QVBoxLayout(dialog)
+        
+        # 添加取消订单的原因输入
+        reason_layout = QHBoxLayout()
+        reason_label = ClassicLabel("取消原因:")
+        reason_input = ClassicTextEdit()
+        reason_input.setPlaceholderText("请输入取消原因")
+        reason_layout.addWidget(reason_label)
+        reason_layout.addWidget(reason_input)
+        layout.addLayout(reason_layout)
+        
+        # 添加按钮
+        button_layout = QHBoxLayout()
+        confirm_btn = ClassicButton("确认取消", "success")
+        cancel_btn = ClassicButton("取消", "default")
+        button_layout.addWidget(confirm_btn)
+        button_layout.addWidget(cancel_btn)
+        layout.addLayout(button_layout)
+        
+        # 事件绑定
+        def validate_and_cancel():
+            reason = reason_input.toPlainText().strip()
+            if not reason:
+                QMessageBox.warning(dialog, "输入错误", "请输入取消原因")
+                return
+            
+            # 处理取消逻辑
+            self._handle_order_cancel(order, reason)
+            dialog.accept()
+        
+        confirm_btn.clicked.connect(validate_and_cancel)
+        cancel_btn.clicked.connect(dialog.reject)
+        
+        dialog.exec_()
+
+    def _handle_order_cancel(self, order, reason):
+        """处理取消订单逻辑"""
+        # 实现取消订单的逻辑
+        print(f"[Tab管理器] 取消订单: {order['order_id']}, 原因: {reason}")
+
+    def _on_order_double_click(self, index):
+        """处理订单表格的双击事件"""
+        if index.column() == 0:  # 假设双击事件发生在第一列（影片列）
+            selected_item = self.order_table.item(index.row(), index.column())
+            if selected_item:
+                movie_name = selected_item.text()
+                self._show_movie_details(movie_name)
+
+    def _show_movie_details(self, movie_name):
+        """显示电影详情"""
+        # 实现显示电影详情的逻辑
+        print(f"[Tab管理器] 显示电影详情: {movie_name}")
+    
+    def _load_cinema_list(self):
+        """加载影院列表"""
+        try:
+            # 使用新的刷新显示方法
+            self._refresh_cinema_table_display()
+            
+            # 初始化统计信息
+            self._update_cinema_stats()
+            
+            # 同时加载影片列表
+            self._load_movie_list()
+            
+        except Exception as e:
+            print(f"[Tab管理器] 加载影院列表错误: {e}")
+            # 加载示例数据作为后备
+            self._load_sample_cinemas()
+
+    def _load_movie_list(self):
+        """加载影片列表到座位图区域"""
+        try:
+            if hasattr(self, 'movie_combo'):
+                self.movie_combo.clear()
+                self.movie_combo.addItem("请选择影片")
+                
+                # 添加示例影片
+                movies = [
+                    "阿凡达：水之道",
+                    "流浪地球2", 
+                    "满江红",
+                    "熊出没·伴我熊心",
+                    "深海"
+                ]
+                
+                for movie in movies:
+                    self.movie_combo.addItem(movie)
+                    
+        except Exception as e:
+            print(f"[Tab管理器] 加载影片列表错误: {e}")
+    
+    def get_selected_cinemaid(self):
+        """获取当前选择的影院ID"""
+        try:
+            # 从当前账号中获取影院ID，或者从影院管理器中查找
+            if hasattr(self, 'current_account') and self.current_account:
+                return self.current_account.get('cinemaid')
+                
+            # 如果没有当前账号，尝试从影院表格获取第一个影院ID
+            if hasattr(self, 'cinema_table') and self.cinema_table.rowCount() > 0:
+                id_item = self.cinema_table.item(0, 1)
+                if id_item:
+                    return id_item.text()
+                    
+            # 默认返回一个测试影院ID
+            return "11b7e4bcc265"
+            
+        except Exception as e:
+            print(f"[Tab管理器] 获取影院ID错误: {e}")
+            return "11b7e4bcc265"
+
+    def _connect_signals(self):
+        """连接信号槽"""
+        try:
+            # 出票Tab信号 - 检查组件是否存在再连接
+            if hasattr(self, 'cinema_combo'):
+                self.cinema_combo.currentTextChanged.connect(self._on_cinema_changed)
+            if hasattr(self, 'movie_combo'):
+                self.movie_combo.currentTextChanged.connect(self._on_movie_changed)
+            if hasattr(self, 'date_combo'):
+                self.date_combo.currentTextChanged.connect(self._on_date_changed)
+            if hasattr(self, 'session_combo'):  # 🆕 添加场次选择信号连接
+                self.session_combo.currentTextChanged.connect(self._on_session_changed)
+            if hasattr(self, 'submit_order_btn'):
+                self.submit_order_btn.clicked.connect(self._on_submit_order)
+            
+            # 订单Tab信号
+            if hasattr(self, 'order_refresh_btn'):
+                self.order_refresh_btn.clicked.connect(self._on_refresh_orders)
+            if hasattr(self, 'order_table'):
+                self.order_table.customContextMenuRequested.connect(self._show_order_context_menu)
+                self.order_table.itemDoubleClicked.connect(self._on_order_double_click)
+            
+            print("[Tab管理器] 信号连接完成")
+            
+        except Exception as e:
+            print(f"[Tab管理器] 信号连接错误: {e}")
+    
+    def _connect_global_events(self):
+        """连接全局事件"""
+        # 监听账号切换事件
+        event_bus.account_changed.connect(self._on_account_changed)
+    
+    def _on_account_changed(self, account_data: dict):
+        """账号切换处理"""
+        try:
+            self.current_account = account_data
+            userid = account_data.get("userid", "未知账号")
+            balance = account_data.get("balance", 0)
+            
+            # 更新各Tab页面的账号显示
+            if hasattr(self, 'current_account_label'):
+                account_info = f"当前账号: {userid} (余额:{balance})"
+                self.current_account_label.setText(account_info)
+            
+            # 更新绑券界面
+            self.update_bind_account_info()
+            
+            # 更新兑换券界面
+            self.update_exchange_account_info()
+            
+            # 更新积分显示
+            self.current_points = account_data.get("score", 0)
+            
+            print(f"[Tab管理器] 账号切换: {userid}")
+            
+        except Exception as e:
+            print(f"[Tab管理器] 账号切换错误: {e}")
+    
+    def _on_cinema_changed(self, cinema_text: str):
+        """影院选择变化处理 - 加载真实影片数据"""
+        try:
+            if not cinema_text or cinema_text == "加载中...":
+                return
+                
+            print(f"[Tab管理器] 影院切换: {cinema_text}")
+            
+            # 清空下级选择
+            self.movie_combo.clear()
+            self.date_combo.clear()
+            self.session_combo.clear()
+            
+            self.movie_combo.addItem("加载影片中...")
+            self.date_combo.addItem("请先选择影片")
+            self.session_combo.addItem("请先选择日期")
+            
+            # 查找选中的影院数据
+            selected_cinema = None
+            if hasattr(self, 'cinemas_data') and self.cinemas_data:
+                for cinema in self.cinemas_data:
+                    if cinema.get('cinemaShortName') == cinema_text:
+                        selected_cinema = cinema
+                        break
+            
+            if not selected_cinema:
+                print(f"[Tab管理器] 未找到影院数据: {cinema_text}")
+                self.movie_combo.clear()
+                self.movie_combo.addItem("影院数据错误")
+                return
+            
+            # 🆕 发出影院选择信号 - 传递影院数据对象
+            self.cinema_selected.emit(cinema_text)
+            
+            # 🆕 发布全局影院选择事件 - 传递完整影院数据
+            event_bus.cinema_selected.emit(selected_cinema)
+            
+            # 🆕 延迟检查账号状态，等待账号组件处理完影院切换
+            QTimer.singleShot(200, lambda: self._check_and_load_movies(selected_cinema))
+                
+        except Exception as e:
+            print(f"[Tab管理器] 影院选择错误: {e}")
+            self.movie_combo.clear()
+            self.movie_combo.addItem("加载失败")
+    
+    def _check_and_load_movies(self, selected_cinema):
+        """检查账号状态并加载影片数据"""
+        try:
+            # 🆕 更强的账号状态检查逻辑
+            if not self.current_account:
+                print("[Tab管理器] 等待账号选择...")
+                self.movie_combo.clear()
+                self.movie_combo.addItem("等待账号选择...")
+                
+                # 🆕 只延迟检查一次，避免无限循环
+                QTimer.singleShot(1000, lambda: self._final_check_and_load_movies(selected_cinema))
+                return
+            
+            print(f"[Tab管理器] 账号已选择: {self.current_account.get('userid', 'N/A')}")
+            
+            # 调用影片API
+            self._load_movies_for_cinema(selected_cinema)
+                
+        except Exception as e:
+            print(f"[Tab管理器] 检查账号状态错误: {e}")
+            self.movie_combo.clear()
+            self.movie_combo.addItem("加载失败")
+    
+    def _final_check_and_load_movies(self, selected_cinema):
+        """最终检查账号状态并加载影片数据 - 避免无限循环"""
+        try:
+            if not self.current_account:
+                print("[Tab管理器] 最终检查：仍未选择账号，停止重试")
+                self.movie_combo.clear()
+                self.movie_combo.addItem("请选择账号")
+                return
+            
+            print(f"[Tab管理器] 最终检查：账号已选择: {self.current_account.get('userid', 'N/A')}")
+            
+            # 调用影片API
+            self._load_movies_for_cinema(selected_cinema)
+                
+        except Exception as e:
+            print(f"[Tab管理器] 最终检查错误: {e}")
+            self.movie_combo.clear()
+            self.movie_combo.addItem("加载失败")
+
+    def _load_movies_for_cinema(self, cinema_data):
+        """为指定影院加载影片数据"""
+        try:
+            from services.film_service import get_films, normalize_film_data
+            
+            # 获取影院参数 - 🆕 修复字段名称
+            base_url = cinema_data.get('base_url', '')
+            cinemaid = cinema_data.get('cinemaid', '')
+            
+            print(f"[Tab管理器] 影院数据检查:")
+            print(f"  - 影院名称: {cinema_data.get('cinemaShortName', 'N/A')}")
+            print(f"  - 影院ID: {cinemaid}")
+            print(f"  - 域名: {base_url}")
+            
+            if not base_url or not cinemaid:
+                print(f"[Tab管理器] 影院参数不完整: base_url={base_url}, cinemaid={cinemaid}")
+                self.movie_combo.clear()
+                self.movie_combo.addItem("影院参数错误")
+                return
+            
+            # 获取账号参数
+            account = self.current_account
+            if not account:
+                print(f"[Tab管理器] 当前账号为空")
+                self.movie_combo.clear()
+                self.movie_combo.addItem("账号信息缺失")
+                return
+                
+            openid = account.get('openid', '')
+            userid = account.get('userid', '')
+            token = account.get('token', '')
+            
+            print(f"[Tab管理器] 账号数据检查:")
+            print(f"  - 用户ID: {userid}")
+            print(f"  - OpenID: {openid[:10]}..." if openid else "  - OpenID: 空")
+            print(f"  - Token: {token[:10]}..." if token else "  - Token: 空")
+            
+            if not all([openid, userid, token]):
+                print(f"[Tab管理器] 账号参数不完整")
+                self.movie_combo.clear()
+                self.movie_combo.addItem("账号信息不完整")
+                return
+            
+            print(f"[Tab管理器] 开始调用影片API...")
+            print(f"[Tab管理器] API URL: https://{base_url}/MiniTicket/index.php/MiniFilm/getAllFilmsIndexNew")
+            
+            # 调用API获取影片数据
+            films_data = get_films(base_url, cinemaid, openid, userid, token)
+            
+            print(f"[Tab管理器] API响应数据类型: {type(films_data)}")
+            print(f"[Tab管理器] API响应数据长度: {len(str(films_data)) if films_data else 0}")
+            
+            if not films_data:
+                print("[Tab管理器] API返回空数据")
+                self.movie_combo.clear()
+                self.movie_combo.addItem("暂无影片")
+                return
+            
+            # 🆕 详细调试API响应结构
+            print(f"[Tab管理器] API响应keys: {list(films_data.keys()) if isinstance(films_data, dict) else '非字典类型'}")
+            
+            # 🆕 正确保存原始数据
+            self.raw_films_data = films_data  # 保存完整的原始数据
+            films = films_data.get('films', [])
+            shows = films_data.get('shows', {})
+            
+            print(f"[Tab管理器] 原始数据影片数量: {len(films)}")
+            print(f"[Tab管理器] 原始数据排期数量: {len(shows)}")
+            
+            # 🆕 调试films和shows的具体结构
+            if films:
+                first_film = films[0]
+                print(f"[Tab管理器] 第一个影片数据: {first_film}")
+                print(f"[Tab管理器] 第一个影片数据字段: {list(first_film.keys())}")
+            
+            if shows:
+                print(f"[Tab管理器] shows结构keys: {list(shows.keys())[:3]}")  # 只显示前3个
+                first_film_key = list(shows.keys())[0]
+                first_film_shows = shows[first_film_key]
+                print(f"[Tab管理器] 第一个影片的排期结构: {type(first_film_shows)}")
+                if isinstance(first_film_shows, dict):
+                    print(f"[Tab管理器] 第一个影片排期日期keys: {list(first_film_shows.keys())[:3]}")
+                    first_date = list(first_film_shows.keys())[0] if first_film_shows else None
+                    if first_date:
+                        first_date_sessions = first_film_shows[first_date]
+                        print(f"[Tab管理器] 第一个日期的场次数量: {len(first_date_sessions) if isinstance(first_date_sessions, list) else '非列表类型'}")
+                        if isinstance(first_date_sessions, list) and first_date_sessions:
+                            first_session = first_date_sessions[0]
+                            print(f"[Tab管理器] 第一个场次数据: {first_session}")
+                            print(f"[Tab管理器] 第一个场次数据字段: {list(first_session.keys()) if isinstance(first_session, dict) else '非字典类型'}")
+            
+            # 🆕 添加原始数据字段检查
+            if films:
+                first_film = films[0]
+                print(f"[Tab管理器] 第一个影片数据字段: {list(first_film.keys())}")
+            if shows:
+                first_film_key = list(shows.keys())[0]
+                first_date = list(shows[first_film_key].keys())[0] if shows[first_film_key] else None
+                if first_date:
+                    first_session = shows[first_film_key][first_date][0] if shows[first_film_key][first_date] else {}
+                    print(f"[Tab管理器] 第一个场次数据字段: {list(first_session.keys())}")
+            
+            # 🆕 构建影片数据结构，包含排期信息
+            self.current_movies = []  # 保存影片列表，用于影片切换时查找
+            
+            # 更新影片下拉框
+            self.movie_combo.clear()
+            
+            if films:
+                for i, film in enumerate(films):
+                    # 🆕 使用原始数据的正确字段名
+                    film_name = film.get('fn', '未知影片')  # 'fn' 是影片名称字段
+                    film_id = film.get('fno', '')  # 🆕 修复关联字段：使用 'fno' 而不是 'fno'
+                    film_code = film.get('fc', '')  # 'fc' 是影片编码
+                    
+                    print(f"[Tab管理器] 处理影片 {i+1}: {film_name}")
+                    print(f"  - fno: {film_id}")
+                    print(f"  - fc: {film_code}")
+                    
+                    # 🆕 尝试多种可能的关联字段
+                    film_plans = None
+                    
+                    # 方法1: 使用 fno 关联
+                    if film_id and film_id in shows:
+                        film_plans = shows[film_id]
+                        print(f"  - 使用fno关联成功，排期数据: {len(film_plans) if isinstance(film_plans, dict) else '非字典'}")
+                    
+                    # 方法2: 使用 fc 关联
+                    elif film_code and film_code in shows:
+                        film_plans = shows[film_code]
+                        print(f"  - 使用fc关联成功，排期数据: {len(film_plans) if isinstance(film_plans, dict) else '非字典'}")
+                    
+                    # 方法3: 尝试直接用索引关联
+                    elif i < len(list(shows.keys())):
+                        shows_keys = list(shows.keys())
+                        film_plans = shows[shows_keys[i]]
+                        print(f"  - 使用索引关联，key: {shows_keys[i]}")
+                    
+                    else:
+                        print(f"  - 未找到排期数据")
+                        film_plans = {}
+                    
+                    # 🆕 为每个影片添加对应的排期数据
+                    film_with_plans = film.copy()
+                    
+                    # 将排期数据转换为plans列表格式
+                    plans = []
+                    if film_plans and isinstance(film_plans, dict):
+                        for date, sessions in film_plans.items():
+                            if isinstance(sessions, list):
+                                for session in sessions:
+                                    # 为每个场次添加日期信息
+                                    session_with_date = session.copy()
+                                    session_with_date['show_date'] = date
+                                    session_with_date['k'] = f"{date} {session.get('q', '')}"  # 完整的时间信息
+                                    plans.append(session_with_date)
+                    
+                    film_with_plans['plans'] = plans
+                    self.current_movies.append(film_with_plans)
+                    
+                    print(f"[Tab管理器] 影片 {i+1}: {film_name} (排期数: {len(plans)})")
+                    self.movie_combo.addItem(film_name)
+                    
+                print(f"[Tab管理器] 影片列表更新完成，共{len(self.current_movies)}个影片")
+            else:
+                self.movie_combo.addItem("暂无影片")
+                print(f"[Tab管理器] 没有可用影片")
+                
+        except Exception as e:
+            print(f"[Tab管理器] 加载影片数据错误: {e}")
+            import traceback
+            traceback.print_exc()
+            self.movie_combo.clear()
+            self.movie_combo.addItem("加载失败")
+
+    def _on_movie_changed(self, movie_text: str):
+        """影片选择变化处理"""
+        try:
+            if not movie_text or movie_text in ["请先选择影院", "正在加载影片...", "暂无影片", "加载失败"]:
+                return
+            
+            # 🆕 添加账号状态检查，避免循环错误
+            if not self.current_account:
+                # 静默返回，不输出错误日志
+                return
+                
+            print(f"[Tab管理器] 影片切换: {movie_text}")
+            
+            # 获取选中的影片详细数据
+            selected_movie = None
+            if hasattr(self, 'current_movies') and self.current_movies:
+                movie_index = self.movie_combo.currentIndex()
+                if 0 <= movie_index < len(self.current_movies):
+                    selected_movie = self.current_movies[movie_index]
+            
+            if not selected_movie:
+                print(f"[Tab管理器] 未找到影片数据: {movie_text}")
+                return
+            
+            # 清空日期和场次选择
+            self.date_combo.clear()
+            self.session_combo.clear()
+            
+            # 添加默认选项
+            self.date_combo.addItem("请选择日期")
+            self.session_combo.addItem("请先选择日期")
+            
+            # 从影片排期数据中提取日期列表
+            dates = []
+            plans = selected_movie.get('plans', [])
+            
+            if not plans:
+                print(f"[Tab管理器] 影片排期数据未加载")
+                self.date_combo.addItem("暂无排期")
+                return
+            
+            # 收集所有日期
+            for plan in plans:
+                show_date = plan.get('k', '')  # 场次时间字段
+                if show_date:
+                    # 提取日期部分
+                    date_part = show_date.split(' ')[0] if ' ' in show_date else show_date
+                    if date_part and date_part not in dates:
+                        dates.append(date_part)
+            
+            # 排序日期
+            dates.sort()
+            
+            # 添加到下拉框
+            if dates:
+                for date in dates:
+                    self.date_combo.addItem(date)
+                print(f"[Tab管理器] 加载日期: {len(dates)} 个")
+                
+                # 🆕 自动选择第一个日期，触发四级联动
+                if len(dates) > 0:
+                    QTimer.singleShot(100, lambda: self.date_combo.setCurrentIndex(1))  # 索引1是第一个日期（索引0是"请选择日期"）
+                    print(f"[Tab管理器] 自动选择第一个日期: {dates[0]}")
+            else:
+                self.date_combo.addItem("暂无日期")
+            
+            # 保存当前影片数据
+            self.current_movie_data = selected_movie
+            
+        except Exception as e:
+            print(f"[Tab管理器] 影片选择错误: {e}")
+
+    def _on_date_changed(self, date_text: str):
+        """日期选择变化处理"""
+        try:
+            if not date_text or date_text in ["请选择日期", "正在加载日期...", "暂无排期", "暂无日期"]:
+                return
+            
+            # 🆕 添加数据状态检查，避免循环错误
+            if not hasattr(self, 'current_movie_data') or not self.current_movie_data:
+                # 静默返回，不输出错误日志
+                return
+                
+            print(f"[Tab管理器] 日期切换: {date_text}")
+            
+            # 清空场次选择
+            self.session_combo.clear()
+            self.session_combo.addItem("请选择场次")
+            
+            # 从当前影片的排期中筛选指定日期的场次
+            plans = self.current_movie_data.get('plans', [])
+            if not plans:
+                self.session_combo.addItem("暂无场次")
+                return
+            
+            # 筛选匹配日期的场次
+            matching_sessions = []
+            for plan in plans:
+                show_time = plan.get('k', '')  # 完整的场次时间
+                if show_time:
+                    # 提取日期部分进行匹配
+                    date_part = show_time.split(' ')[0] if ' ' in show_time else show_time
+                    if date_part == date_text:
+                        matching_sessions.append(plan)
+            
+            # 添加场次到下拉框
+            if matching_sessions:
+                for session in matching_sessions:
+                    session_text = self._format_session_text(session)
+                    self.session_combo.addItem(session_text)
+                print(f"[Tab管理器] 加载场次: {len(matching_sessions)} 个")
+                
+                # 保存当前日期的场次数据
+                self.current_date_sessions = matching_sessions
+                
+                # 🆕 自动选择第一个场次，完成四级联动
+                if len(matching_sessions) > 0:
+                    QTimer.singleShot(100, lambda: self.session_combo.setCurrentIndex(1))  # 索引1是第一个场次（索引0是"请选择场次"）
+                    print(f"[Tab管理器] 自动选择第一个场次")
+            else:
+                self.session_combo.addItem("暂无场次")
+                self.current_date_sessions = []
+            
+        except Exception as e:
+            print(f"[Tab管理器] 日期选择错误: {e}")
+
+    def _on_session_changed(self, session_text: str):
+        """场次选择变化处理 - 触发座位图加载"""
+        try:
+            if not session_text or session_text in ["请先选择日期", "加载场次中...", "暂无场次", "加载失败", "请选择场次"]:
+                return
+                
+            # 🆕 添加数据状态检查，避免循环错误
+            if not hasattr(self, 'current_date_sessions') or not self.current_date_sessions:
+                # 静默返回，不输出错误日志
+                return
+                
+            print(f"[Tab管理器] 场次切换: {session_text}")
+            
+            # 获取选中的场次详细数据
+            selected_session = None
+            session_index = self.session_combo.currentIndex() - 1  # 减去"请选择场次"选项
+            if 0 <= session_index < len(self.current_date_sessions):
+                selected_session = self.current_date_sessions[session_index]
+            
+            if not selected_session:
+                print(f"[Tab管理器] 未找到场次数据: {session_text}")
+                return
+            
+            # 🆕 保存当前场次数据供订单创建使用
+            self.current_session_data = selected_session
+            print(f"[Tab管理器] 保存当前场次数据: {selected_session}")
+            
+            # 获取当前选择的完整信息
+            cinema_text = self.cinema_combo.currentText() if hasattr(self, 'cinema_combo') else ""
+            movie_text = self.movie_combo.currentText() if hasattr(self, 'movie_combo') else ""
+            date_text = self.date_combo.currentText() if hasattr(self, 'date_combo') else ""
+            
+            # 🆕 查找影院详细数据 - 修复逻辑
+            cinema_data = None
+            if hasattr(self, 'cinemas_data') and self.cinemas_data:
+                for cinema in self.cinemas_data:
+                    if cinema.get('cinemaShortName') == cinema_text:
+                        cinema_data = cinema
+                        print(f"[Tab管理器] 找到影院数据: {cinema.get('cinemaShortName')} -> base_url: {cinema.get('base_url')}")
+                        break
+                        
+            if not cinema_data:
+                print(f"[Tab管理器] 未找到影院数据: {cinema_text}")
+                print(f"[Tab管理器] 可用影院列表: {[c.get('cinemaShortName') for c in self.cinemas_data] if hasattr(self, 'cinemas_data') else '无数据'}")
+                
+                # 🆕 尝试从影院管理器重新加载数据
+                try:
+                    from services.cinema_manager import cinema_manager
+                    cinemas = cinema_manager.load_cinema_list()
+                    self.cinemas_data = cinemas
+                    
+                    # 重新查找
+                    for cinema in cinemas:
+                        if cinema.get('cinemaShortName') == cinema_text:
+                            cinema_data = cinema
+                            print(f"[Tab管理器] 重新加载后找到影院数据: {cinema.get('cinemaShortName')} -> base_url: {cinema.get('base_url')}")
+                            break
+                except Exception as reload_error:
+                    print(f"[Tab管理器] 重新加载影院数据失败: {reload_error}")
+            
+            # 构建场次信息对象
+            session_info = {
+                'session_data': selected_session,
+                'cinema_name': cinema_text,
+                'movie_name': movie_text,
+                'show_date': date_text,
+                'session_text': session_text,
+                'account': self.current_account,
+                'cinema_data': cinema_data  # 🆕 确保传递完整的影院数据
+            }
+            
+            print(f"[Tab管理器] 发出场次选择信号: {session_text}")
+            print(f"[Tab管理器] 影院数据验证: {cinema_data.get('base_url') if cinema_data else 'None'}")
+            
+            # 发出场次选择信号，让主窗口处理座位图加载
+            self.session_selected.emit(session_info)
+            
+        except Exception as e:
+            print(f"[Tab管理器] 场次选择错误: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _on_submit_order(self):
+        """提交订单处理 - 获取完整选择信息"""
+        try:
+            if not self.current_account:
+                MessageManager.show_error(self, "提交失败", "请先选择账号", auto_close=False)
+                return
+            
+            # 获取所有选择的信息
+            cinema_text = self.cinema_combo.currentText() if hasattr(self, 'cinema_combo') else ""
+            movie_text = self.movie_combo.currentText() if hasattr(self, 'movie_combo') else ""
+            date_text = self.date_combo.currentText() if hasattr(self, 'date_combo') else ""
+            session_text = self.session_combo.currentText() if hasattr(self, 'session_combo') else ""
+            
+            # 验证选择完整性
+            if not all([cinema_text, movie_text, date_text, session_text]):
+                MessageManager.show_error(self, "选择不完整", "请完成影院、影片、日期、场次的选择！", auto_close=False)
+                return
+            
+            # 验证选择有效性
+            invalid_texts = ["加载中...", "请先选择", "暂无", "加载失败", "错误"]
+            if any(invalid in cinema_text for invalid in invalid_texts) or \
+               any(invalid in movie_text for invalid in invalid_texts) or \
+               any(invalid in date_text for invalid in invalid_texts) or \
+               any(invalid in session_text for invalid in invalid_texts):
+                MessageManager.show_error(self, "选择无效", "请重新选择有效的影院、影片、日期和场次！", auto_close=False)
+                return
+            
+            # 🆕 发出订单信号让主窗口处理实际的API调用
+            # 构建订单基本信息（主窗口会完善API参数）
+            order_info = {
+                "account": self.current_account,
+                "cinema_name": cinema_text,
+                "movie_name": movie_text,
+                "show_date": date_text,
+                "session_text": session_text,
+                "session_data": getattr(self, 'current_session_data', {}),
+                "trigger_type": "tab_submit"  # 标识来源
+            }
+            
+            print(f"[Tab管理器] 发出订单信号:")
+            print(f"  影院: {cinema_text}")
+            print(f"  影片: {movie_text}")
+            print(f"  日期: {date_text}")
+            print(f"  场次: {session_text}")
+            
+            # 发出订单提交信号，让主窗口处理
+            self.order_submitted.emit(order_info)
+            
+            MessageManager.show_success(self, "订单处理中", "正在处理订单，请稍候...", auto_close=True)
+            
+        except Exception as e:
+            MessageManager.show_error(self, "提交错误", f"提交订单失败: {str(e)}", auto_close=False)
+            print(f"[Tab管理器] 提交订单错误: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _on_refresh_orders(self):
+        """刷新订单列表"""
+        try:
+            account = getattr(self, 'current_account', None)
+            if not account:
+                QMessageBox.warning(self, "未选择账号", "请先选择账号！")
+                return
+            
+            cinemaid = self.get_selected_cinemaid()
+            if not cinemaid:
+                QMessageBox.warning(self, "未选择影院", "请先选择影院！")
+                return
+            
+            # 调用现有的订单API
+            from services.order_api import get_order_list
+            
+            params = {
+                'userid': account['userid'],
+                'token': account['token'], 
+                'openid': account['openid'],
+                'cinemaid': cinemaid,
+                'pageIndex': 1,
+                'pageSize': 50
+            }
+            
+            result = get_order_list(params)
+            
+            if result.get('resultCode') == '0':
+                orders = result.get('data', {}).get('orderList', [])
+                self.update_order_table(orders)
+                QMessageBox.information(self, "刷新成功", f"已获取到 {len(orders)} 个订单")
+            else:
+                error_msg = result.get('resultDesc', '获取订单列表失败')
+                QMessageBox.warning(self, "获取失败", error_msg)
+                self._load_sample_orders()
+                
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"刷新订单列表时出错：{str(e)}")
+            self._load_sample_orders()
+
+    def update_order_table(self, orders):
+        """更新订单表格显示"""
+        try:
+            self.order_table.setRowCount(len(orders))
+            self.order_data_cache = orders
+            
+            for row, order in enumerate(orders):
+                # 影片名称
+                movie_name = order.get('movieName', '未知影片')
+                self.order_table.setItem(row, 0, self.order_table.__class__.createItem(movie_name))
+                
+                # 影院名称
+                cinema_name = order.get('cinemaName', '未知影院')
+                self.order_table.setItem(row, 1, self.order_table.__class__.createItem(cinema_name))
+                
+                # 订单状态
+                status = self.get_order_status_text(order.get('orderStatus', 0))
+                
+                # 根据状态设置颜色
+                if '待支付' in status:
+                    self.order_table.add_colored_item(row, 2, status, "#ff9800")
+                elif '已支付' in status:
+                    self.order_table.add_colored_item(row, 2, status, "#4caf50")
+                elif '已取票' in status:
+                    self.order_table.add_colored_item(row, 2, status, "#2196f3")
+                elif '已取消' in status:
+                    self.order_table.add_colored_item(row, 2, status, "#f44336")
+                else:
+                    self.order_table.setItem(row, 2, self.order_table.__class__.createItem(status))
+                
+                # 订单号
+                order_no = order.get('orderNo', '无订单号')
+                self.order_table.setItem(row, 3, self.order_table.__class__.createItem(order_no))
+                
+        except Exception as e:
+            print(f"[Tab管理器] 更新订单表格错误: {e}")
+
+    def get_order_status_text(self, status_code):
+        """转换订单状态码为中文"""
+        status_map = {
+            0: "待支付",
+            1: "已支付", 
+            2: "已取票",
+            3: "已取消",
+            4: "已退款",
+            5: "支付失败"
+        }
+        return status_map.get(status_code, "未知状态")
+    
+    def _build_cinema_tab(self):
+        """构建影院Tab页面"""
+        layout = QVBoxLayout(self.cinema_tab)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(10)
+        
+        # 操作按钮区
+        button_layout = QHBoxLayout()
+        
+        add_cinema_btn = ClassicButton("添加影院", "success")
+        add_cinema_btn.clicked.connect(self._on_add_cinema)
+        button_layout.addWidget(add_cinema_btn)
+        
+        delete_cinema_btn = ClassicButton("删除影院", "danger")
+        delete_cinema_btn.clicked.connect(self._on_delete_cinema)
+        button_layout.addWidget(delete_cinema_btn)
+        
+        refresh_cinema_btn = ClassicButton("刷新列表", "default")
+        refresh_cinema_btn.clicked.connect(self._load_cinema_list)
+        button_layout.addWidget(refresh_cinema_btn)
+        
+        button_layout.addStretch()
+        layout.addLayout(button_layout)
+        
+        # 影院列表表格
+        self.cinema_table = ClassicTableWidget()
+        self.cinema_table.setColumnCount(3)
+        self.cinema_table.setHorizontalHeaderLabels(["影院名称", "影院ID", "操作"])
+        
+        # 设置列宽
+        header = self.cinema_table.horizontalHeader()
+        header.resizeSection(0, 200)  # 影院名称
+        header.resizeSection(1, 150)  # 影院ID
+        header.resizeSection(2, 100)  # 操作
+        
+        # 设置行高
+        self.cinema_table.verticalHeader().setDefaultSectionSize(36)
+        
+        layout.addWidget(self.cinema_table)
+        
+        # 统计信息
+        self.cinema_stats_label = ClassicLabel("影院统计信息加载中...")
+        self.cinema_stats_label.setStyleSheet("QLabel { color: #666; font-size: 12px; }")
+        layout.addWidget(self.cinema_stats_label)
+        
+        # 加载影院数据
+        self._load_cinema_list()
+    
+    def _format_session_text(self, session):
+        """格式化场次显示文本 - 简洁版本"""
+        try:
+            # 🆕 简化显示格式，只显示核心信息
+            time_info = session.get('q', '')  # 时间
+            hall_info = session.get('t', '')  # 影厅名
+            price_info = session.get('tbprice', 0)  # 票价
+            
+            # 简化时间显示 - 只显示时分，去掉秒
+            if time_info and ':' in time_info:
+                try:
+                    # 提取时分部分
+                    time_parts = time_info.split(':')
+                    if len(time_parts) >= 2:
+                        time_display = f"{time_parts[0]}:{time_parts[1]}"
+                    else:
+                        time_display = time_info
+                except:
+                    time_display = time_info
+            else:
+                time_display = time_info or '未知时间'
+            
+            # 简化影厅显示
+            hall_display = hall_info or '影厅'
+            
+            # 价格显示
+            if price_info and price_info > 0:
+                price_display = f"¥{price_info}"
+            else:
+                price_display = "¥-"
+            
+            # 🆕 紧凑格式：时间 影厅 价格
+            session_text = f"{time_display} {hall_display} {price_display}"
+            
+            print(f"[Tab管理器] 格式化场次: {session_text}")
+            return session_text
+            
+        except Exception as e:
+            print(f"[Tab管理器] 格式化场次错误: {e}")
+            print(f"[Tab管理器] 原始场次数据: {session}")
+            return "场次信息错误"
+ 

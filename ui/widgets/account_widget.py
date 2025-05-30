@@ -34,6 +34,8 @@ class AccountWidget(QWidget):
         # 初始化状态
         self.current_account = None
         self.accounts_data = []
+        self.current_cinema_id = None  # 🆕 当前选择的影院ID
+        self.all_accounts_data = []    # 🆕 所有账号数据缓存
         
         # 实现IWidgetInterface接口
         self._widget_interface = IWidgetInterface()
@@ -128,31 +130,54 @@ class AccountWidget(QWidget):
         layout.addStretch()
     
     def _build_account_list(self):
-        """构建账号列表"""
+        """构建账号列表区域"""
         layout = QVBoxLayout(self.account_group)
         layout.setContentsMargins(10, 20, 10, 10)
         layout.setSpacing(8)
         
-        # 操作按钮区
-        button_layout = QHBoxLayout()
-        self.refresh_btn = ClassicButton("刷新", "default")
-        self.refresh_btn.setMaximumWidth(50)
+        # 刷新按钮
+        self.refresh_btn = ClassicButton("刷新账号", "default")
+        self.refresh_btn.setMaximumWidth(100)
+        layout.addWidget(self.refresh_btn)
         
-        button_layout.addWidget(self.refresh_btn)
-        button_layout.addStretch()
-        
-        layout.addLayout(button_layout)
-        
-        # 账号表格
+        # 账号表格 - 🆕 修改为三列：账号、余额、积分
         self.account_table = ClassicTableWidget()
         self.account_table.setColumnCount(3)
-        self.account_table.setHorizontalHeaderLabels(["账号", "影院", "余额"])
+        self.account_table.setHorizontalHeaderLabels(["账号", "余额", "积分"])
+        
+        # 🆕 移除悬停效果，设置选择行为
+        self.account_table.setSelectionBehavior(self.account_table.SelectRows)
+        self.account_table.setSelectionMode(self.account_table.SingleSelection)
+        self.account_table.setAlternatingRowColors(False)  # 移除交替行颜色
+        
+        # 🆕 移除悬停样式
+        self.account_table.setStyleSheet("""
+            QTableWidget {
+                gridline-color: #ddd;
+                background-color: white;
+                selection-background-color: #e3f2fd;
+            }
+            QTableWidget::item {
+                padding: 8px;
+                border: none;
+            }
+            QTableWidget::item:selected {
+                background-color: #e3f2fd;
+                color: #1976d2;
+            }
+            QHeaderView::section {
+                background-color: #f5f5f5;
+                padding: 8px;
+                border: 1px solid #ddd;
+                font-weight: bold;
+            }
+        """)
         
         # 设置表格属性
         header = self.account_table.horizontalHeader()
         header.resizeSection(0, 120)  # 账号列
-        header.resizeSection(1, 120)  # 影院列
-        # 余额列自动拉伸
+        header.resizeSection(1, 80)   # 余额列
+        header.resizeSection(2, 80)   # 积分列
         
         layout.addWidget(self.account_table)
     
@@ -170,6 +195,9 @@ class AccountWidget(QWidget):
         """连接全局事件"""
         # 监听用户登录成功事件
         event_bus.user_login_success.connect(self._on_user_login_success)
+        
+        # 🆕 监听影院选择事件
+        event_bus.cinema_selected.connect(self._on_cinema_selected)
     
     def _on_login_clicked(self):
         """登录按钮点击处理"""
@@ -261,6 +289,97 @@ class AccountWidget(QWidget):
         except Exception as e:
             print(f"[账号组件] 登录成功处理错误: {e}")
     
+    def _on_cinema_selected(self, cinema_data: dict):
+        """影院选择处理 - 🆕 根据影院过滤账号"""
+        try:
+            # 🆕 直接处理dict类型的影院数据
+            if isinstance(cinema_data, dict):
+                cinema_id = cinema_data.get('cinemaid', '')
+                cinema_name = cinema_data.get('cinemaShortName', '')
+            else:
+                print(f"[账号组件] 收到非dict类型的影院数据: {type(cinema_data)}")
+                return
+            
+            if cinema_id:
+                self.current_cinema_id = cinema_id
+                self._filter_accounts_by_cinema(cinema_id)
+                print(f"[账号组件] 影院切换: {cinema_name} ({cinema_id})，已过滤账号列表")
+                
+                # 🆕 如果过滤后有账号，自动选择第一个账号
+                if self.accounts_data:
+                    first_account = self.accounts_data[0]
+                    self.current_account = first_account
+                    
+                    # 更新表格选择
+                    self.account_table.selectRow(0)
+                    
+                    # 发出账号选择信号
+                    self.account_selected.emit(first_account)
+                    event_bus.account_changed.emit(first_account)
+                    
+                    print(f"[账号组件] 自动选择账号: {first_account.get('userid', 'N/A')}")
+                else:
+                    print(f"[账号组件] 影院 {cinema_name} 没有关联账号")
+            
+        except Exception as e:
+            print(f"[账号组件] 影院选择处理错误: {e}")
+    
+    def _get_cinema_id_by_name(self, cinema_name: str) -> str:
+        """根据影院名称获取影院ID"""
+        try:
+            # 从影院管理器获取影院数据
+            from services.cinema_manager import cinema_manager
+            cinemas = cinema_manager.load_cinema_list()
+            
+            for cinema in cinemas:
+                if cinema.get('cinemaShortName') == cinema_name:
+                    return cinema.get('cinemaid', '')
+            
+            return ''
+            
+        except Exception as e:
+            print(f"[账号组件] 获取影院ID错误: {e}")
+            return ''
+    
+    def _filter_accounts_by_cinema(self, cinema_id: str):
+        """根据影院ID过滤账号列表"""
+        try:
+            if not self.all_accounts_data:
+                return
+            
+            # 过滤出属于指定影院的账号
+            filtered_accounts = [
+                account for account in self.all_accounts_data 
+                if account.get('cinemaid') == cinema_id
+            ]
+            
+            # 更新显示的账号数据
+            self.accounts_data = filtered_accounts
+            self._update_account_table(filtered_accounts)
+            
+            print(f"[账号组件] 影院 {cinema_id} 关联账号: {len(filtered_accounts)} 个")
+            
+        except Exception as e:
+            print(f"[账号组件] 过滤账号错误: {e}")
+    
+    def _set_default_cinema(self):
+        """设置默认影院 - 🆕 程序启动时自动选择第一个影院"""
+        try:
+            from services.cinema_manager import cinema_manager
+            cinemas = cinema_manager.load_cinema_list()
+            
+            if cinemas:
+                first_cinema = cinemas[0]
+                cinema_id = first_cinema.get('cinemaid', '')
+                
+                if cinema_id:
+                    self.current_cinema_id = cinema_id
+                    self._filter_accounts_by_cinema(cinema_id)
+                    print(f"[账号组件] 默认选择影院: {first_cinema.get('cinemaShortName', 'N/A')} ({cinema_id})")
+                    
+        except Exception as e:
+            print(f"[账号组件] 设置默认影院错误: {e}")
+    
     def refresh_accounts(self):
         """刷新账号列表"""
         try:
@@ -274,14 +393,19 @@ class AccountWidget(QWidget):
             with open(accounts_file, 'r', encoding='utf-8') as f:
                 accounts = json.load(f)
             
-            self.accounts_data = accounts
+            # 🆕 保存所有账号数据到缓存
+            self.all_accounts_data = accounts
             print(f"[账号组件] 成功加载 {len(accounts)} 个账号")
             
-            # 更新表格
-            self._update_account_table(accounts)
+            # 🆕 如果没有设置当前影院，则设置默认影院
+            if not self.current_cinema_id:
+                self._set_default_cinema()
+            else:
+                # 根据当前影院过滤账号
+                self._filter_accounts_by_cinema(self.current_cinema_id)
             
             # 发出刷新信号
-            self.accounts_refreshed.emit(accounts)
+            self.accounts_refreshed.emit(self.accounts_data)
             
         except Exception as e:
             QMessageBox.warning(self, "数据加载失败", f"刷新账号列表失败: {str(e)}")
@@ -294,16 +418,13 @@ class AccountWidget(QWidget):
             
             for i, account in enumerate(accounts):
                 userid = account.get("userid", "")
-                cinemaid = account.get("cinemaid", "")
                 balance = account.get("balance", 0)
+                points = account.get("points", account.get("score", 0))  # 兼容points和score字段
                 
-                # 根据影院ID获取影院名称
-                cinema_name = self._get_cinema_name_by_id(cinemaid)
-                
-                # 设置表格项
+                # 🆕 只设置三列：账号、余额、积分
                 self.account_table.setItem(i, 0, self.account_table.__class__.createItem(userid))
-                self.account_table.setItem(i, 1, self.account_table.__class__.createItem(cinema_name))
-                self.account_table.setItem(i, 2, self.account_table.__class__.createItem(str(balance)))
+                self.account_table.setItem(i, 1, self.account_table.__class__.createItem(str(balance)))
+                self.account_table.setItem(i, 2, self.account_table.__class__.createItem(str(points)))
                 
                 # 保存完整账号信息到第一列的数据中
                 account_item = self.account_table.item(i, 0)

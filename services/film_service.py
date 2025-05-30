@@ -26,8 +26,13 @@ def get_films(base_url, cinemaid, openid, userid,  token, cversion='3.9.12', os=
     response = requests.get(url, headers=headers, params=params, verify=False)
     # 处理BOM
     data = json.loads(response.content.decode('utf-8-sig'))
-    # print(data['resultData'] if 'resultData' in data else {})
-    return data['resultData'] if 'resultData' in data else {}
+    # 🆕 启用调试信息 - 查看实际API响应结构
+    result_data = data['resultData'] if 'resultData' in data else {}
+    print(f"[film_service] API完整响应: {data}")
+    print(f"[film_service] resultData类型: {type(result_data)}")
+    print(f"[film_service] resultData keys: {list(result_data.keys()) if isinstance(result_data, dict) else '非字典类型'}")
+    
+    return result_data
 
 def load_cinemas():
     """

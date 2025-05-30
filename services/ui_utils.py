@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 UI工具类 - 提供统一的消息管理和UI辅助功能
 """
@@ -6,75 +7,106 @@ UI工具类 - 提供统一的消息管理和UI辅助功能
 import tkinter as tk
 from tkinter import messagebox
 from typing import Optional, Any
+from PyQt5.QtWidgets import QMessageBox, QApplication
+from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtGui import QFont
 
 class MessageManager:
-    """统一消息管理器 - 处理各种弹窗和提示"""
+    """消息管理器 - 支持自动关闭和居中显示"""
     
     @staticmethod
-    def show_info(parent: Optional[tk.Widget], title: str, message: str) -> None:
-        """显示信息提示"""
-        try:
-            if parent and hasattr(parent, 'update_idletasks'):
-                # 只对tkinter窗口进行居中处理
-                parent.update_idletasks()
-                x = parent.winfo_x() + parent.winfo_width() // 2 - 150
-                y = parent.winfo_y() + parent.winfo_height() // 2 - 50
-                root = parent.winfo_toplevel()
-                root.geometry(f"+{x}+{y}")
-            
-            messagebox.showinfo(title, message)
-        except Exception as e:
-            print(f"[MessageManager] 显示信息弹窗失败: {e}")
-            print(f"[MessageManager] 消息内容: {title} - {message}")
+    def _create_message_box(parent, title, message, icon_type):
+        """创建居中的消息框"""
+        msg_box = QMessageBox(parent)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setIcon(icon_type)
+        
+        # 设置字体
+        font = QFont("Microsoft YaHei", 10)
+        msg_box.setFont(font)
+        
+        # 设置窗口标志，确保居中显示
+        msg_box.setWindowFlags(Qt.Dialog | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
+        
+        # 居中显示
+        if parent:
+            # 相对于父窗口居中
+            parent_rect = parent.geometry()
+            msg_box.move(
+                parent_rect.x() + (parent_rect.width() - 400) // 2,
+                parent_rect.y() + (parent_rect.height() - 200) // 2
+            )
+        else:
+            # 屏幕居中
+            from PyQt5.QtWidgets import QDesktopWidget
+            screen = QDesktopWidget().screenGeometry()
+            msg_box.move(
+                (screen.width() - 400) // 2,
+                (screen.height() - 200) // 2
+            )
+        
+        return msg_box
     
     @staticmethod
-    def show_warning(parent: Optional[tk.Widget], title: str, message: str) -> None:
-        """显示警告提示"""
-        try:
-            if parent and hasattr(parent, 'update_idletasks'):
-                parent.update_idletasks()
-                x = parent.winfo_x() + parent.winfo_width() // 2 - 150
-                y = parent.winfo_y() + parent.winfo_height() // 2 - 50
-                root = parent.winfo_toplevel()
-                root.geometry(f"+{x}+{y}")
-            
-            messagebox.showwarning(title, message)
-        except Exception as e:
-            print(f"[MessageManager] 显示警告弹窗失败: {e}")
-            print(f"[MessageManager] 警告内容: {title} - {message}")
+    def show_success(parent, title, message, auto_close=True):
+        """显示成功消息 - 默认1秒后自动关闭"""
+        msg_box = MessageManager._create_message_box(parent, title, message, QMessageBox.Information)
+        
+        if auto_close:
+            # 1秒后自动关闭
+            timer = QTimer()
+            timer.timeout.connect(msg_box.accept)
+            timer.start(1000)  # 1秒
+            msg_box.exec_()
+            timer.stop()
+        else:
+            msg_box.exec_()
     
     @staticmethod
-    def show_error(parent: Optional[tk.Widget], title: str, message: str) -> None:
-        """显示错误提示"""
-        try:
-            if parent and hasattr(parent, 'update_idletasks'):
-                parent.update_idletasks()
-                x = parent.winfo_x() + parent.winfo_width() // 2 - 150
-                y = parent.winfo_y() + parent.winfo_height() // 2 - 50
-                root = parent.winfo_toplevel()
-                root.geometry(f"+{x}+{y}")
-            
-            messagebox.showerror(title, message)
-        except Exception as e:
-            print(f"[MessageManager] 显示错误弹窗失败: {e}")
-            print(f"[MessageManager] 错误内容: {title} - {message}")
+    def show_error(parent, title, message, auto_close=False):
+        """显示错误消息 - 默认需要手动确认"""
+        msg_box = MessageManager._create_message_box(parent, title, message, QMessageBox.Critical)
+        
+        if auto_close:
+            # 1秒后自动关闭
+            timer = QTimer()
+            timer.timeout.connect(msg_box.accept)
+            timer.start(1000)  # 1秒
+            msg_box.exec_()
+            timer.stop()
+        else:
+            msg_box.exec_()
     
     @staticmethod
-    def ask_yes_no(parent: Optional[tk.Widget], title: str, message: str) -> bool:
-        """显示确认对话框"""
-        try:
-            if parent and hasattr(parent, 'update_idletasks'):
-                parent.update_idletasks()
-                x = parent.winfo_x() + parent.winfo_width() // 2 - 150
-                y = parent.winfo_y() + parent.winfo_height() // 2 - 50
-                root = parent.winfo_toplevel()
-                root.geometry(f"+{x}+{y}")
-            
-            return messagebox.askyesno(title, message)
-        except Exception as e:
-            print(f"[MessageManager] 显示确认对话框失败: {e}")
-            print(f"[MessageManager] 确认内容: {title} - {message}")
-            return False
+    def show_warning(parent, title, message, auto_close=False):
+        """显示警告消息 - 默认需要手动确认"""
+        msg_box = MessageManager._create_message_box(parent, title, message, QMessageBox.Warning)
+        
+        if auto_close:
+            # 1秒后自动关闭
+            timer = QTimer()
+            timer.timeout.connect(msg_box.accept)
+            timer.start(1000)  # 1秒
+            msg_box.exec_()
+            timer.stop()
+        else:
+            msg_box.exec_()
+    
+    @staticmethod
+    def show_info(parent, title, message, auto_close=True):
+        """显示信息消息 - 默认1秒后自动关闭"""
+        msg_box = MessageManager._create_message_box(parent, title, message, QMessageBox.Information)
+        
+        if auto_close:
+            # 1秒后自动关闭
+            timer = QTimer()
+            timer.timeout.connect(msg_box.accept)
+            timer.start(1000)  # 1秒
+            msg_box.exec_()
+            timer.stop()
+        else:
+            msg_box.exec_()
 
 class CouponManager:
     """优惠券状态管理器"""

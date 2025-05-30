@@ -120,6 +120,27 @@ class ClassicButton(QPushButton):
                     border-color: #cc6c00;
                 }
             """
+        elif self.button_type == "danger":
+            style = """
+                QPushButton {
+                    background-color: #d13438;
+                    color: white;
+                    border: 1px solid #d13438;
+                    padding: 8px 16px;
+                    border-radius: 3px;
+                    font: 11px "Microsoft YaHei";
+                    min-width: 60px;
+                    min-height: 24px;
+                }
+                QPushButton:hover {
+                    background-color: #b92b2f;
+                    border-color: #b92b2f;
+                }
+                QPushButton:pressed {
+                    background-color: #a12226;
+                    border-color: #a12226;
+                }
+            """
         else:  # default
             style = """
                 QPushButton {

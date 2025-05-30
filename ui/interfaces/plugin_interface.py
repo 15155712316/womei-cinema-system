@@ -77,7 +77,7 @@ class EventBus(QObject):
     user_login_success = pyqtSignal(dict)  # 用户登录成功
     user_logout = pyqtSignal()  # 用户登出
     account_changed = pyqtSignal(dict)  # 账号切换
-    cinema_selected = pyqtSignal(str)  # 影院选择
+    cinema_selected = pyqtSignal(dict)  # 🆕 影院选择 - 修改为dict类型支持完整影院数据
     order_created = pyqtSignal(dict)  # 订单创建
     order_paid = pyqtSignal(str)  # 订单支付
     coupon_bound = pyqtSignal(dict)  # 券绑定
