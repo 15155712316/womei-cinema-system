@@ -56,32 +56,20 @@ class SeatMapPanelPyQt5(QWidget):
         self.scroll_area.setWidget(self.seat_widget)
         layout.addWidget(self.scroll_area, 1)
         
-        # 🆕 简化底部信息区 - 移除图例
+        # 🆕 简化底部信息区 - 完全移除选座信息区域，为座位图腾出更多空间
         bottom_layout = QVBoxLayout()
+
+        # 移除选座信息区域，直接显示提交按钮
         
-        # 选座信息 - 简洁显示
-        self.info_label = QLabel("请选择座位")
-        self.info_label.setFont(QFont("Microsoft YaHei", 10))
-        self.info_label.setStyleSheet("""
-            QLabel { 
-                color: #333; 
-                padding: 8px; 
-                background-color: #f8f9fa;
-                border: 1px solid #e9ecef;
-                border-radius: 4px;
-                font-weight: bold;
-            }
-        """)
-        bottom_layout.addWidget(self.info_label)
-        
-        # 提交订单按钮
+        # 提交订单按钮 - 集成选座信息，居中显示
         button_layout = QHBoxLayout()
+        button_layout.addStretch()  # 左侧弹性空间
         self.submit_btn = QPushButton("提交订单")
         self.submit_btn.setFont(QFont("Microsoft YaHei", 11, QFont.Bold))
         self.submit_btn.clicked.connect(self._on_submit_order_click)
         self._setup_submit_button_style(self.submit_btn)
         button_layout.addWidget(self.submit_btn)
-        button_layout.addStretch()
+        button_layout.addStretch()  # 右侧弹性空间
         bottom_layout.addLayout(button_layout)
         
         layout.addLayout(bottom_layout)
@@ -96,17 +84,19 @@ class SeatMapPanelPyQt5(QWidget):
         """)
     
     def _setup_submit_button_style(self, button: QPushButton):
-        """设置提交按钮样式"""
+        """设置提交按钮样式 - 集成选座信息，居中显示，高度增加四分之一"""
         button.setStyleSheet("""
             QPushButton {
                 background-color: #007bff;
                 color: white;
-                font: bold 12px "Microsoft YaHei";
+                font: bold 11px "Microsoft YaHei";
                 border: none;
-                padding: 12px 24px;
-                border-radius: 6px;
-                min-width: 120px;
-                min-height: 40px;
+                padding: 6px 20px;
+                border-radius: 4px;
+                min-width: 200px;
+                min-height: 25px;
+                max-height: 25px;
+                text-align: center;
             }
             QPushButton:hover {
                 background-color: #0056b3;
@@ -221,9 +211,9 @@ class SeatMapPanelPyQt5(QWidget):
                 self.seat_buttons[(r, c)] = seat_btn
         
         print(f"[座位面板] 座位图绘制完成，共{len(self.seat_buttons)}个座位")
-        
-        # 更新信息显示
-        self.update_info_label()
+
+        # 初始化按钮文字
+        self._update_submit_button_text()
     
     def _update_seat_button_style(self, button: QPushButton, status: str):
         """更新座位按钮样式 - 现代化设计"""
@@ -316,11 +306,12 @@ class SeatMapPanelPyQt5(QWidget):
         # 发送信号
         selected_seats = [self.seat_data[r][c] for (r, c) in self.selected_seats]
         self.seat_selected.emit(selected_seats)
-        
-        # 更新信息显示
-        self.update_info_label()
-        
+
         print(f"[座位面板] 座位{seat.get('num', f'{r+1}-{c+1}')}切换为: {seat['status']}")
+        print(f"[座位面板] 当前已选座位数: {len(self.selected_seats)}")
+
+        # 更新提交按钮文字
+        self._update_submit_button_text()
     
     def update_seat_data(self, seat_data: List[List]):
         """更新座位数据并重绘"""
@@ -341,16 +332,27 @@ class SeatMapPanelPyQt5(QWidget):
         """获取选中座位对象列表"""
         return [self.seat_data[r][c] for (r, c) in self.selected_seats]
     
-    def update_info_label(self):
-        """更新信息显示 - 简洁明了"""
+    def _update_submit_button_text(self):
+        """更新提交按钮文字 - 集成选座信息"""
         selected_count = len(self.selected_seats)
         if selected_count == 0:
-            self.info_label.setText("👆 请点击上方座位进行选择")
+            self.submit_btn.setText("提交订单")
         else:
-            selected_nums = self.get_selected_seats()
-            price_per_seat = 35.0  # 假设价格
-            total_price = selected_count * price_per_seat
-            self.info_label.setText(f"✅ 已选 {selected_count} 个座位: {', '.join(selected_nums)} | 总计: ¥{total_price:.0f}")
+            # 获取选中座位的排号信息
+            selected_seats_info = []
+            for (r, c) in self.selected_seats:
+                seat = self.seat_data[r][c]
+                # 获取座位的排号和列号
+                row_num = seat.get('row', r + 1)
+                col_num = seat.get('col', c + 1)
+                seat_info = f"{row_num}排{col_num}"
+                selected_seats_info.append(seat_info)
+
+            # 按钮文字格式：提交订单 5排13 5排12
+            seats_text = " ".join(selected_seats_info)
+            self.submit_btn.setText(f"提交订单 {seats_text}")
+
+        print(f"[座位面板] 按钮文字已更新: '{self.submit_btn.text()}'")
     
     def set_on_seat_selected(self, callback: Callable):
         """设置选座回调函数"""
@@ -400,7 +402,10 @@ class SeatMapPanelPyQt5(QWidget):
                 self._update_seat_button_style(seat_btn, seat['status'])
         
         self.selected_seats.clear()
-        self.update_info_label()
+        print(f"[座位面板] 座位状态已重置，已选座位已清空")
+
+        # 更新提交按钮文字
+        self._update_submit_button_text()
     
     def set_enabled(self, enabled: bool):
         """设置是否可用"""

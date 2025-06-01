@@ -120,15 +120,15 @@ class TabManagerWidget(QWidget):
         layout = QHBoxLayout(self.ticket_tab)
         layout.setSpacing(10)
         
-        # 左侧：影院选择
+        # 左侧：影院选择 - 缩小比例，给券列表更多空间
         cinema_group = ClassicGroupBox("影院选择")
         self._build_cinema_select(cinema_group)
-        layout.addWidget(cinema_group, 55)
-        
-        # 右侧：可用券列表
+        layout.addWidget(cinema_group, 40)  # 从55改为40
+
+        # 右侧：可用券列表 - 增加比例
         coupon_group = ClassicGroupBox("可用券列表")
         self._build_coupon_list(coupon_group)
-        layout.addWidget(coupon_group, 45)
+        layout.addWidget(coupon_group, 60)  # 从45改为60
     
     def _build_cinema_select(self, parent_group):
         """构建影院选择区域"""
@@ -140,14 +140,17 @@ class TabManagerWidget(QWidget):
         self.current_account_label = ClassicLabel("当前账号: 未选择", "info")
         layout.addWidget(self.current_account_label)
         
-        # 影院选择
+        # 影院选择 - 优化间距，让下拉框与文字贴近
         cinema_layout = QHBoxLayout()
+        cinema_layout.setSpacing(5)  # 设置较小的间距
         cinema_label = ClassicLabel("影院:")
-        cinema_label.setMinimumWidth(40)
+        cinema_label.setMinimumWidth(35)  # 缩小标签宽度
+        cinema_label.setMaximumWidth(35)  # 限制最大宽度
         self.cinema_combo = ClassicComboBox()
         self.cinema_combo.addItem("加载中...")
         cinema_layout.addWidget(cinema_label)
         cinema_layout.addWidget(self.cinema_combo)
+        cinema_layout.setContentsMargins(0, 0, 0, 0)  # 移除边距
         layout.addLayout(cinema_layout)
         
         # 影片选择
@@ -180,9 +183,37 @@ class TabManagerWidget(QWidget):
         session_layout.addWidget(self.session_combo)
         layout.addLayout(session_layout)
         
-        # 提交订单按钮
+        # 提交订单按钮 - 缩小高度，避免占用座位区域空间
         self.submit_order_btn = ClassicButton("提交订单", "success")
-        self.submit_order_btn.setMinimumHeight(35)
+        self.submit_order_btn.setMinimumHeight(20)  # 进一步缩小到20px
+        self.submit_order_btn.setMaximumHeight(20)  # 限制最大高度为20px
+        # 覆盖样式中的padding设置
+        self.submit_order_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #107c10;
+                color: white;
+                border: 1px solid #107c10;
+                padding: 2px 8px;
+                border-radius: 3px;
+                font: 10px "Microsoft YaHei";
+                min-width: 60px;
+                min-height: 20px;
+                max-height: 20px;
+            }
+            QPushButton:hover {
+                background-color: #0e6e0e;
+                border-color: #0e6e0e;
+            }
+            QPushButton:pressed {
+                background-color: #0c5e0c;
+                border-color: #0c5e0c;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                border-color: #cccccc;
+                color: #888888;
+            }
+        """)
         self.submit_order_btn.setEnabled(False)  # 初始禁用，需要选择完所有选项后启用
         layout.addWidget(self.submit_order_btn)
         
@@ -194,12 +225,10 @@ class TabManagerWidget(QWidget):
         layout.setContentsMargins(10, 20, 10, 10)
         layout.setSpacing(8)
         
-        # 券列表
+        # 券列表 - 初始为空白状态
         self.coupon_list = ClassicListWidget()
-        self.coupon_list.addItem("10元代金券 (有效期至2024-12-31)")
-        self.coupon_list.addItem("5折优惠券 (限周末使用)")
-        self.coupon_list.addItem("买一送一券 (限工作日)")
-        
+        # 不添加任何初始项目，保持空白
+
         layout.addWidget(self.coupon_list)
     
     def _build_bind_coupon_tab(self):
@@ -422,66 +451,34 @@ class TabManagerWidget(QWidget):
         layout.setContentsMargins(10, 10, 10, 10)
         layout.setSpacing(10)
         
-        # 账号信息显示区
-        account_info_frame = QWidget()
-        account_info_frame.setStyleSheet("QWidget { background-color: #f0f8ff; padding: 10px; border: 1px solid #ddd; }")
-        account_info_layout = QHBoxLayout(account_info_frame)
-        
-        self.exchange_account_info = ClassicLabel("当前账号：未选择")
-        self.exchange_account_info.setFont(QFont("Microsoft YaHei", 10, QFont.Bold))
-        account_info_layout.addWidget(self.exchange_account_info)
-        layout.addWidget(account_info_frame)
-        
-        # 控制按钮区
+        # 控制按钮区 - 刷新按钮和统计信息
         control_frame = QWidget()
         control_layout = QHBoxLayout(control_frame)
-        
+
         refresh_btn = ClassicButton("刷新券列表", "default")
         refresh_btn.clicked.connect(self.refresh_coupon_exchange_list)
         control_layout.addWidget(refresh_btn)
-        
-        # 券类型筛选
-        control_layout.addWidget(ClassicLabel("券类型:"))
-        self.coupon_type_combo = ClassicComboBox()
-        self.coupon_type_combo.addItems(["全部", "代金券", "优惠券", "免费券"])
-        self.coupon_type_combo.currentTextChanged.connect(self.filter_exchange_coupons)
-        control_layout.addWidget(self.coupon_type_combo)
-        
-        # 状态筛选
-        control_layout.addWidget(ClassicLabel("状态:"))
-        self.coupon_status_combo = ClassicComboBox()
-        self.coupon_status_combo.addItems(["全部", "可兑换", "已兑换", "已过期"])
-        self.coupon_status_combo.currentTextChanged.connect(self.filter_exchange_coupons)
-        control_layout.addWidget(self.coupon_status_combo)
-        
+
+        # 券统计信息显示 - 初始为空白
+        self.coupon_stats_label = ClassicLabel("")
+        self.coupon_stats_label.setStyleSheet("color: #666; font-size: 12px; margin-left: 10px;")
+        control_layout.addWidget(self.coupon_stats_label)
+
         control_layout.addStretch()
         layout.addWidget(control_frame)
         
-        # 可兑换券列表表格
+        # 可兑换券列表表格 - 显示券名称、券码和有效期
         self.exchange_coupon_table = ClassicTableWidget()
-        self.exchange_coupon_table.setColumnCount(5)
-        self.exchange_coupon_table.setHorizontalHeaderLabels(["券名称", "券码", "面值", "状态", "操作"])
-        
+        self.exchange_coupon_table.setColumnCount(3)
+        self.exchange_coupon_table.setHorizontalHeaderLabels(["券名称", "券码", "有效期"])
+
         # 设置列宽
         header = self.exchange_coupon_table.horizontalHeader()
         header.resizeSection(0, 150)  # 券名称
         header.resizeSection(1, 120)  # 券码
-        header.resizeSection(2, 80)   # 面值
-        header.resizeSection(3, 80)   # 状态
-        header.resizeSection(4, 80)   # 操作
-        
+        header.resizeSection(2, 100)  # 有效期
+
         layout.addWidget(self.exchange_coupon_table)
-        
-        # 兑换记录区
-        record_frame = QWidget()
-        record_layout = QVBoxLayout(record_frame)
-        record_layout.addWidget(ClassicLabel("兑换记录:"))
-        
-        self.exchange_record_text = ClassicTextEdit(read_only=True)
-        self.exchange_record_text.setMaximumHeight(100)
-        record_layout.addWidget(self.exchange_record_text)
-        
-        layout.addWidget(record_frame)
         
         # 初始化数据
         self.exchange_coupon_data = []
@@ -654,7 +651,7 @@ class TabManagerWidget(QWidget):
         """显示券列表获取错误"""
         self.exchange_coupon_table.setRowCount(1)
         self.exchange_coupon_table.clearSpans()
-        
+
         # 根据错误类型显示不同的提示
         if 'TOKEN_INVALID' in error_msg or 'token' in error_msg.lower():
             display_msg = "登录状态已失效，请重新登录账号"
@@ -668,28 +665,28 @@ class TabManagerWidget(QWidget):
         else:
             display_msg = f"获取失败：{error_msg}"
             suggestion = ""
-        
+
         error_item = self.exchange_coupon_table.__class__.createItem(display_msg)
         error_item.setBackground(QColor('#f8d7da'))  # 红色背景
         self.exchange_coupon_table.setItem(0, 0, error_item)
-        self.exchange_coupon_table.setSpan(0, 0, 1, 5)
-        
+        self.exchange_coupon_table.setSpan(0, 0, 1, 3)  # 合并3列
+
         if suggestion:
             self.exchange_coupon_table.setRowCount(2)
             suggestion_item = self.exchange_coupon_table.__class__.createItem(suggestion)
             suggestion_item.setBackground(QColor('#fff3cd'))  # 黄色背景
             self.exchange_coupon_table.setItem(1, 0, suggestion_item)
-            self.exchange_coupon_table.setSpan(1, 0, 1, 5)
+            self.exchange_coupon_table.setSpan(1, 0, 1, 3)  # 合并3列
+
+        # 更新统计信息为错误状态
+        self.coupon_stats_label.setText("券信息：获取失败")
+        self.coupon_stats_label.setStyleSheet("color: #d32f2f; font-size: 12px; margin-left: 10px; font-weight: bold;")
 
     def add_exchange_record_info(self, message):
-        """添加兑换记录信息"""
+        """添加兑换记录信息 - 简化版本，只打印日志"""
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        record = f"• {timestamp} - {message}"
-        
-        current_text = self.exchange_record_text.toPlainText()
-        new_text = record + "\n" + current_text if current_text else record
-        self.exchange_record_text.setPlainText(new_text)
+        print(f"[券列表记录] {timestamp} - {message}")
 
     def restore_coupon_ui_state(self, status_text=""):
         """恢复UI状态"""
@@ -706,80 +703,158 @@ class TabManagerWidget(QWidget):
         print(f"[券列表刷新] 完成 - {status_text}")
 
     def update_coupon_table(self, vouchers):
-        """更新券列表表格显示"""
+        """更新券列表表格显示 - 只显示没过期没使用的券"""
         # 清空加载状态
         self.exchange_coupon_table.setRowCount(0)
         self.exchange_coupon_table.clearSpans()
-        
-        if not vouchers:
-            # 无券的情况
+
+        # 过滤券：只显示没过期没使用的券
+        valid_vouchers = []
+        for voucher in vouchers:
+            # 检查是否过期 - 使用多个字段判断
+            is_expired = (
+                voucher.get('is_expired', False) or
+                voucher.get('expired', '0') == '1' or
+                voucher.get('leftDays', 0) < 0
+            )
+
+            # 检查是否已使用 - 使用真实API字段
+            is_redeemed = voucher.get('redeemed', '0') == '1'
+            is_used = voucher.get('status') in ['used', 'consumed', 'redeemed'] if voucher.get('status') else False
+
+            # 只保留未过期且未使用的券
+            if not is_expired and not is_redeemed and not is_used:
+                valid_vouchers.append(voucher)
+
+        if not valid_vouchers:
+            # 无可用券的情况
             self.exchange_coupon_table.setRowCount(1)
             no_coupon_item = self.exchange_coupon_table.__class__.createItem("暂无可用优惠券")
             no_coupon_item.setBackground(QColor('#f8f9fa'))
             self.exchange_coupon_table.setItem(0, 0, no_coupon_item)
-            self.exchange_coupon_table.setSpan(0, 0, 1, 5)
+            self.exchange_coupon_table.setSpan(0, 0, 1, 3)  # 合并3列
+
+            # 更新统计信息
+            self.update_coupon_stats(len(vouchers), 0)
             return
-        
+
         # 按有效期排序（即将过期的在前）
-        vouchers.sort(key=lambda v: v.get('expireddate', '9999-12-31'))
-        
+        valid_vouchers.sort(key=lambda v: v.get('expireddate', '9999-12-31'))
+
         # 设置表格行数
-        self.exchange_coupon_table.setRowCount(len(vouchers))
-        
-        # 填充券数据
-        for row, voucher in enumerate(vouchers):
+        self.exchange_coupon_table.setRowCount(len(valid_vouchers))
+
+        # 填充券数据 - 显示券名称、券码和有效期
+        for row, voucher in enumerate(valid_vouchers):
             # 券名称
             name = voucher.get('couponname', '未知券')
             name_item = self.exchange_coupon_table.__class__.createItem(name)
             self.exchange_coupon_table.setItem(row, 0, name_item)
-            
+
             # 券码
             code = voucher.get('couponcode', '无券码')
             code_item = self.exchange_coupon_table.__class__.createItem(code)
             self.exchange_coupon_table.setItem(row, 1, code_item)
-            
-            # 面值（如果有）
-            face_value = voucher.get('faceValue', 0)
-            if face_value > 0:
-                value_text = f"¥{face_value:.1f}"
-            else:
-                value_text = "待查询"
-            value_item = self.exchange_coupon_table.__class__.createItem(value_text)
-            self.exchange_coupon_table.setItem(row, 2, value_item)
-            
+
             # 有效期
             expire_date = voucher.get('expireddate', '未知')
             expire_item = self.exchange_coupon_table.__class__.createItem(expire_date)
-            self.exchange_coupon_table.setItem(row, 3, expire_item)
-            
-            # 状态
-            is_expired = voucher.get('is_expired', False)
-            if is_expired:
-                status_text = "❌ 已过期"
-                status_color = QColor('#f8d7da')  # 红色背景
+
+            # 根据剩余天数设置颜色
+            left_days = voucher.get('leftDays', 0)
+            if left_days <= 3:
+                expire_item.setBackground(QColor('#f8d7da'))  # 红色背景 - 即将过期
+            elif left_days <= 7:
+                expire_item.setBackground(QColor('#fff3cd'))  # 黄色背景 - 快过期
             else:
-                status_text = "✅ 可用"
-                status_color = QColor('#d4edda')  # 绿色背景
-            
-            status_item = self.exchange_coupon_table.__class__.createItem(status_text)
-            status_item.setBackground(status_color)
-            self.exchange_coupon_table.setItem(row, 4, status_item)
-        
+                expire_item.setBackground(QColor('#d4edda'))  # 绿色背景 - 正常
+
+            self.exchange_coupon_table.setItem(row, 2, expire_item)
+
         # 保存券数据到缓存
-        self.exchange_coupon_data = vouchers
-        
-        print(f"[券列表UI] 表格更新完成，显示 {len(vouchers)} 张券")
+        self.exchange_coupon_data = valid_vouchers
+
+        # 更新统计信息
+        self.update_coupon_stats(len(vouchers), len(valid_vouchers))
+
+        print(f"[券列表UI] 表格更新完成，显示 {len(valid_vouchers)} 张可用券（已过滤 {len(vouchers) - len(valid_vouchers)} 张不可用券）")
+
+    def update_coupon_stats(self, total_count, valid_count):
+        """更新券统计信息显示"""
+        try:
+            filtered_count = total_count - valid_count
+
+            # 构建统计信息文本
+            stats_parts = []
+
+            # 总数信息
+            stats_parts.append(f"总计: {total_count}张")
+
+            # 可用数信息
+            if valid_count > 0:
+                stats_parts.append(f"可用: {valid_count}张")
+
+            # 过滤数信息
+            if filtered_count > 0:
+                stats_parts.append(f"已过滤: {filtered_count}张")
+
+            # 组合显示文本
+            if total_count == 0:
+                stats_text = "券信息：暂无券数据"
+            elif valid_count == 0:
+                stats_text = f"券信息：{stats_parts[0]}，全部不可用"
+            else:
+                stats_text = f"券信息：{' | '.join(stats_parts)}"
+
+            # 更新显示
+            self.coupon_stats_label.setText(stats_text)
+
+            # 根据可用券数量设置颜色
+            if valid_count == 0:
+                color = "#d32f2f"  # 红色 - 无可用券
+            elif valid_count <= 3:
+                color = "#f57c00"  # 橙色 - 券较少
+            else:
+                color = "#388e3c"  # 绿色 - 券充足
+
+            self.coupon_stats_label.setStyleSheet(f"color: {color}; font-size: 12px; margin-left: 10px; font-weight: bold;")
+
+            print(f"[券统计] 更新统计信息: {stats_text}")
+
+        except Exception as e:
+            print(f"[券统计] 更新统计信息失败: {e}")
+            self.coupon_stats_label.setText("券信息：统计失败")
+
+    def reset_coupon_lists(self):
+        """重置所有券列表为空白状态"""
+        try:
+            # 重置可用券列表
+            if hasattr(self, 'coupon_list'):
+                self.coupon_list.clear()
+                print(f"[券列表重置] 可用券列表已清空")
+
+            # 重置兑换券表格
+            if hasattr(self, 'exchange_coupon_table'):
+                self.exchange_coupon_table.setRowCount(0)
+                self.exchange_coupon_table.clearSpans()
+                print(f"[券列表重置] 兑换券表格已清空")
+
+            # 重置券统计信息
+            if hasattr(self, 'coupon_stats_label'):
+                self.coupon_stats_label.setText("")
+                print(f"[券列表重置] 券统计信息已清空")
+
+            # 清空券数据缓存
+            self.exchange_coupon_data = []
+
+            print(f"[券列表重置] 所有券列表已重置为空白状态")
+
+        except Exception as e:
+            print(f"[券列表重置] 重置失败: {e}")
 
     def filter_exchange_coupons(self):
-        """筛选兑换券"""
-        # 简化实现，实际应该根据筛选条件过滤数据
+        """筛选兑换券 - 已简化，不再需要筛选功能"""
         pass
-
-    def update_exchange_account_info(self):
-        """更新兑换界面的账号信息"""
-        if self.current_account:
-            info_text = f"当前账号：{self.current_account.get('userid', 'N/A')} (积分：{self.current_account.get('score', 0)})"
-            self.exchange_account_info.setText(info_text)
 
     def _build_order_tab(self):
         """构建订单Tab页面"""
@@ -1420,9 +1495,12 @@ class TabManagerWidget(QWidget):
         try:
             if not cinema_text or cinema_text == "加载中...":
                 return
-                
+
             print(f"[Tab管理器] 影院切换: {cinema_text}")
-            
+
+            # 🆕 重置券列表
+            self.reset_coupon_lists()
+
             # 清空下级选择
             self.movie_combo.clear()
             self.date_combo.clear()
@@ -1682,13 +1760,16 @@ class TabManagerWidget(QWidget):
         try:
             if not movie_text or movie_text in ["请先选择影院", "正在加载影片...", "暂无影片", "加载失败"]:
                 return
-            
+
             # 🆕 添加账号状态检查，避免循环错误
             if not self.current_account:
                 # 静默返回，不输出错误日志
                 return
-                
+
             print(f"[Tab管理器] 影片切换: {movie_text}")
+
+            # 🆕 重置券列表
+            self.reset_coupon_lists()
             
             # 获取选中的影片详细数据
             selected_movie = None
@@ -1761,7 +1842,10 @@ class TabManagerWidget(QWidget):
                 return
                 
             print(f"[Tab管理器] 日期切换: {date_text}")
-            
+
+            # 🆕 重置券列表
+            self.reset_coupon_lists()
+
             # 清空场次选择
             self.session_combo.clear()
             self.session_combo.addItem("请选择场次")
@@ -1815,7 +1899,10 @@ class TabManagerWidget(QWidget):
                 return
                 
             print(f"[Tab管理器] 场次切换: {session_text}")
-            
+
+            # 🆕 重置券列表
+            self.reset_coupon_lists()
+
             # 获取选中的场次详细数据
             selected_session = None
             session_index = self.session_combo.currentIndex() - 1  # 减去"请选择场次"选项

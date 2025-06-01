@@ -46,14 +46,35 @@ class LoginWindow(QWidget):
         self.login_thread = None
         self.machine_code = auth_service.get_machine_code()  # 预先获取机器码
         self.login_history_file = "data/login_history.json"  # 登录历史文件
-        
+        self.auto_login_prevented = False  # 防止自动登录标志
+
         # 输出机器码信息，方便用户确认
         print(f"[机器码生成] 当前设备机器码: {self.machine_code}")
         print(f"[登录窗口] 机器码已显示在界面上，可点击复制按钮复制")
-        
+
         self.init_ui()
         self.load_login_history()  # 加载登录历史
-    
+
+        # 直接启用登录功能
+        self.auto_login_prevented = True
+        print("[登录窗口] 登录功能已启用")
+
+    def _safe_login(self):
+        """安全登录方法 - 防止意外触发"""
+        print("[登录窗口] _safe_login() 被调用")
+
+        # 额外的安全检查
+        if not self.auto_login_prevented:
+            print("[登录窗口] 安全检查：登录功能尚未启用，忽略回车键")
+            return
+
+        if not self.login_button.isEnabled():
+            print("[登录窗口] 安全检查：登录按钮未启用，忽略回车键")
+            return
+
+        print("[登录窗口] 安全检查通过，执行登录")
+        self.login()
+
     def init_ui(self):
         """初始化用户界面"""
         self.setWindowTitle("乐影票务系统 - 用户登录")
@@ -106,8 +127,9 @@ class LoginWindow(QWidget):
         self.phone_input.setFont(QFont("微软雅黑", 13))
         self.phone_input.setMaxLength(11)
         
-        # 回车键登录
-        self.phone_input.returnPressed.connect(self.login)
+        # 回车键登录 - 延迟连接，防止自动触发
+        # self.phone_input.returnPressed.connect(self.login)  # 暂时禁用
+        self.phone_input.returnPressed.connect(self._safe_login)
         
         # 登录按钮
         self.login_button = QPushButton("登 录")
@@ -287,12 +309,31 @@ class LoginWindow(QWidget):
             print(f"[登录历史] 保存登录历史失败: {e}")
     
     def center_window(self):
-        """窗口居中显示"""
-        screen = QApplication.desktop().screenGeometry()
-        size = self.geometry()
-        x = (screen.width() - size.width()) // 2
-        y = (screen.height() - size.height()) // 2
-        self.move(x, y)
+        """窗口居中显示 - 确保在主屏幕"""
+        try:
+            # 获取主屏幕的几何信息
+            desktop = QApplication.desktop()
+            screen_rect = desktop.availableGeometry(desktop.primaryScreen())
+
+            # 获取窗口大小
+            window_size = self.size()
+
+            # 计算中央位置
+            x = screen_rect.x() + (screen_rect.width() - window_size.width()) // 2
+            y = screen_rect.y() + (screen_rect.height() - window_size.height()) // 2
+
+            # 确保窗口完全在屏幕内
+            x = max(screen_rect.x(), min(x, screen_rect.x() + screen_rect.width() - window_size.width()))
+            y = max(screen_rect.y(), min(y, screen_rect.y() + screen_rect.height() - window_size.height()))
+
+            self.move(x, y)
+            print(f"[登录窗口] 窗口已居中到主屏幕: ({x}, {y})")
+            print(f"[登录窗口] 主屏幕范围: {screen_rect}")
+
+        except Exception as e:
+            print(f"[登录窗口] 居中窗口失败: {e}")
+            # 备用方案：移动到安全位置
+            self.move(100, 100)
     
     def copy_machine_code(self):
         """复制机器码到剪贴板"""
@@ -319,21 +360,28 @@ class LoginWindow(QWidget):
     
     def login(self):
         """执行登录"""
+        # 防止自动登录检查
+        if not self.auto_login_prevented:
+            print("[登录窗口] 阻止自动登录，登录功能尚未启用")
+            return
+
         phone = self.phone_input.text().strip()
-        
+
         if not phone:
             MessageManager.show_warning(self, "输入错误", "请输入手机号")
             self.phone_input.setFocus()
             return
-        
+
         if len(phone) != 11 or not phone.isdigit():
             MessageManager.show_warning(self, "输入错误", "请输入正确的11位手机号")
             self.phone_input.setFocus()
             return
-        
+
+        print(f"[登录窗口] 用户手动触发登录: {phone}")
+
         # 显示登录进度
         self.set_login_state(True)
-        
+
         # 启动登录线程
         self.login_thread = LoginThread(phone)
         self.login_thread.login_result.connect(self.on_login_result)

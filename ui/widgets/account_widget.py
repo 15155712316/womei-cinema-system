@@ -173,11 +173,22 @@ class AccountWidget(QWidget):
             }
         """)
         
-        # 设置表格属性
+        # 设置表格属性 - 优化列宽避免滚动条
         header = self.account_table.horizontalHeader()
-        header.resizeSection(0, 120)  # 账号列
-        header.resizeSection(1, 80)   # 余额列
-        header.resizeSection(2, 80)   # 积分列
+
+        # 先设置固定模式，再设置宽度
+        header.setSectionResizeMode(0, header.Fixed)  # 账号列固定宽度
+        header.setSectionResizeMode(1, header.Fixed)  # 余额列固定宽度
+        header.setSectionResizeMode(2, header.Fixed)  # 积分列固定宽度
+
+        # 然后设置具体宽度
+        header.resizeSection(0, 110)  # 账号列 - 缩小10px
+        header.resizeSection(1, 60)   # 余额列 - 缩小20px
+        header.resizeSection(2, 50)   # 积分列 - 缩小30px
+
+        # 设置表格固定宽度，避免出现滚动条
+        self.account_table.setFixedWidth(240)  # 110+60+50+20(边距) = 240
+        self.account_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         
         layout.addWidget(self.account_table)
     

@@ -175,15 +175,11 @@ class ModularCinemaMainWindow(QMainWindow):
         self.seat_area_layout.setContentsMargins(10, 20, 10, 10)
         self.seat_area_layout.setSpacing(10)
         
-        # 座位选择输入
-        seat_input_layout = QHBoxLayout()
-        seat_label = ClassicLabel("选择座位:")
-        seat_label.setMinimumWidth(80)
+        # 🆕 移除座位选择输入框 - 直接使用座位图选择，不需要手动输入
+        # 保留seat_input引用以避免代码错误，但不显示在界面上
         self.seat_input = ClassicLineEdit()
-        self.seat_input.setPlaceholderText("请输入座位号，如: A1,A2,B3")
-        seat_input_layout.addWidget(seat_label)
-        seat_input_layout.addWidget(self.seat_input)
-        self.seat_area_layout.addLayout(seat_input_layout)
+        self.seat_input.setPlaceholderText("点击上方座位图选择座位...")
+        self.seat_input.hide()  # 隐藏输入框
         
         # 座位图占位符
         self.seat_placeholder = ClassicLabel(
@@ -255,16 +251,21 @@ class ModularCinemaMainWindow(QMainWindow):
         """)
         order_layout.addWidget(self.phone_display)
         
-        # 订单详情文本框
+        # 订单详情文本框 - 改善UI：增大字体，优化样式
         self.order_detail_text = ClassicTextEdit(read_only=True)
         self.order_detail_text.setPlaceholderText("订单详情将在此显示...")
         self.order_detail_text.setStyleSheet("""
             QTextEdit {
-                font: 10px "Microsoft YaHei";
-                background-color: #f5f5f5;
-                border: 1px solid #cccccc;
-                border-radius: 3px;
-                padding: 4px;
+                font: 14px "Microsoft YaHei";
+                background-color: #ffffff;
+                border: 2px solid #e0e0e0;
+                border-radius: 6px;
+                padding: 12px;
+                line-height: 1.6;
+                color: #333333;
+            }
+            QTextEdit:focus {
+                border-color: #4CAF50;
             }
         """)
         order_layout.addWidget(self.order_detail_text)
@@ -417,36 +418,97 @@ class ModularCinemaMainWindow(QMainWindow):
             self._restart_login()
     
     def _trigger_default_cinema_selection(self):
-        """触发默认影院选择 - 🆕 确保账号列表正确过滤"""
+        """智能默认选择：影院 → 账号 - 避免等待账号选择"""
         try:
-            # 获取第一个影院并触发选择
+            print(f"[主窗口] 🚀 开始智能默认选择流程...")
+
+            # 第一步：获取影院列表
             from services.cinema_manager import cinema_manager
             cinemas = cinema_manager.load_cinema_list()
-            
-            if cinemas:
-                first_cinema = cinemas[0]
-                cinema_name = first_cinema.get('cinemaShortName', '')
-                
-                print(f"[主窗口] 准备自动选择默认影院: {cinema_name}")
-                print(f"[主窗口] 影院数据: {first_cinema}")
-                
-                # 🆕 首先更新Tab管理器的影院数据列表
-                if hasattr(self.tab_manager_widget, 'update_cinema_list'):
-                    self.tab_manager_widget.update_cinema_list(cinemas)
-                    print(f"[主窗口] 已更新Tab管理器的影院数据列表")
-                
-                # 🆕 先发布全局影院选择事件，让账号组件处理
-                event_bus.cinema_selected.emit(first_cinema)
-                
-                # 🆕 延迟更新Tab管理器的影院选择，确保账号组件先处理完
-                QTimer.singleShot(300, lambda: self._update_tab_cinema_selection(cinema_name))
-                
-                print(f"[主窗口] 已发送影院选择事件: {cinema_name}")
-            else:
-                print(f"[主窗口] 没有可用的影院数据")
-            
+
+            if not cinemas:
+                print(f"[主窗口] ❌ 没有可用的影院数据")
+                return
+
+            # 第二步：自动选择第一个影院
+            first_cinema = cinemas[0]
+            cinema_name = first_cinema.get('cinemaShortName', '')
+            cinema_id = first_cinema.get('cinemaid', '')
+
+            print(f"[主窗口] 📍 步骤1: 自动选择默认影院: {cinema_name} ({cinema_id})")
+
+            # 更新Tab管理器的影院数据
+            if hasattr(self.tab_manager_widget, 'update_cinema_list'):
+                self.tab_manager_widget.update_cinema_list(cinemas)
+                print(f"[主窗口] ✅ 已更新Tab管理器的影院数据列表")
+
+            # 发布影院选择事件
+            event_bus.cinema_selected.emit(first_cinema)
+
+            # 第三步：延迟选择该影院的关联账号
+            QTimer.singleShot(200, lambda: self._auto_select_cinema_account(first_cinema))
+
+            # 第四步：延迟更新Tab管理器界面
+            QTimer.singleShot(400, lambda: self._update_tab_cinema_selection(cinema_name))
+
         except Exception as e:
-            print(f"[主窗口] 触发默认影院选择错误: {e}")
+            print(f"[主窗口] ❌ 智能默认选择错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _auto_select_cinema_account(self, cinema_info):
+        """自动选择影院关联的主账号"""
+        try:
+            cinema_name = cinema_info.get('cinemaShortName', '')
+            cinema_id = cinema_info.get('cinemaid', '')
+
+            print(f"[主窗口] 👤 步骤2: 为影院 {cinema_name} 自动选择关联账号")
+
+            # 获取账号列表 - 修复account_manager引用
+            if hasattr(self, 'account_widget') and hasattr(self.account_widget, 'load_account_list'):
+                all_accounts = self.account_widget.load_account_list()
+            else:
+                print(f"[主窗口] ⚠️  账号组件不可用")
+                return
+
+            if not all_accounts:
+                print(f"[主窗口] ⚠️  没有可用账号，请先添加账号")
+                return
+
+            # 过滤该影院的关联账号
+            cinema_accounts = []
+            for account in all_accounts:
+                account_cinema_id = account.get('cinemaid', '')
+                if account_cinema_id == cinema_id:
+                    cinema_accounts.append(account)
+
+            # 选择账号
+            if cinema_accounts:
+                # 有关联账号，选择第一个
+                first_account = cinema_accounts[0]
+                userid = first_account.get('userid', first_account.get('phone', ''))
+                print(f"[主窗口] ✅ 步骤3: 自动选择影院关联账号: {userid}")
+            else:
+                # 没有关联账号，选择第一个可用账号
+                first_account = all_accounts[0]
+                userid = first_account.get('userid', first_account.get('phone', ''))
+                print(f"[主窗口] ⚠️  影院无关联账号，选择第一个可用账号: {userid}")
+
+            # 设置当前账号
+            self.set_current_account(first_account)
+
+            # 发布账号选择事件
+            event_bus.account_changed.emit(first_account)
+
+            # 更新账号组件显示
+            if hasattr(self, 'account_widget'):
+                self.account_widget.set_current_account(first_account)
+
+            print(f"[主窗口] 🎉 智能选择完成: 影院={cinema_name}, 账号={userid}")
+            print(f"[主窗口] 🎬 现在Tab管理器可以正常加载影片数据了")
+
+        except Exception as e:
+            print(f"[主窗口] ❌ 自动选择账号错误: {e}")
             import traceback
             traceback.print_exc()
     
@@ -526,11 +588,10 @@ class ModularCinemaMainWindow(QMainWindow):
         try:
             print(f"[主窗口] 影院选择: {cinema_name}")
             
-            # 更新座位图占位符
+            # 更新座位图占位符 - 移除多余提示
             self.seat_placeholder.setText(
                 f"已选择影院: {cinema_name}\n\n"
-                f"请继续选择影片、日期和场次\n"
-                f"然后在上方输入框中输入座位号"
+                f"请继续选择影片、日期和场次"
             )
             
             # 调用核心业务方法处理影院切换
@@ -903,31 +964,87 @@ class ModularCinemaMainWindow(QMainWindow):
                 ])
     
     def _show_order_detail(self, order_detail):
-        """显示订单详情"""
+        """显示订单详情 - 改善UI：使用更好的格式和布局"""
         try:
             if not order_detail:
                 return
-                
-            # 更新右栏订单详情显示
-            details = f"订单信息:\n"
-            details += f"订单号: {order_detail.get('order_id', 'N/A')}\n"
-            details += f"影院: {order_detail.get('cinema', 'N/A')}\n"
-            details += f"影片: {order_detail.get('movie', 'N/A')}\n"
-            details += f"场次: {order_detail.get('session', 'N/A')}\n"
-            details += f"座位: {order_detail.get('seats', 'N/A')}\n"
-            details += f"金额: ¥{order_detail.get('amount', 0):.2f}\n"
-            details += f"状态: {order_detail.get('status', '未知')}"
-            
+
+            # 更新手机号显示
+            phone = order_detail.get('phone', '')
+            if phone:
+                self.phone_display.setText(f"手机号: {phone}")
+
+            # 构建格式化的订单详情 - 参考您提供的格式
+            details = ""
+
+            # 订单号
+            order_id = order_detail.get('orderno', order_detail.get('order_id', 'N/A'))
+            details += f"订单号: {order_id}\n\n"
+
+            # 影片信息
+            movie = order_detail.get('movie', order_detail.get('film_name', 'N/A'))
+            details += f"影片: {movie}\n\n"
+
+            # 时间信息
+            show_time = order_detail.get('showTime', '')
+            if not show_time:
+                date = order_detail.get('date', '')
+                session = order_detail.get('session', '')
+                if date and session:
+                    show_time = f"{date} {session}"
+            details += f"时间: {show_time}\n\n"
+
+            # 影厅信息
+            cinema = order_detail.get('cinema', order_detail.get('cinema_name', 'N/A'))
+            hall = order_detail.get('hall_name', '')
+            if hall:
+                details += f"影厅: {hall}\n\n"
+            else:
+                details += f"影院: {cinema}\n\n"
+
+            # 座位信息
+            seats = order_detail.get('seats', [])
+            if isinstance(seats, list) and seats:
+                if len(seats) == 1:
+                    details += f"座位: {seats[0]}\n\n"
+                else:
+                    seat_str = " ".join(seats)
+                    details += f"座位: {seat_str}\n\n"
+            else:
+                details += f"座位: {seats}\n\n"
+
+            # 票价信息
+            amount = order_detail.get('amount', 0)
+            seat_count = order_detail.get('seat_count', len(seats) if isinstance(seats, list) else 1)
+
+            if seat_count > 1:
+                unit_price = amount / seat_count if seat_count > 0 else amount
+                details += f"票价: {seat_count}张×¥{unit_price:.2f}\n\n"
+            else:
+                details += f"票价: ¥{amount:.2f}\n\n"
+
+            # 状态信息
+            status = order_detail.get('status', '未知')
+            details += f"状态: {status}\n\n"
+
+            # 实付金额
+            details += f"实付金额: ¥{amount:.2f}"
+
+            # 设置文本内容
             self.order_detail_text.setPlainText(details)
-            
+
             # 启动倒计时
-            if order_detail.get('status') == '待支付':
+            if status == '待支付':
                 self.start_countdown(900)  # 15分钟倒计时
             else:
                 self.stop_countdown()
-            
+
+            print(f"[主窗口] 订单详情已更新显示: {order_id}")
+
         except Exception as e:
             print(f"[主窗口] 显示订单详情错误: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _show_qr_code(self, qr_code):
         """显示取票码"""
@@ -1069,18 +1186,91 @@ class ModularCinemaMainWindow(QMainWindow):
             
             if not all([session_data, account, cinema_data]):
                 print(f"[主窗口] 场次信息不完整，无法加载座位图")
-                self.seat_placeholder.setText("场次信息不完整\n\n无法加载座位图")
+                self._safe_update_seat_area("场次信息不完整\n\n无法加载座位图")
                 return
-            
+
             # 更新座位区域提示
-            self.seat_placeholder.setText("正在加载座位图，请稍候...")
+            self._safe_update_seat_area("正在加载座位图，请稍候...")
             
             # 使用QTimer延迟执行，避免阻塞UI
             QTimer.singleShot(100, lambda: self._load_seat_map(session_info))
             
         except Exception as e:
             print(f"[主窗口] 场次选择处理错误: {e}")
-            self.seat_placeholder.setText("加载座位图失败\n\n请重新选择场次")
+            # 安全地更新座位区域显示
+            self._safe_update_seat_area("加载座位图失败\n\n请重新选择场次")
+
+    def _safe_update_seat_area(self, message: str):
+        """安全地更新座位区域显示"""
+        try:
+            # 检查座位区域布局是否存在
+            if not hasattr(self, 'seat_area_layout') or not self.seat_area_layout:
+                print(f"[主窗口] 座位区域布局不存在，消息: {message}")
+                return
+
+            # 清理现有的座位组件
+            self._clear_seat_area()
+
+            # 重新创建座位占位符
+            from ui.widgets.classic_components import ClassicLabel
+            self.seat_placeholder = ClassicLabel(message, "default")
+            self.seat_placeholder.setAlignment(Qt.AlignCenter)
+            self.seat_placeholder.setStyleSheet("""
+                QLabel {
+                    color: #999999;
+                    font: 14px "Microsoft YaHei";
+                    background-color: #ffffff;
+                    border: 1px dashed #cccccc;
+                    padding: 60px;
+                    border-radius: 5px;
+                }
+            """)
+            self.seat_area_layout.addWidget(self.seat_placeholder)
+
+            print(f"[主窗口] 座位区域已安全更新: {message}")
+
+        except Exception as e:
+            print(f"[主窗口] 安全更新座位区域错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _safe_update_seat_area_with_style(self, message: str, style: str):
+        """安全地更新座位区域显示，并应用自定义样式"""
+        try:
+            # 检查座位区域布局是否存在
+            if not hasattr(self, 'seat_area_layout') or not self.seat_area_layout:
+                print(f"[主窗口] 座位区域布局不存在，消息: {message}")
+                return
+
+            # 清理现有的座位组件
+            self._clear_seat_area()
+
+            # 重新创建座位占位符
+            from ui.widgets.classic_components import ClassicLabel
+            self.seat_placeholder = ClassicLabel(message, "default")
+            self.seat_placeholder.setAlignment(Qt.AlignCenter)
+            self.seat_placeholder.setStyleSheet(style)
+            self.seat_area_layout.addWidget(self.seat_placeholder)
+
+            print(f"[主窗口] 座位区域已安全更新（带样式）: {message}")
+
+        except Exception as e:
+            print(f"[主窗口] 安全更新座位区域（带样式）错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _clear_seat_area(self):
+        """清理座位区域的所有组件"""
+        try:
+            if hasattr(self, 'seat_area_layout') and self.seat_area_layout:
+                # 清理布局中的所有组件
+                while self.seat_area_layout.count():
+                    child = self.seat_area_layout.takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()
+                print(f"[主窗口] 座位区域已清理")
+        except Exception as e:
+            print(f"[主窗口] 清理座位区域错误: {e}")
 
     def _load_seat_map(self, session_info: dict):
         """加载座位图数据"""
@@ -1129,7 +1319,7 @@ class ModularCinemaMainWindow(QMainWindow):
             if missing_params:
                 error_msg = f"缺少必要参数: {', '.join(missing_params)}"
                 print(f"[主窗口] {error_msg}")
-                self.seat_placeholder.setText(f"参数不完整\n\n{error_msg}")
+                self._safe_update_seat_area(f"参数不完整\n\n{error_msg}")
                 return
             
             # 调用座位图API
@@ -1147,17 +1337,17 @@ class ModularCinemaMainWindow(QMainWindow):
                     # API返回错误
                     error_msg = seat_result.get('resultDesc', '未知错误')
                     print(f"[主窗口] 座位图API错误: {error_msg}")
-                    self.seat_placeholder.setText(f"获取座位图失败\n\n{error_msg}")
+                    self._safe_update_seat_area(f"获取座位图失败\n\n{error_msg}")
             else:
                 # 响应格式错误
                 print(f"[主窗口] 座位图API响应格式错误")
-                self.seat_placeholder.setText("座位图数据格式错误\n\n请重新选择场次")
+                self._safe_update_seat_area("座位图数据格式错误\n\n请重新选择场次")
                 
         except Exception as e:
             print(f"[主窗口] 加载座位图错误: {e}")
             import traceback
             traceback.print_exc()
-            self.seat_placeholder.setText("加载座位图异常\n\n请检查网络连接")
+            self._safe_update_seat_area("加载座位图异常\n\n请检查网络连接")
 
     def _display_seat_map(self, seat_data: dict, session_info: dict):
         """显示座位图"""
@@ -1229,23 +1419,23 @@ class ModularCinemaMainWindow(QMainWindow):
                         
                     else:
                         print(f"[主窗口] 未找到座位区域布局")
-                        self.seat_placeholder.setText("座位区域初始化失败")
+                        self._safe_update_seat_area("座位区域初始化失败")
                         
                 except Exception as panel_error:
                     print(f"[主窗口] 创建座位图面板错误: {panel_error}")
                     import traceback
                     traceback.print_exc()
-                    self.seat_placeholder.setText(f"座位图显示错误\\n\\n{str(panel_error)}")
+                    self._safe_update_seat_area(f"座位图显示错误\n\n{str(panel_error)}")
             else:
                 # 座位数据解析失败
                 print(f"[主窗口] 座位矩阵数据无效")
-                self.seat_placeholder.setText("座位数据解析失败\\n\\n请重新选择场次或联系管理员")
+                self._safe_update_seat_area("座位数据解析失败\n\n请重新选择场次或联系管理员")
                 
         except Exception as e:
             print(f"[主窗口] 显示座位图错误: {e}")
             import traceback
             traceback.print_exc()
-            self.seat_placeholder.setText("显示座位图异常\\n\\n请重新选择场次")
+            self._safe_update_seat_area("显示座位图异常\n\n请重新选择场次")
 
     def _parse_seats_array(self, seats_array: List[Dict], hall_info: dict) -> List[List[Dict]]:
         """解析seats数组为座位矩阵"""
@@ -1379,18 +1569,15 @@ class ModularCinemaMainWindow(QMainWindow):
         print(f"[主窗口] 券兑换完成: {quantity}个{coupon_type}")
 
     def _on_seat_input_changed(self, text: str):
-        """座位输入变化处理"""
+        """座位输入变化处理 - 只记录日志，不替换座位图"""
         try:
             # 解析座位输入
             seats = [seat.strip() for seat in text.split(',') if seat.strip()]
-            
+
             if seats:
-                # 更新座位显示
-                self._update_seat_selection(seats)
-                
-                # 发出座位选择信号
+                # 只发出座位选择信号，不替换座位图
                 self._on_seat_selected(','.join(seats))
-            
+
         except Exception as e:
             print(f"[主窗口] 座位输入处理错误: {e}")
 
@@ -1404,8 +1591,9 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[主窗口] 支付按钮处理错误: {e}")
 
     def _on_seat_selected(self, seats: str):
-        """座位选择处理"""
+        """座位选择处理 - 只记录日志，不替换座位图"""
         print(f"[主窗口] 座位选择: {seats}")
+        # 注意：不再调用_update_seat_selection，因为座位图面板会自己管理选座信息显示
 
     def _on_main_login_success(self, user_info: dict):
         """主窗口登录成功处理 - 触发账号列表刷新"""
@@ -1498,9 +1686,9 @@ class ModularCinemaMainWindow(QMainWindow):
                 seat_info = f"已选择座位: {', '.join(seats)}\n\n"
                 seat_info += f"座位数量: {len(seats)} 个\n"
                 seat_info += f"预计价格: ¥{len(seats) * 35.0:.2f}"
-                
-                self.seat_placeholder.setText(seat_info)
-                self.seat_placeholder.setStyleSheet("""
+
+                # 安全地更新座位区域
+                self._safe_update_seat_area_with_style(seat_info, """
                     QLabel {
                         color: #333333;
                         font: 14px "Microsoft YaHei";
@@ -1511,17 +1699,8 @@ class ModularCinemaMainWindow(QMainWindow):
                     }
                 """)
             else:
-                self.seat_placeholder.setText("座位图将在此显示\n\n请先选择影院、影片、日期和场次")
-                self.seat_placeholder.setStyleSheet("""
-                    QLabel {
-                        color: #999999;
-                        font: 14px "Microsoft YaHei";
-                        background-color: #ffffff;
-                        border: 1px dashed #cccccc;
-                        padding: 60px;
-                        border-radius: 5px;
-                    }
-                """)
+                # 安全地更新座位区域
+                self._safe_update_seat_area("座位图将在此显示\n\n请先选择影院、影片、日期和场次")
                 
         except Exception as e:
             print(f"[主窗口] 更新座位选择错误: {e}")
@@ -1573,28 +1752,105 @@ class ModularCinemaMainWindow(QMainWindow):
     # ===== 第三步：核心业务方法（从源项目复制） =====
 
     def set_current_account(self, account):
-        """设置当前账号"""
+        """设置当前账号 - 修复：账号切换时重新加载座位图"""
         try:
             self.current_account = account
             if account:
                 userid = account.get('userid', 'N/A')
                 phone = account.get('phone', '')
                 print(f"[主窗口] 设置当前账号: {userid}")
-                
+
                 # 更新UI显示
                 if phone:
                     self.phone_display.setText(f"当前账号: {phone}")
                 else:
                     self.phone_display.setText(f"当前账号: {userid}")
-                
+
                 # 发布全局账号切换事件
                 event_bus.account_changed.emit(account)
-                
+
+                # 🆕 重置券列表
+                if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'reset_coupon_lists'):
+                    self.tab_manager_widget.reset_coupon_lists()
+
                 # 刷新券列表等
                 self._refresh_account_dependent_data()
-                
+
+                # 重要修复：账号切换时重新加载座位图
+                print(f"[主窗口] 账号切换，重新加载座位图...")
+                self._reload_seat_map_for_account_change()
+
         except Exception as e:
             print(f"[主窗口] 设置账号错误: {e}")
+
+    def _reload_seat_map_for_account_change(self):
+        """账号切换时重新加载座位图"""
+        try:
+            # 检查是否有完整的选择信息
+            if not hasattr(self, 'tab_manager_widget'):
+                print(f"[主窗口] Tab管理器不存在，跳过座位图重新加载")
+                return
+
+            tab_manager = self.tab_manager_widget
+
+            # 获取当前选择
+            cinema_text = tab_manager.cinema_combo.currentText()
+            movie_text = tab_manager.movie_combo.currentText()
+            date_text = tab_manager.date_combo.currentText()
+            session_text = tab_manager.session_combo.currentText()
+
+            # 检查选择是否完整
+            invalid_selections = ["请选择", "请先选择", "正在加载", "暂无", "加载失败", "选择影院", "加载中..."]
+            if any(text in invalid_selections for text in [cinema_text, movie_text, date_text, session_text]):
+                print(f"[主窗口] 选择信息不完整，清空座位图")
+                self._safe_update_seat_area("请完整选择影院、影片、日期和场次后查看座位图")
+                return
+
+            # 如果选择完整，重新加载座位图
+            print(f"[主窗口] 账号切换，重新加载座位图:")
+            print(f"  - 影院: {cinema_text}")
+            print(f"  - 影片: {movie_text}")
+            print(f"  - 日期: {date_text}")
+            print(f"  - 场次: {session_text}")
+            print(f"  - 新账号: {self.current_account.get('userid', 'N/A')}")
+
+            # 重新触发场次选择，这会重新加载座位图
+            if hasattr(tab_manager, 'current_session_data') and tab_manager.current_session_data:
+                print(f"[主窗口] 重新加载当前场次的座位图...")
+                # 先清空当前座位选择
+                self._clear_seat_selection()
+                # 触发座位图重新加载
+                session_info = {
+                    'session_data': tab_manager.current_session_data,
+                    'session_text': session_text,
+                    'account': self.current_account,  # 添加当前账号信息
+                    'cinema_data': self._get_cinema_info_by_name(cinema_text)  # 添加影院信息
+                }
+                self._load_seat_map(session_info)
+            else:
+                print(f"[主窗口] 没有当前场次数据，清空座位图")
+                self._safe_update_seat_area("账号已切换，请重新选择场次")
+
+        except Exception as e:
+            print(f"[主窗口] 重新加载座位图错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _clear_seat_selection(self):
+        """清空座位选择"""
+        try:
+            # 清空当前座位面板的选择
+            if hasattr(self, 'current_seat_panel') and self.current_seat_panel:
+                if hasattr(self.current_seat_panel, 'clear_selection'):
+                    self.current_seat_panel.clear_selection()
+                    print(f"[主窗口] 已清空座位选择")
+
+            # 更新提交按钮文字
+            if hasattr(self, 'submit_button'):
+                self.submit_button.setText("提交订单")
+
+        except Exception as e:
+            print(f"[主窗口] 清空座位选择错误: {e}")
 
     def set_main_account(self, account):
         """设置主账号标记"""
@@ -1694,35 +1950,92 @@ class ModularCinemaMainWindow(QMainWindow):
                 MessageManager.show_error(self, "选择无效", "请重新选择有效的影院、影片、日期和场次", auto_close=False)
                 return False
             
-            # 简化版订单创建 - 返回成功状态
-            MessageManager.show_info(self, "正在处理", "正在创建订单，请稍候...", auto_close=True)
-            
-            # 模拟订单创建成功
-            order_id = f"ORDER{int(time.time())}"
-            
-            # 保存当前订单
+            # 真正的订单创建 - 调用API
+            print(f"[主窗口] 开始订单创建流程...")
+
+            # 第一步：取消该账号的所有未付款订单
+            print(f"[主窗口] 步骤1: 取消未付款订单...")
+            cinema_data = self._get_cinema_info_by_name(cinema_text)
+            if cinema_data and self.current_account:
+                from services.order_api import cancel_all_unpaid_orders
+                cancel_result = cancel_all_unpaid_orders(self.current_account, cinema_data.get('cinemaid', ''))
+                cancelled_count = cancel_result.get('cancelledCount', 0)
+                print(f"[主窗口] 已取消 {cancelled_count} 个未付款订单")
+            else:
+                print(f"[主窗口] 无法获取影院或账号信息，跳过取消未付款订单")
+
+            # 第二步：构建订单参数
+            print(f"[主窗口] 步骤2: 构建订单参数...")
+            order_params = self._build_order_params(selected_seats)
+            if not order_params:
+                MessageManager.show_error(self, "参数错误", "构建订单参数失败", auto_close=False)
+                return False
+
+            # 第三步：调用订单创建API
+            print(f"[主窗口] 步骤3: 调用订单创建API...")
+            from services.order_api import create_order
+            result = create_order(order_params)
+
+            if not result or result.get('resultCode') != '0':
+                error_msg = result.get('resultDesc', '创建订单失败') if result else '网络错误'
+                MessageManager.show_error(self, "创建失败", f"订单创建失败: {error_msg}", auto_close=False)
+                return False
+
+            # 获取订单数据
+            order_data = result.get('resultData', {})
+            order_id = order_data.get('orderno', f"ORDER{int(time.time())}")
+
+            # 获取场次数据用于显示
+            tab_manager = self.tab_manager_widget
+            session_data = getattr(tab_manager, 'current_session_data', {})
+
+            # 构建座位显示信息
+            seat_display = []
+            total_amount = 0
+            for seat in selected_seats:
+                seat_row = seat.get('rn', seat.get('row', 1))
+                seat_col = seat.get('cn', seat.get('col', 1))
+                seat_price = seat.get('price', 0)
+                if seat_price == 0:
+                    seat_price = session_data.get('first_price', session_data.get('b', 33.9))
+
+                seat_display.append(f"{seat_row}排{seat_col}座")
+                total_amount += seat_price
+
+            # 保存当前订单 - 使用真实API返回的数据
             self.current_order = {
                 'order_id': order_id,
+                'orderno': order_id,  # API返回的订单号
                 'cinema': cinema_text,
                 'movie': movie_text,
                 'date': date_text,
                 'session': session_text,
-                'seats': [seat.get('num', '') for seat in selected_seats],
-                'amount': len(selected_seats) * 35.0,
+                'showTime': session_data.get('show_date', '') + ' ' + session_data.get('q', ''),
+                'seats': seat_display,
+                'seat_count': len(selected_seats),
+                'amount': total_amount,
                 'status': '待支付',
                 'create_time': time.strftime("%Y-%m-%d %H:%M:%S"),
-                'phone': self.current_account.get('phone', ''),
+                'phone': self.current_account.get('userid', ''),  # 使用userid作为手机号
+                'cinema_name': cinema_text,
+                'film_name': movie_text,
+                'hall_name': session_data.get('hall_name', ''),
+                'api_data': order_data  # 保存完整的API返回数据
             }
             
             # 显示订单详情
             self._show_order_detail(self.current_order)
-            
+
+            # 第四步：获取可用券列表
+            print(f"[主窗口] 步骤4: 获取可用券列表...")
+            self._load_available_coupons(order_id, cinema_data.get('cinemaid', ''))
+
             # 发布订单创建事件
             event_bus.order_created.emit(self.current_order)
-            
+
             # 启动支付倒计时
             self.start_countdown(900)  # 15分钟倒计时
-            
+
             print(f"[主窗口] 订单创建成功: {order_id}")
             return True
                 
@@ -1733,6 +2046,384 @@ class ModularCinemaMainWindow(QMainWindow):
             from services.ui_utils import MessageManager
             MessageManager.show_error(self, "提交失败", f"提交订单失败\n\n错误: {str(e)}", auto_close=False)
             return False
+
+    def _build_order_params(self, selected_seats: list) -> dict:
+        """构建订单创建参数"""
+        try:
+            # 获取当前选择信息
+            if not hasattr(self, 'tab_manager_widget'):
+                print(f"[主窗口] Tab管理器不存在")
+                return None
+
+            tab_manager = self.tab_manager_widget
+
+            # 获取场次数据
+            session_data = getattr(tab_manager, 'current_session_data', None)
+            if not session_data:
+                print(f"[主窗口] 场次数据不存在")
+                return None
+
+            # 获取影院数据
+            cinema_text = tab_manager.cinema_combo.currentText()
+            cinema_data = self._get_cinema_info_by_name(cinema_text)
+            if not cinema_data:
+                print(f"[主窗口] 影院数据不存在")
+                return None
+
+            # 构建座位参数 - 修复：使用真实API格式的seatInfo
+            seat_info_list = []
+            for i, seat in enumerate(selected_seats):
+                # 从座位数据中获取正确的字段
+                seat_no = seat.get('sn', '')  # 座位编号
+                if not seat_no:
+                    # 如果没有sn字段，尝试构建座位编号
+                    row_num = seat.get('rn', seat.get('row', 1))
+                    col_num = seat.get('cn', seat.get('col', 1))
+                    seat_no = f"000000011111-{col_num}-{row_num}"
+
+                # 获取座位价格
+                seat_price = seat.get('price', 0)
+                if seat_price == 0:
+                    # 如果座位没有价格，从场次数据获取默认价格
+                    seat_price = session_data.get('first_price', session_data.get('b', 33.9))
+
+                # 获取座位位置信息
+                seat_row = seat.get('rn', seat.get('row', 1))
+                seat_col = seat.get('cn', seat.get('col', 1))
+
+                # 构建真实API格式的座位信息
+                seat_info = {
+                    "seatInfo": f"{seat_row}排{seat_col}座",
+                    "eventPrice": 0,
+                    "strategyPrice": seat_price,
+                    "ticketPrice": seat_price,
+                    "seatRow": seat_row,
+                    "seatRowId": seat_row,
+                    "seatCol": seat_col,
+                    "seatColId": seat_col,
+                    "seatNo": seat_no,
+                    "sectionId": "11111",
+                    "ls": "",
+                    "rowIndex": seat.get('r', 1) - 1,  # 行索引从0开始
+                    "colIndex": seat.get('c', 1) - 1,  # 列索引从0开始
+                    "index": i + 1
+                }
+                seat_info_list.append(seat_info)
+
+                print(f"[主窗口] 座位信息: {seat_info}")
+
+            # 构建订单参数 - 修复：使用真实API格式
+            import json
+            order_params = {
+                # 基础参数
+                'groupid': '',
+                'cardno': 'undefined',  # 真实API使用undefined
+                'userid': self.current_account.get('userid', ''),
+                'cinemaid': cinema_data.get('cinemaid', ''),
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': self.current_account.get('token', ''),
+                'openid': self.current_account.get('openid', ''),
+                'source': '2',
+
+                # 订单相关参数
+                'oldOrderNo': '',
+                'showTime': f"{session_data.get('show_date', '')} {session_data.get('q', '')}",  # 真实格式
+                'eventCode': '',
+                'hallCode': session_data.get('j', ''),
+                'showCode': session_data.get('g', ''),
+                'filmCode': 'null',  # 真实API使用null字符串
+                'filmNo': session_data.get('h', ''),  # 使用h字段作为filmNo
+                'recvpPhone': 'undefined',
+
+                # 座位信息 - 使用真实API格式
+                'seatInfo': json.dumps(seat_info_list, separators=(',', ':')),  # JSON字符串格式
+
+                # 支付相关参数
+                'payType': '3',  # 真实API使用的支付类型
+                'companyChannelId': 'undefined',
+                'shareMemberId': '',
+                'limitprocount': '0'
+            }
+
+            print(f"[主窗口] 订单参数构建完成:")
+            print(f"  - 影院ID: {order_params['cinemaid']}")
+            print(f"  - 用户ID: {order_params['userid']}")
+            print(f"  - 场次编码: {order_params['showCode']}")
+            print(f"  - 座位数量: {len(selected_seats)}")
+            print(f"  - 支付类型: {order_params['payType']}")
+            print(f"  - 场次时间: {order_params['showTime']}")
+
+            return order_params
+
+        except Exception as e:
+            print(f"[主窗口] 构建订单参数错误: {e}")
+            import traceback
+            traceback.print_exc()
+            return None
+
+    def _load_available_coupons(self, order_id: str, cinema_id: str):
+        """获取订单可用券列表"""
+        try:
+            if not self.current_account or not order_id or not cinema_id:
+                print(f"[主窗口] 获取券列表参数不完整")
+                return
+
+            print(f"[主窗口] 获取订单 {order_id} 的可用券列表...")
+
+            # 方法1：获取订单可用券（推荐，针对特定订单）
+            from services.order_api import get_coupons_by_order
+
+            coupon_params = {
+                'orderno': order_id,
+                'cinemaid': cinema_id,
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'token': self.current_account.get('token', ''),
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'source': '2',
+                'groupid': '',
+                'cardno': self.current_account.get('cardno', '')
+            }
+
+            print(f"[主窗口] 券列表API参数: {coupon_params}")
+
+            # 调用API获取券列表
+            coupon_result = get_coupons_by_order(coupon_params)
+
+            if coupon_result:
+                print(f"[主窗口] 券列表API响应: {coupon_result}")
+
+                if coupon_result.get('resultCode') == '0':
+                    result_data = coupon_result.get('resultData', {})
+                    coupons = result_data.get('vouchers', []) if isinstance(result_data, dict) else []
+                    print(f"[主窗口] 获取到 {len(coupons)} 张可用券")
+
+                    # 显示券列表
+                    self._show_coupon_list(coupons)
+                else:
+                    error_desc = coupon_result.get('resultDesc', '未知错误')
+                    print(f"[主窗口] 获取券列表失败: {error_desc}")
+                    self._show_coupon_list([])  # 显示空券列表
+            else:
+                print(f"[主窗口] 券列表API无响应")
+                self._show_coupon_list([])  # 显示空券列表
+
+        except Exception as e:
+            print(f"[主窗口] 获取券列表错误: {e}")
+            import traceback
+            traceback.print_exc()
+            self._show_coupon_list([])  # 显示空券列表
+
+    def _show_coupon_list(self, coupons: list):
+        """显示券列表 - 修复：使用现有的券列表区域"""
+        try:
+            print(f"[主窗口] 显示券列表: {len(coupons)} 张券")
+
+            # 查找现有的券列表组件
+            coupon_list_widget = None
+
+            # 方法1：直接查找 coupon_list 属性
+            if hasattr(self, 'coupon_list'):
+                coupon_list_widget = self.coupon_list
+                print(f"[主窗口] 找到现有的券列表组件: coupon_list")
+
+            # 方法2：查找 tab_manager_widget 中的券列表
+            elif hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
+                coupon_list_widget = self.tab_manager_widget.coupon_list
+                print(f"[主窗口] 找到tab_manager中的券列表组件")
+
+            # 方法3：遍历查找 QListWidget
+            else:
+                print(f"[主窗口] 搜索QListWidget组件...")
+                from PyQt5.QtWidgets import QListWidget
+                for child in self.findChildren(QListWidget):
+                    # 检查是否是券列表（通过父组件名称或位置判断）
+                    parent = child.parent()
+                    if parent and hasattr(parent, 'title') and '券' in parent.title():
+                        coupon_list_widget = child
+                        print(f"[主窗口] 通过搜索找到券列表组件")
+                        break
+
+            if coupon_list_widget:
+                # 清空现有券列表
+                coupon_list_widget.clear()
+                print(f"[主窗口] 已清空现有券列表")
+
+                if not coupons:
+                    # 显示无券提示
+                    coupon_list_widget.addItem("暂无可用券")
+                    print(f"[主窗口] 显示无券提示")
+                    return
+
+                # 显示券列表
+                for i, coupon in enumerate(coupons):
+                    # 解析券信息 - 使用真实API的字段名称
+                    # 券名称：尝试多个字段
+                    coupon_name = coupon.get('couponname') or coupon.get('voucherName') or coupon.get('name', f'券{i+1}')
+
+                    # 有效期：尝试多个字段
+                    expire_date = coupon.get('expireddate') or coupon.get('expiredDate') or coupon.get('expireDate', '未知')
+
+                    # 券号：尝试多个字段
+                    coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or coupon.get('code', f'券号{i+1}')
+
+                    # 券类型：如果没有单独的类型字段，从券名称中推断
+                    coupon_type = coupon.get('voucherType') or coupon.get('coupontype') or '优惠券'
+
+                    # 如果券类型为空或者是数字，尝试从券名称推断
+                    if not coupon_type or coupon_type.isdigit():
+                        if '延时' in coupon_name:
+                            coupon_type = '延时券'
+                        elif '折' in coupon_name:
+                            coupon_type = '折扣券'
+                        elif '送' in coupon_name:
+                            coupon_type = '赠送券'
+                        else:
+                            coupon_type = '优惠券'
+
+                    # 格式化显示文本
+                    display_text = f"{coupon_type} | 有效期至 {expire_date} | 券号 {coupon_code}"
+                    coupon_list_widget.addItem(display_text)
+                    print(f"[主窗口] 添加券项目: {display_text}")
+                    print(f"[主窗口] 券原始数据: {coupon}")
+
+                print(f"[主窗口] 券列表显示完成，共 {len(coupons)} 张券")
+            else:
+                print(f"[主窗口] 未找到现有的券列表组件，使用备用方案")
+                # 备用方案：创建新的券列表区域
+                self._create_coupon_list_area()
+                # 递归调用，这次应该能找到券列表组件
+                self._show_coupon_list(coupons)
+
+        except Exception as e:
+            print(f"[主窗口] 显示券列表错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _create_coupon_list_area(self):
+        """创建券列表显示区域"""
+        try:
+            from PyQt5.QtWidgets import QScrollArea, QVBoxLayout, QWidget, QLabel
+            from PyQt5.QtCore import Qt
+
+            # 创建券列表滚动区域
+            self.coupon_scroll_area = QScrollArea()
+            self.coupon_scroll_area.setWidgetResizable(True)
+            self.coupon_scroll_area.setMaximumHeight(200)  # 限制高度
+
+            # 创建券列表容器
+            self.coupon_list_widget = QWidget()
+            self.coupon_list_layout = QVBoxLayout(self.coupon_list_widget)
+            self.coupon_list_layout.setContentsMargins(5, 5, 5, 5)
+            self.coupon_list_layout.setSpacing(2)
+
+            # 设置样式
+            self.coupon_scroll_area.setStyleSheet("""
+                QScrollArea {
+                    border: 1px solid #cccccc;
+                    border-radius: 3px;
+                    background-color: #ffffff;
+                }
+            """)
+
+            self.coupon_scroll_area.setWidget(self.coupon_list_widget)
+
+            # 添加到主布局（在订单详情下方）
+            # 尝试多种方式找到合适的布局
+            target_layout = None
+
+            if hasattr(self, 'right_layout'):
+                target_layout = self.right_layout
+                print(f"[主窗口] 使用right_layout")
+            elif hasattr(self, 'main_layout'):
+                target_layout = self.main_layout
+                print(f"[主窗口] 使用main_layout")
+            elif hasattr(self, 'layout'):
+                target_layout = self.layout()
+                print(f"[主窗口] 使用主窗口layout")
+
+            if target_layout:
+                # 添加券列表标题
+                coupon_title = QLabel("可用券列表:")
+                coupon_title.setStyleSheet("font: bold 12px 'Microsoft YaHei'; color: #333333; margin-top: 10px;")
+                target_layout.addWidget(coupon_title)
+
+                # 添加券列表区域
+                target_layout.addWidget(self.coupon_scroll_area)
+                self.coupon_list_area = self.coupon_scroll_area
+
+                print(f"[主窗口] 券列表区域创建成功")
+            else:
+                print(f"[主窗口] 无法找到合适的布局，券列表将显示在独立窗口")
+                # 创建独立的券列表窗口
+                self.coupon_list_area = self.coupon_scroll_area
+                self.coupon_scroll_area.setWindowTitle("可用券列表")
+                self.coupon_scroll_area.resize(400, 300)
+                self.coupon_scroll_area.show()
+
+        except Exception as e:
+            print(f"[主窗口] 创建券列表区域错误: {e}")
+
+    def _clear_coupon_list(self):
+        """清空券列表"""
+        try:
+            if hasattr(self, 'coupon_list_layout'):
+                # 清空所有券项目
+                while self.coupon_list_layout.count():
+                    child = self.coupon_list_layout.takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()
+
+        except Exception as e:
+            print(f"[主窗口] 清空券列表错误: {e}")
+
+    def _add_coupon_item(self, coupon_type: str, coupon_name: str, expire_date: str, coupon_code: str):
+        """添加券项目"""
+        try:
+            from PyQt5.QtWidgets import QLabel, QHBoxLayout, QWidget
+            from PyQt5.QtCore import Qt
+
+            # 创建券项目容器
+            coupon_item = QWidget()
+            coupon_layout = QHBoxLayout(coupon_item)
+            coupon_layout.setContentsMargins(5, 3, 5, 3)
+            coupon_layout.setSpacing(5)
+
+            # 券类型标签
+            type_label = QLabel(coupon_type)
+            type_label.setFixedWidth(50)
+            type_label.setStyleSheet("font: 10px 'Microsoft YaHei'; color: #666666;")
+
+            # 券信息标签
+            info_text = f"{coupon_name} 有效期至 {expire_date} | 券号 {coupon_code}"
+            info_label = QLabel(info_text)
+            info_label.setStyleSheet("font: 10px 'Microsoft YaHei'; color: #333333;")
+
+            # 添加到布局
+            coupon_layout.addWidget(type_label)
+            coupon_layout.addWidget(info_label)
+            coupon_layout.addStretch()
+
+            # 设置项目样式
+            coupon_item.setStyleSheet("""
+                QWidget {
+                    background-color: #f9f9f9;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 3px;
+                }
+                QWidget:hover {
+                    background-color: #f0f0f0;
+                }
+            """)
+
+            # 添加到券列表
+            if hasattr(self, 'coupon_list_layout'):
+                self.coupon_list_layout.addWidget(coupon_item)
+
+        except Exception as e:
+            print(f"[主窗口] 添加券项目错误: {e}")
 
 
 def main():
