@@ -9,7 +9,7 @@ import os
 import json
 from typing import Dict, List, Optional, Any
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QApplication, QMessageBox
+    QWidget, QVBoxLayout, QHBoxLayout, QApplication, QMessageBox, QMenu, QAction
 )
 from PyQt5.QtCore import pyqtSignal, Qt
 
@@ -189,7 +189,11 @@ class AccountWidget(QWidget):
         # 设置表格固定宽度，避免出现滚动条
         self.account_table.setFixedWidth(240)  # 110+60+50+20(边距) = 240
         self.account_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        
+
+        # 🆕 移除右键菜单设置，因为不再需要主账号设置选项
+        # self.account_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        # self.account_table.customContextMenuRequested.connect(self._show_context_menu)
+
         layout.addWidget(self.account_table)
     
     def _connect_signals(self):
@@ -277,12 +281,107 @@ class AccountWidget(QWidget):
                     # 双击直接登录该账号
                     userid = account_data.get("userid", "")
                     QMessageBox.information(
-                        self, "快速登录", 
+                        self, "快速登录",
                         f"准备快速登录账号: {userid}\n此功能待实现"
                     )
-        
+
         except Exception as e:
             print(f"[账号组件] 双击处理错误: {e}")
+
+    def _show_context_menu(self, position):
+        """显示右键菜单 - 🆕 移除主账号设置选项"""
+        try:
+            # 获取点击位置的项目
+            item = self.account_table.itemAt(position)
+            if not item:
+                return
+
+            # 获取行号
+            row = item.row()
+            account_item = self.account_table.item(row, 0)
+            if not account_item:
+                return
+
+            # 获取账号数据
+            account_data = account_item.data(Qt.UserRole)
+            if not account_data:
+                return
+
+            # 🆕 暂时不显示右键菜单，因为主账号设置已移除
+            # 如果将来需要添加其他右键菜单选项，可以在这里添加
+            return
+
+        except Exception as e:
+            print(f"[账号组件] 显示右键菜单错误: {e}")
+
+    def _set_as_main_account(self, account_data: dict):
+        """设置为主账号 - 🆕 无确认，直接设置"""
+        try:
+            userid = account_data.get('userid', '')
+            cinemaid = account_data.get('cinemaid', '')
+
+            if not userid or not cinemaid:
+                print(f"[账号组件] 设置主账号失败: 账号信息不完整")
+                return
+
+            # 🆕 直接执行设置，无确认对话框
+            success = self._update_main_account_in_file(cinemaid, userid)
+
+            if success:
+                # 🆕 静默刷新账号列表，无提示信息
+                self.refresh_accounts()
+                print(f"[账号组件] 主账号设置成功: {userid} (影院: {cinemaid})")
+            else:
+                print(f"[账号组件] 主账号设置失败: 更新账号文件失败")
+
+        except Exception as e:
+            print(f"[账号组件] 设置主账号错误: {e}")
+
+    def _update_main_account_in_file(self, cinemaid: str, userid: str) -> bool:
+        """更新账号文件中的主账号设置"""
+        try:
+            accounts_file = "data/accounts.json"
+
+            if not os.path.exists(accounts_file):
+                print(f"[账号组件] 账号文件不存在: {accounts_file}")
+                return False
+
+            # 读取现有账号数据
+            with open(accounts_file, 'r', encoding='utf-8') as f:
+                accounts = json.load(f)
+
+            # 更新主账号设置
+            updated = False
+            for account in accounts:
+                if account.get('cinemaid') == cinemaid:
+                    # 如果是目标账号，设置为主账号
+                    if account.get('userid') == userid:
+                        account['is_main'] = True
+                        updated = True
+                        print(f"[账号组件] 设置主账号: {userid} (影院: {cinemaid})")
+                    else:
+                        # 其他同影院账号取消主账号状态
+                        if account.get('is_main', False):
+                            account['is_main'] = False
+                            print(f"[账号组件] 取消主账号: {account.get('userid')} (影院: {cinemaid})")
+
+            if not updated:
+                print(f"[账号组件] 未找到目标账号: {userid} (影院: {cinemaid})")
+                return False
+
+            # 写回文件
+            with open(accounts_file, 'w', encoding='utf-8') as f:
+                json.dump(accounts, f, ensure_ascii=False, indent=2)
+
+            # 更新缓存
+            self.all_accounts_data = accounts
+
+            print(f"[账号组件] 主账号设置已保存到文件")
+            return True
+
+        except Exception as e:
+            print(f"[账号组件] 更新账号文件错误: {e}")
+            return False
     
     def _on_user_login_success(self, user_info: dict):
         """用户登录成功处理"""
@@ -316,25 +415,62 @@ class AccountWidget(QWidget):
                 self._filter_accounts_by_cinema(cinema_id)
                 print(f"[账号组件] 影院切换: {cinema_name} ({cinema_id})，已过滤账号列表")
                 
-                # 🆕 如果过滤后有账号，自动选择第一个账号
+                # 🆕 如果过滤后有账号，优先选择主账号
                 if self.accounts_data:
-                    first_account = self.accounts_data[0]
-                    self.current_account = first_account
-                    
-                    # 更新表格选择
-                    self.account_table.selectRow(0)
-                    
+                    selected_account = self._find_main_account_for_cinema(cinema_id)
+
+                    if not selected_account:
+                        # 如果没有主账号，选择第一个账号
+                        selected_account = self.accounts_data[0]
+                        print(f"[账号组件] 影院 {cinema_name} 没有主账号，选择第一个账号")
+                    else:
+                        print(f"[账号组件] 影院 {cinema_name} 自动选择主账号")
+
+                    self.current_account = selected_account
+
+                    # 找到该账号在表格中的行号并选择
+                    selected_row = self._find_account_row(selected_account.get('userid', ''))
+                    if selected_row >= 0:
+                        self.account_table.selectRow(selected_row)
+
                     # 发出账号选择信号
-                    self.account_selected.emit(first_account)
-                    event_bus.account_changed.emit(first_account)
-                    
-                    print(f"[账号组件] 自动选择账号: {first_account.get('userid', 'N/A')}")
+                    self.account_selected.emit(selected_account)
+                    event_bus.account_changed.emit(selected_account)
+
+                    print(f"[账号组件] 自动选择账号: {selected_account.get('userid', 'N/A')}")
                 else:
                     print(f"[账号组件] 影院 {cinema_name} 没有关联账号")
             
         except Exception as e:
             print(f"[账号组件] 影院选择处理错误: {e}")
-    
+
+    def _find_main_account_for_cinema(self, cinema_id: str) -> Optional[dict]:
+        """查找指定影院的主账号"""
+        try:
+            for account in self.accounts_data:
+                if (account.get('cinemaid') == cinema_id and
+                    account.get('is_main', False)):
+                    return account
+            return None
+        except Exception as e:
+            print(f"[账号组件] 查找主账号错误: {e}")
+            return None
+
+    def _find_account_row(self, userid: str) -> int:
+        """查找账号在表格中的行号"""
+        try:
+            for row in range(self.account_table.rowCount()):
+                item = self.account_table.item(row, 0)
+                if item:
+                    # 获取存储的账号数据来比较
+                    account_data = item.data(Qt.UserRole)
+                    if account_data and account_data.get('userid') == userid:
+                        return row
+            return -1
+        except Exception as e:
+            print(f"[账号组件] 查找账号行号错误: {e}")
+            return -1
+
     def _get_cinema_id_by_name(self, cinema_name: str) -> str:
         """根据影院名称获取影院ID"""
         try:
@@ -431,12 +567,15 @@ class AccountWidget(QWidget):
                 userid = account.get("userid", "")
                 balance = account.get("balance", 0)
                 points = account.get("points", account.get("score", 0))  # 兼容points和score字段
-                
+
+                # 🆕 不改变样式，保持原有显示
+                display_userid = userid
+
                 # 🆕 只设置三列：账号、余额、积分
-                self.account_table.setItem(i, 0, self.account_table.__class__.createItem(userid))
+                self.account_table.setItem(i, 0, self.account_table.__class__.createItem(display_userid))
                 self.account_table.setItem(i, 1, self.account_table.__class__.createItem(str(balance)))
                 self.account_table.setItem(i, 2, self.account_table.__class__.createItem(str(points)))
-                
+
                 # 保存完整账号信息到第一列的数据中
                 account_item = self.account_table.item(i, 0)
                 account_item.setData(Qt.UserRole, account)

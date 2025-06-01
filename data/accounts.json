@@ -46,7 +46,8 @@
     "balance": 262.8,
     "points": 0,
     "cardno": "15155712316",
-    "score": 0
+    "score": 0,
+    "is_main": false
   },
   {
     "userid": "14700283316",
@@ -57,6 +58,6 @@
     "points": 0,
     "cardno": "",
     "score": 0,
-    "is_main": false
+    "is_main": true
   }
 ]

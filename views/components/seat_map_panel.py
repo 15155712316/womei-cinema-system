@@ -429,8 +429,9 @@ class SeatMapPanel(QWidget):
     
     @event_handler("seat_map_loading")
     def _on_seat_map_loading(self):
-        """座位图加载中"""
-        self._show_placeholder("正在加载座位图，请稍候...")
+        """座位图加载中 - 🆕 移除加载提示"""
+        # 🆕 不显示加载提示，直接等待座位图数据
+        pass
     
     @event_handler("seat_map_error")
     def _on_seat_map_error(self, error_msg: str):

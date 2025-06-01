@@ -34,6 +34,7 @@ class TabManagerWidget(QWidget):
     coupon_bound = pyqtSignal(dict)  # 券绑定信号
     coupon_exchanged = pyqtSignal(dict)  # 兑换券信号
     session_selected = pyqtSignal(dict)  # 🆕 场次选择信号，用于触发座位图加载
+    seat_load_requested = pyqtSignal(dict)  # 🆕 座位图加载请求信号
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -196,8 +197,8 @@ class TabManagerWidget(QWidget):
         session_layout.addStretch()  # 添加弹性空间
         layout.addLayout(session_layout)
         
-        # 提交订单按钮 - 缩小高度，避免占用座位区域空间
-        self.submit_order_btn = ClassicButton("提交订单", "success")
+        # 选座按钮 - 缩小高度，避免占用座位区域空间
+        self.submit_order_btn = ClassicButton("选座", "success")
         self.submit_order_btn.setMinimumHeight(20)  # 进一步缩小到20px
         self.submit_order_btn.setMaximumHeight(20)  # 限制最大高度为20px
         # 覆盖样式中的padding设置
@@ -1514,6 +1515,11 @@ class TabManagerWidget(QWidget):
             # 🆕 重置券列表
             self.reset_coupon_lists()
 
+            # 🆕 禁用选座按钮 - 影院切换时
+            if hasattr(self, 'submit_order_btn'):
+                self.submit_order_btn.setEnabled(False)
+                print(f"[Tab管理器] 影院切换，选座按钮已禁用")
+
             # 清空下级选择
             self.movie_combo.clear()
             self.date_combo.clear()
@@ -1783,7 +1789,12 @@ class TabManagerWidget(QWidget):
 
             # 🆕 重置券列表
             self.reset_coupon_lists()
-            
+
+            # 🆕 禁用选座按钮 - 影片切换时
+            if hasattr(self, 'submit_order_btn'):
+                self.submit_order_btn.setEnabled(False)
+                print(f"[Tab管理器] 影片切换，选座按钮已禁用")
+
             # 获取选中的影片详细数据
             selected_movie = None
             if hasattr(self, 'current_movies') and self.current_movies:
@@ -1858,6 +1869,11 @@ class TabManagerWidget(QWidget):
 
             # 🆕 重置券列表
             self.reset_coupon_lists()
+
+            # 🆕 禁用选座按钮 - 日期切换时
+            if hasattr(self, 'submit_order_btn'):
+                self.submit_order_btn.setEnabled(False)
+                print(f"[Tab管理器] 日期切换，选座按钮已禁用")
 
             # 清空场次选择
             self.session_combo.clear()
@@ -1976,7 +1992,12 @@ class TabManagerWidget(QWidget):
             
             print(f"[Tab管理器] 发出场次选择信号: {session_text}")
             print(f"[Tab管理器] 影院数据验证: {cinema_data.get('base_url') if cinema_data else 'None'}")
-            
+
+            # 🆕 启用选座按钮 - 当用户选择完场次后
+            if hasattr(self, 'submit_order_btn'):
+                self.submit_order_btn.setEnabled(True)
+                print(f"[Tab管理器] 选座按钮已启用")
+
             # 发出场次选择信号，让主窗口处理座位图加载
             self.session_selected.emit(session_info)
             
@@ -1986,23 +2007,23 @@ class TabManagerWidget(QWidget):
             traceback.print_exc()
     
     def _on_submit_order(self):
-        """提交订单处理 - 获取完整选择信息"""
+        """选座按钮处理 - 加载座位图"""
         try:
             if not self.current_account:
-                MessageManager.show_error(self, "提交失败", "请先选择账号", auto_close=False)
+                MessageManager.show_error(self, "选座失败", "请先选择账号", auto_close=False)
                 return
-            
+
             # 获取所有选择的信息
             cinema_text = self.cinema_combo.currentText() if hasattr(self, 'cinema_combo') else ""
             movie_text = self.movie_combo.currentText() if hasattr(self, 'movie_combo') else ""
             date_text = self.date_combo.currentText() if hasattr(self, 'date_combo') else ""
             session_text = self.session_combo.currentText() if hasattr(self, 'session_combo') else ""
-            
+
             # 验证选择完整性
             if not all([cinema_text, movie_text, date_text, session_text]):
                 MessageManager.show_error(self, "选择不完整", "请完成影院、影片、日期、场次的选择！", auto_close=False)
                 return
-            
+
             # 验证选择有效性
             invalid_texts = ["加载中...", "请先选择", "暂无", "加载失败", "错误"]
             if any(invalid in cinema_text for invalid in invalid_texts) or \
@@ -2011,33 +2032,33 @@ class TabManagerWidget(QWidget):
                any(invalid in session_text for invalid in invalid_texts):
                 MessageManager.show_error(self, "选择无效", "请重新选择有效的影院、影片、日期和场次！", auto_close=False)
                 return
-            
-            # 🆕 发出订单信号让主窗口处理实际的API调用
-            # 构建订单基本信息（主窗口会完善API参数）
-            order_info = {
+
+            # 🆕 发出座位图加载信号让主窗口处理
+            # 构建座位图加载信息
+            seat_load_info = {
                 "account": self.current_account,
                 "cinema_name": cinema_text,
                 "movie_name": movie_text,
                 "show_date": date_text,
                 "session_text": session_text,
                 "session_data": getattr(self, 'current_session_data', {}),
-                "trigger_type": "tab_submit"  # 标识来源
+                "trigger_type": "tab_seat_selection"  # 标识来源为选座
             }
-            
-            print(f"[Tab管理器] 发出订单信号:")
+
+            print(f"[Tab管理器] 发出座位图加载信号:")
             print(f"  影院: {cinema_text}")
             print(f"  影片: {movie_text}")
             print(f"  日期: {date_text}")
             print(f"  场次: {session_text}")
-            
-            # 发出订单提交信号，让主窗口处理
-            self.order_submitted.emit(order_info)
-            
-            MessageManager.show_success(self, "订单处理中", "正在处理订单，请稍候...", auto_close=True)
-            
+
+            # 发出座位图加载信号，让主窗口处理
+            self.seat_load_requested.emit(seat_load_info)
+
+            # 🆕 移除加载提示信息，直接加载座位图
+
         except Exception as e:
-            MessageManager.show_error(self, "提交错误", f"提交订单失败: {str(e)}", auto_close=False)
-            print(f"[Tab管理器] 提交订单错误: {e}")
+            MessageManager.show_error(self, "选座错误", f"加载座位图失败: {str(e)}", auto_close=False)
+            print(f"[Tab管理器] 选座错误: {e}")
             import traceback
             traceback.print_exc()
     

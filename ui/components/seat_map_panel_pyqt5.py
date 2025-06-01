@@ -10,8 +10,8 @@ from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QScrollArea, QFrame, QGridLayout
 )
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont, QPalette
+from PyQt5.QtCore import Qt, pyqtSignal, QPoint
+from PyQt5.QtGui import QFont, QPalette, QMouseEvent
 
 class SeatMapPanelPyQt5(QWidget):
     """座位面板 - PyQt5版本，模仿tkinter布局"""
@@ -32,7 +32,12 @@ class SeatMapPanelPyQt5(QWidget):
         
         # UI组件
         self.seat_buttons: Dict[Tuple[int, int], QPushButton] = {}
-        
+
+        # 🆕 拖拽滚动相关属性
+        self.is_dragging = False
+        self.last_mouse_pos = QPoint()
+        self.drag_start_pos = QPoint()
+
         self._init_ui()
         self._draw_seats()
     
@@ -47,6 +52,12 @@ class SeatMapPanelPyQt5(QWidget):
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        # 🆕 启用鼠标拖拽滚动功能
+        self.scroll_area.setMouseTracking(True)
+        self.scroll_area.mousePressEvent = self._scroll_area_mouse_press
+        self.scroll_area.mouseMoveEvent = self._scroll_area_mouse_move
+        self.scroll_area.mouseReleaseEvent = self._scroll_area_mouse_release
         
         # 座位网格容器
         self.seat_widget = QWidget()
@@ -216,8 +227,14 @@ class SeatMapPanelPyQt5(QWidget):
                 
                 # 设置点击事件
                 if status == "available":
-                    seat_btn.clicked.connect(lambda checked, r=r, c=c: self.toggle_seat(r, c))
+                    # 🆕 使用自定义的座位按钮点击处理，支持拖拽滚动
+                    seat_btn.clicked.connect(lambda checked, r=r, c=c: self._seat_button_clicked(r, c))
                     seat_btn.setCursor(Qt.PointingHandCursor)
+
+                    # 🆕 为座位按钮添加鼠标事件处理
+                    seat_btn.mousePressEvent = lambda event, r=r, c=c: self._seat_button_mouse_press(event, r, c)
+                    seat_btn.mouseMoveEvent = lambda event, r=r, c=c: self._seat_button_mouse_move(event, r, c)
+                    seat_btn.mouseReleaseEvent = lambda event, r=r, c=c: self._seat_button_mouse_release(event, r, c)
                 else:
                     seat_btn.setEnabled(False)
                 
@@ -451,4 +468,129 @@ class SeatMapPanelPyQt5(QWidget):
             'available': available,
             'sold': sold,
             'selected': selected
-        } 
+        }
+
+    # 🆕 鼠标拖拽滚动功能实现
+    def _scroll_area_mouse_press(self, event: QMouseEvent):
+        """滚动区域鼠标按下事件"""
+        if event.button() == Qt.LeftButton:
+            self.is_dragging = True
+            self.last_mouse_pos = event.pos()
+            self.drag_start_pos = event.pos()
+            # 设置拖拽光标
+            self.scroll_area.setCursor(Qt.ClosedHandCursor)
+            print(f"[座位面板] 开始拖拽滚动，起始位置: {event.pos()}")
+
+    def _scroll_area_mouse_move(self, event: QMouseEvent):
+        """滚动区域鼠标移动事件"""
+        if self.is_dragging and event.buttons() & Qt.LeftButton:
+            # 计算鼠标移动的距离
+            delta = event.pos() - self.last_mouse_pos
+
+            # 获取滚动条
+            h_scrollbar = self.scroll_area.horizontalScrollBar()
+            v_scrollbar = self.scroll_area.verticalScrollBar()
+
+            # 根据鼠标移动方向调整滚动位置
+            # 注意：鼠标向右移动时，我们希望内容向右移动（即滚动条向左移动）
+            # 所以滚动值的变化方向与鼠标移动方向相反
+            new_h_value = h_scrollbar.value() - delta.x()
+            new_v_value = v_scrollbar.value() - delta.y()
+
+            # 限制滚动范围
+            new_h_value = max(h_scrollbar.minimum(), min(h_scrollbar.maximum(), new_h_value))
+            new_v_value = max(v_scrollbar.minimum(), min(v_scrollbar.maximum(), new_v_value))
+
+            # 设置新的滚动位置
+            h_scrollbar.setValue(new_h_value)
+            v_scrollbar.setValue(new_v_value)
+
+            # 更新鼠标位置
+            self.last_mouse_pos = event.pos()
+
+            # 调试输出（可选）
+            # print(f"[座位面板] 拖拽滚动，delta: {delta}, 滚动位置: H={new_h_value}, V={new_v_value}")
+
+    def _scroll_area_mouse_release(self, event: QMouseEvent):
+        """滚动区域鼠标释放事件"""
+        if event.button() == Qt.LeftButton and self.is_dragging:
+            self.is_dragging = False
+            # 恢复默认光标
+            self.scroll_area.setCursor(Qt.ArrowCursor)
+
+            # 计算总的拖拽距离
+            total_delta = event.pos() - self.drag_start_pos
+            print(f"[座位面板] 结束拖拽滚动，总移动距离: {total_delta}")
+
+            # 重置位置
+            self.last_mouse_pos = QPoint()
+            self.drag_start_pos = QPoint()
+
+    # 🆕 座位按钮鼠标事件处理（支持拖拽滚动）
+    def _seat_button_mouse_press(self, event: QMouseEvent, r: int, c: int):
+        """座位按钮鼠标按下事件"""
+        if event.button() == Qt.LeftButton:
+            # 记录按下位置，用于判断是点击还是拖拽
+            self.drag_start_pos = event.globalPos()
+            self.last_mouse_pos = event.globalPos()
+            # 暂时不设置拖拽状态，等移动一定距离后再判断
+
+    def _seat_button_mouse_move(self, event: QMouseEvent, r: int, c: int):
+        """座位按钮鼠标移动事件"""
+        if event.buttons() & Qt.LeftButton:
+            # 计算移动距离
+            move_distance = (event.globalPos() - self.drag_start_pos).manhattanLength()
+
+            # 如果移动距离超过阈值，开始拖拽滚动
+            if move_distance > 5 and not self.is_dragging:  # 5像素的拖拽阈值
+                self.is_dragging = True
+                self.scroll_area.setCursor(Qt.ClosedHandCursor)
+                print(f"[座位面板] 在座位按钮上开始拖拽滚动")
+
+            # 如果正在拖拽，执行滚动
+            if self.is_dragging:
+                # 计算鼠标移动的距离
+                delta = event.globalPos() - self.last_mouse_pos
+
+                # 获取滚动条
+                h_scrollbar = self.scroll_area.horizontalScrollBar()
+                v_scrollbar = self.scroll_area.verticalScrollBar()
+
+                # 根据鼠标移动方向调整滚动位置
+                new_h_value = h_scrollbar.value() - delta.x()
+                new_v_value = v_scrollbar.value() - delta.y()
+
+                # 限制滚动范围
+                new_h_value = max(h_scrollbar.minimum(), min(h_scrollbar.maximum(), new_h_value))
+                new_v_value = max(v_scrollbar.minimum(), min(v_scrollbar.maximum(), new_v_value))
+
+                # 设置新的滚动位置
+                h_scrollbar.setValue(new_h_value)
+                v_scrollbar.setValue(new_v_value)
+
+                # 更新鼠标位置
+                self.last_mouse_pos = event.globalPos()
+
+    def _seat_button_mouse_release(self, event: QMouseEvent, r: int, c: int):
+        """座位按钮鼠标释放事件"""
+        if event.button() == Qt.LeftButton:
+            if self.is_dragging:
+                # 如果是拖拽，结束拖拽状态
+                self.is_dragging = False
+                self.scroll_area.setCursor(Qt.ArrowCursor)
+                print(f"[座位面板] 在座位按钮上结束拖拽滚动")
+
+                # 重置位置
+                self.last_mouse_pos = QPoint()
+                self.drag_start_pos = QPoint()
+            else:
+                # 如果不是拖拽，执行座位选择
+                move_distance = (event.globalPos() - self.drag_start_pos).manhattanLength()
+                if move_distance <= 5:  # 只有在移动距离很小时才认为是点击
+                    self.toggle_seat(r, c)
+
+    def _seat_button_clicked(self, r: int, c: int):
+        """座位按钮点击事件（备用，主要逻辑在mouse_release中处理）"""
+        # 这个方法现在主要作为备用，实际的点击逻辑在_seat_button_mouse_release中处理
+        # 如果没有拖拽，mouse_release会调用toggle_seat
+        pass

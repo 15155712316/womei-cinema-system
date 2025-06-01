@@ -132,7 +132,7 @@ class CinemaSelectPanelPyQt5(QWidget):
         row5_layout = QHBoxLayout(row5)
         row5_layout.setContentsMargins(5, 3, 5, 2)
         
-        self.open_seat_btn = QPushButton("打开选座 获取可用券")
+        self.open_seat_btn = QPushButton("选座")
         self.open_seat_btn.setFont(btn_font)
         self.open_seat_btn.clicked.connect(self.on_open_seat_selection)
         self._setup_button_style(self.open_seat_btn)
@@ -510,20 +510,22 @@ class CinemaSelectPanelPyQt5(QWidget):
             QMessageBox.warning(self, "加载失败", f"加载座位信息失败: {str(e)}")
     
     def on_open_seat_selection(self):
-        """打开选座按钮点击事件"""
+        """选座按钮点击事件 - 打开或刷新座位图"""
         current_account = self.get_current_account()
         if not current_account:
             QMessageBox.warning(self, "账号提示", "请先选择账号")
             return
-        
+
         if not self.session_combo.currentText():
             QMessageBox.warning(self, "场次提示", "请先选择场次")
             return
-        
+
         # 重新加载当前场次的座位信息
+        print(f"[影院面板] 用户点击选座按钮，刷新座位图")
         self.on_session_select(self.session_combo.currentText())
-        
-        QMessageBox.information(self, "选座提示", "座位信息已更新，可用券已获取")
+
+        # 不显示提示信息，直接刷新座位图
+        print(f"[影院面板] 座位图已刷新")
     
     def set_current_account(self, account: Dict):
         """设置当前账号（外部调用接口）"""

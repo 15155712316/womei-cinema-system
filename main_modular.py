@@ -323,6 +323,7 @@ class ModularCinemaMainWindow(QMainWindow):
         self.tab_manager_widget.coupon_bound.connect(self._on_coupon_bound)
         self.tab_manager_widget.coupon_exchanged.connect(self._on_coupon_exchanged)
         self.tab_manager_widget.session_selected.connect(self._on_session_selected)
+        self.tab_manager_widget.seat_load_requested.connect(self._on_seat_load_requested)  # 🆕 座位图加载请求
         
         # 座位选择信号
         self.seat_input.textChanged.connect(self._on_seat_input_changed)
@@ -1189,9 +1190,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 self._safe_update_seat_area("场次信息不完整\n\n无法加载座位图")
                 return
 
-            # 更新座位区域提示
-            self._safe_update_seat_area("正在加载座位图，请稍候...")
-            
+            # 🆕 直接加载座位图，不显示加载提示
             # 使用QTimer延迟执行，避免阻塞UI
             QTimer.singleShot(100, lambda: self._load_seat_map(session_info))
             
@@ -1606,6 +1605,61 @@ class ModularCinemaMainWindow(QMainWindow):
         coupon_type = exchange_data.get("type", "")
         quantity = exchange_data.get("quantity", 0)
         print(f"[主窗口] 券兑换完成: {quantity}个{coupon_type}")
+
+    def _on_seat_load_requested(self, seat_load_data: dict):
+        """处理座位图加载请求信号 - 来自Tab管理器的选座按钮"""
+        try:
+            print(f"[主窗口] 收到座位图加载请求: {seat_load_data.get('trigger_type', 'unknown')}")
+
+            # 获取场次数据
+            session_data = seat_load_data.get('session_data', {})
+            if not session_data:
+                print(f"[主窗口] 座位图加载失败: 缺少场次数据")
+                from services.ui_utils import MessageManager
+                MessageManager.show_error(self, "加载失败", "缺少场次数据，请重新选择场次", auto_close=False)
+                return
+
+            print(f"[主窗口] 开始加载座位图...")
+            print(f"  影院: {seat_load_data.get('cinema_name', 'N/A')}")
+            print(f"  影片: {seat_load_data.get('movie_name', 'N/A')}")
+            print(f"  日期: {seat_load_data.get('show_date', 'N/A')}")
+            print(f"  场次: {seat_load_data.get('session_text', 'N/A')}")
+
+            # 构建完整的session_info数据
+            session_info = {
+                'session_data': session_data,
+                'account': seat_load_data.get('account', self.current_account),
+                'cinema_data': self._get_current_cinema_data(),
+                'session_text': seat_load_data.get('session_text', 'N/A')
+            }
+
+            # 调用现有的场次选择处理方法来加载座位图
+            self._on_session_selected(session_info)
+
+            print(f"[主窗口] 座位图加载请求处理完成")
+
+        except Exception as e:
+            print(f"[主窗口] 座位图加载请求处理错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+            # 显示错误信息
+            from services.ui_utils import MessageManager
+            MessageManager.show_error(self, "加载失败", f"座位图加载失败: {str(e)}", auto_close=False)
+
+    def _get_current_cinema_data(self):
+        """获取当前选中的影院数据"""
+        try:
+            if hasattr(self.tab_manager_widget, 'cinema_combo'):
+                cinema_name = self.tab_manager_widget.cinema_combo.currentText()
+                if cinema_name and hasattr(self.tab_manager_widget, 'cinemas_data'):
+                    for cinema in self.tab_manager_widget.cinemas_data:
+                        if cinema.get('cinemaShortName') == cinema_name:
+                            return cinema
+            return {}
+        except Exception as e:
+            print(f"[主窗口] 获取当前影院数据错误: {e}")
+            return {}
 
     def _on_seat_input_changed(self, text: str):
         """座位输入变化处理 - 只记录日志，不替换座位图"""
