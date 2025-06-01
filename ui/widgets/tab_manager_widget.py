@@ -140,47 +140,60 @@ class TabManagerWidget(QWidget):
         self.current_account_label = ClassicLabel("当前账号: 未选择", "info")
         layout.addWidget(self.current_account_label)
         
-        # 影院选择 - 优化间距，让下拉框与文字贴近
+        # 影院选择 - 精确对齐布局
         cinema_layout = QHBoxLayout()
-        cinema_layout.setSpacing(5)  # 设置较小的间距
+        cinema_layout.setSpacing(8)
         cinema_label = ClassicLabel("影院:")
-        cinema_label.setMinimumWidth(35)  # 缩小标签宽度
-        cinema_label.setMaximumWidth(35)  # 限制最大宽度
+        cinema_label.setMinimumWidth(50)
+        cinema_label.setMaximumWidth(50)
+        cinema_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.cinema_combo = ClassicComboBox()
         self.cinema_combo.addItem("加载中...")
         cinema_layout.addWidget(cinema_label)
         cinema_layout.addWidget(self.cinema_combo)
-        cinema_layout.setContentsMargins(0, 0, 0, 0)  # 移除边距
+        cinema_layout.addStretch()  # 添加弹性空间
         layout.addLayout(cinema_layout)
         
-        # 影片选择
+        # 影片选择 - 精确对齐布局
         movie_layout = QHBoxLayout()
+        movie_layout.setSpacing(8)
         movie_label = ClassicLabel("影片:")
-        movie_label.setMinimumWidth(40)
+        movie_label.setMinimumWidth(50)
+        movie_label.setMaximumWidth(50)
+        movie_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.movie_combo = ClassicComboBox()
         self.movie_combo.addItems(["请先选择影院"])
         movie_layout.addWidget(movie_label)
         movie_layout.addWidget(self.movie_combo)
+        movie_layout.addStretch()  # 添加弹性空间
         layout.addLayout(movie_layout)
         
-        # 日期选择
+        # 日期选择 - 精确对齐布局
         date_layout = QHBoxLayout()
+        date_layout.setSpacing(8)
         date_label = ClassicLabel("日期:")
-        date_label.setMinimumWidth(40)
+        date_label.setMinimumWidth(50)
+        date_label.setMaximumWidth(50)
+        date_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.date_combo = ClassicComboBox()
         self.date_combo.addItems(["请先选择影片"])
         date_layout.addWidget(date_label)
         date_layout.addWidget(self.date_combo)
+        date_layout.addStretch()  # 添加弹性空间
         layout.addLayout(date_layout)
         
-        # 场次选择
+        # 场次选择 - 精确对齐布局
         session_layout = QHBoxLayout()
+        session_layout.setSpacing(8)
         session_label = ClassicLabel("场次:")
-        session_label.setMinimumWidth(40)
+        session_label.setMinimumWidth(50)
+        session_label.setMaximumWidth(50)
+        session_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.session_combo = ClassicComboBox()
         self.session_combo.addItems(["请先选择日期"])
         session_layout.addWidget(session_label)
         session_layout.addWidget(self.session_combo)
+        session_layout.addStretch()  # 添加弹性空间
         layout.addLayout(session_layout)
         
         # 提交订单按钮 - 缩小高度，避免占用座位区域空间

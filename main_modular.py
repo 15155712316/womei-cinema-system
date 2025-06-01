@@ -1452,16 +1452,26 @@ class ModularCinemaMainWindow(QMainWindow):
             max_row = 0
             max_col = 0
             
-            # 打印前几个座位数据以调试
-            for i, seat in enumerate(seats_array[:3]):
-                print(f"[主窗口] 座位{i+1}数据: {seat}")
+            # 🆕 详细打印前几个座位数据以调试座位号问题
+            print(f"[主窗口] === 座位数据详细调试 ===")
+            for i, seat in enumerate(seats_array[:5]):  # 增加到5个
+                rn = seat.get('rn', 'N/A')
+                cn = seat.get('cn', 'N/A')
+                sn = seat.get('sn', 'N/A')
+                r = seat.get('r', 'N/A')  # 🆕 逻辑排号
+                c = seat.get('c', 'N/A')  # 🆕 逻辑列数
+                s = seat.get('s', 'N/A')
+                print(f"[主窗口] 座位{i+1}: 物理rn={rn},cn={cn} 逻辑r={r},c={c} sn='{sn}', s={s}")
+                print(f"[主窗口] 座位{i+1}完整数据: {seat}")
+            print(f"[主窗口] === 调试结束 ===")
             
             for seat in seats_array:
-                # 🆕 使用正确的字段名：rn(行号), cn(列号)，而不是rownum/colnum
-                row_num = seat.get('rn', 0)
-                col_num = seat.get('cn', 0)
-                max_row = max(max_row, row_num)
-                max_col = max(max_col, col_num)
+                # 🆕 使用物理座位号（rn, cn）来确定座位图的最大尺寸
+                # 物理座位号用于构建座位图布局，包括空座位间隔
+                physical_row = seat.get('rn', 0)
+                physical_col = seat.get('cn', 0)
+                max_row = max(max_row, physical_row)
+                max_col = max(max_col, physical_col)
             
             print(f"[主窗口] 座位矩阵尺寸: {max_row}行 x {max_col}列")
             
@@ -1477,10 +1487,11 @@ class ModularCinemaMainWindow(QMainWindow):
             
             # 🆕 填充座位数据
             for seat in seats_array:
-                row_num = seat.get('rn', 0) - 1  # 转为0基索引
-                col_num = seat.get('cn', 0) - 1  # 转为0基索引
-                
-                if 0 <= row_num < max_row and 0 <= col_num < max_col:
+                # 🆕 使用物理座位号（rn, cn）确定在座位图中的位置
+                physical_row = seat.get('rn', 0) - 1  # 转为0基索引
+                physical_col = seat.get('cn', 0) - 1  # 转为0基索引
+
+                if 0 <= physical_row < max_row and 0 <= physical_col < max_col:
                     # 解析座位状态：s字段，F=可选，B=已售等
                     seat_state = seat.get('s', 'F')
                     if seat_state == 'F':
@@ -1490,23 +1501,51 @@ class ModularCinemaMainWindow(QMainWindow):
                     else:
                         status = 'unavailable'
                     
+                    # 🆕 修复：使用逻辑座位号（r, c）作为显示座位号
+                    # 物理座位号（rn, cn）用于构建座位图布局
+                    # 逻辑座位号（r, c）用于显示和提交
+                    logical_row = seat.get('r', '')  # 逻辑排号
+                    logical_col = seat.get('c', '')  # 逻辑列数
+
+                    # 显示座位号：优先使用逻辑列数c
+                    if logical_col:
+                        real_seat_num = str(logical_col)
+                    else:
+                        # 备选：使用物理列号
+                        real_seat_num = str(seat.get('cn', physical_col + 1))
+
                     seat_data = {
-                        'row': seat.get('rn', row_num + 1),
-                        'col': seat.get('cn', col_num + 1),
-                        'num': f"{seat.get('rn', row_num + 1)}-{seat.get('cn', col_num + 1)}",  # 🆕 简洁格式：行-列
+                        'row': logical_row if logical_row else seat.get('rn', physical_row + 1),  # 🆕 优先使用逻辑排号r，备选物理排号rn
+                        'col': logical_col if logical_col else seat.get('cn', physical_col + 1),  # 🆕 优先使用逻辑列数c，备选物理列数cn
+                        'num': real_seat_num,  # 🆕 使用逻辑列数c作为座位号
                         'status': status,
                         'price': 0,  # 价格信息在priceinfo中
                         'seatname': seat.get('sn', ''),
                         'original_data': seat  # 保存原始数据备用
                     }
-                    
-                    seat_matrix[row_num][col_num] = seat_data
+
+                    seat_matrix[physical_row][physical_col] = seat_data
             
             print(f"[主窗口] 座位矩阵填充完成")
-            # 打印前几行座位数据用于调试
+            # 打印前几行座位数据用于调试，显示物理间隔
             for i, row in enumerate(seat_matrix[:3]):  # 只打印前3行
-                valid_seats = [seat['num'] if seat else 'None' for seat in row[:10]]  # 只显示前10列
+                valid_seats = [seat['num'] if seat else 'None' for seat in row[:20]]  # 显示前20列以看到间隔
                 print(f"[主窗口] 第{i+1}行座位: {valid_seats}")
+
+            # 🆕 专门检查5排的物理间隔
+            if len(seat_matrix) >= 5:
+                row_5 = seat_matrix[4]  # 第5排（0基索引）
+                print(f"[主窗口] 第5排详细检查:")
+                for col_idx, seat in enumerate(row_5):
+                    if seat:
+                        original_data = seat.get('original_data', {})
+                        logical_r = original_data.get('r', '?')
+                        logical_c = original_data.get('c', '?')
+                        physical_cn = original_data.get('cn', '?')
+                        physical_rn = original_data.get('rn', '?')
+                        print(f"  物理位置[{col_idx+1}] -> 逻辑{logical_r}排{logical_c}号, 物理rn={physical_rn},cn={physical_cn}")
+                    else:
+                        print(f"  物理位置[{col_idx+1}] -> 空位")
             
             return seat_matrix
             
@@ -2205,16 +2244,37 @@ class ModularCinemaMainWindow(QMainWindow):
                 else:
                     error_desc = coupon_result.get('resultDesc', '未知错误')
                     print(f"[主窗口] 获取券列表失败: {error_desc}")
-                    self._show_coupon_list([])  # 显示空券列表
+                    # 不要递归调用，直接清空券列表
+                    try:
+                        if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
+                            self.tab_manager_widget.coupon_list.clear()
+                            self.tab_manager_widget.coupon_list.addItem("暂无可用券")
+                            print(f"[主窗口] 已显示无券提示")
+                    except:
+                        pass
             else:
                 print(f"[主窗口] 券列表API无响应")
-                self._show_coupon_list([])  # 显示空券列表
+                # 不要递归调用，直接清空券列表
+                try:
+                    if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
+                        self.tab_manager_widget.coupon_list.clear()
+                        self.tab_manager_widget.coupon_list.addItem("暂无可用券")
+                        print(f"[主窗口] 已显示无券提示")
+                except:
+                    pass
 
         except Exception as e:
             print(f"[主窗口] 获取券列表错误: {e}")
             import traceback
             traceback.print_exc()
-            self._show_coupon_list([])  # 显示空券列表
+            # 不要递归调用，直接清空券列表
+            try:
+                if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
+                    self.tab_manager_widget.coupon_list.clear()
+                    self.tab_manager_widget.coupon_list.addItem("券列表加载失败")
+                    print(f"[主窗口] 已显示错误提示")
+            except:
+                pass
 
     def _show_coupon_list(self, coupons: list):
         """显示券列表 - 修复：使用现有的券列表区域"""
@@ -2246,7 +2306,9 @@ class ModularCinemaMainWindow(QMainWindow):
                         print(f"[主窗口] 通过搜索找到券列表组件")
                         break
 
-            if coupon_list_widget:
+            # 修复：使用 is not None 而不是 bool() 检查
+            if coupon_list_widget is not None:
+                print(f"[主窗口] 券列表组件有效，类型: {type(coupon_list_widget)}")
                 # 清空现有券列表
                 coupon_list_widget.clear()
                 print(f"[主窗口] 已清空现有券列表")
@@ -2291,11 +2353,10 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 print(f"[主窗口] 券列表显示完成，共 {len(coupons)} 张券")
             else:
-                print(f"[主窗口] 未找到现有的券列表组件，使用备用方案")
-                # 备用方案：创建新的券列表区域
-                self._create_coupon_list_area()
-                # 递归调用，这次应该能找到券列表组件
-                self._show_coupon_list(coupons)
+                print(f"[主窗口] 未找到现有的券列表组件，跳过券列表显示")
+                # 不要递归调用，避免无限循环
+                # 可以在这里记录日志或者显示提示信息
+                print(f"[主窗口] 券列表显示被跳过，共 {len(coupons)} 张券未显示")
 
         except Exception as e:
             print(f"[主窗口] 显示券列表错误: {e}")

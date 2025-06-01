@@ -204,41 +204,79 @@ class ClassicComboBox(QComboBox):
         self._setup_style()
     
     def _setup_style(self):
-        """设置下拉框样式"""
+        """设置下拉框样式 - 最终修复版本"""
         self.setStyleSheet("""
             QComboBox {
-                border: 2px solid #cccccc;
-                border-radius: 3px;
-                padding: 6px 8px;
-                font: 12px "Microsoft YaHei";
-                background-color: #ffffff;
+                border: 1px solid #d0d0d0;
+                border-radius: 4px;
+                padding: 6px 12px;
+                font: 13px "Microsoft YaHei";
                 color: #333333;
-                min-width: 140px;
+                min-width: 180px;
+                min-height: 26px;
+                background-color: white !important;
+                background: white !important;
             }
             QComboBox:focus {
-                border-color: #0078d4;
+                border-color: #4a90e2;
+                outline: none;
+                background-color: white !important;
             }
             QComboBox:hover {
-                border-color: #999999;
+                border-color: #a0a0a0;
+                background-color: white !important;
+            }
+            QComboBox:disabled {
+                background-color: #f5f5f5;
+                color: #999999;
+                border-color: #e0e0e0;
             }
             QComboBox::drop-down {
                 border: none;
                 width: 20px;
                 background: transparent;
+                subcontrol-origin: padding;
+                subcontrol-position: top right;
             }
             QComboBox::down-arrow {
-                image: none;
-                border-left: 4px solid transparent;
-                border-right: 4px solid transparent;
-                border-top: 5px solid #666666;
-                margin-right: 8px;
+                width: 0;
+                height: 0;
+                border-left: 5px solid transparent;
+                border-right: 5px solid transparent;
+                border-top: 6px solid #666666;
+                margin-top: 2px;
+                margin-right: 5px;
+            }
+            QComboBox::down-arrow:hover {
+                border-top-color: #333333;
+            }
+            QComboBox::down-arrow:pressed {
+                border-top-color: #000000;
             }
             QComboBox QAbstractItemView {
-                border: 1px solid #cccccc;
+                border: 1px solid #d0d0d0;
+                border-radius: 6px;
                 background-color: #ffffff;
-                selection-background-color: #0078d4;
+                selection-background-color: #4a90e2;
                 selection-color: white;
-                font: 12px "Microsoft YaHei";
+                font: 13px "Microsoft YaHei";
+                padding: 6px;
+                outline: none;
+            }
+            QComboBox QAbstractItemView::item {
+                padding: 10px 12px;
+                border: none;
+                border-radius: 4px;
+                margin: 2px;
+                background: transparent;
+            }
+            QComboBox QAbstractItemView::item:hover {
+                background-color: #f0f8ff;
+                color: #333333;
+            }
+            QComboBox QAbstractItemView::item:selected {
+                background-color: #4a90e2;
+                color: white;
             }
         """)
 

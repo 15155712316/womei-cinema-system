@@ -174,25 +174,42 @@ class SeatMapPanelPyQt5(QWidget):
             
             # 绘制这一行的座位
             for c, seat in enumerate(row):
+                # 🆕 修复：为空位也创建占位符，确保物理间隔正确显示
+                grid_col = c + 1  # 由于第0列是行号标签，座位从第1列开始
+
                 if seat is None:
+                    # 🆕 为空位创建透明占位符，保持物理间隔
+                    spacer = QLabel("")
+                    spacer.setFixedSize(36, 36)
+                    spacer.setStyleSheet("background-color: transparent; border: none;")
+                    self.seat_layout.addWidget(spacer, r, grid_col)
                     continue
-                
+
                 # 确保使用正确的列号，而不是数组索引
                 col_num = seat.get('col', c + 1)
-                # 由于第0列是行号标签，座位从第1列开始，所以实际列位置是col_num
-                grid_col = col_num
-                
+
                 status = seat.get('status', 'available')
                 if status == 'empty':
+                    # 🆕 为empty状态也创建占位符
+                    spacer = QLabel("")
+                    spacer.setFixedSize(36, 36)
+                    spacer.setStyleSheet("background-color: transparent; border: none;")
+                    self.seat_layout.addWidget(spacer, r, grid_col)
                     continue
                 
                 # 创建座位按钮 - 更现代化的样式
                 seat_btn = QPushButton()
                 seat_btn.setFixedSize(36, 36)  # 稍微增大尺寸
                 
-                # 座位编号显示优化 - 直接显示列号
-                btn_text = str(col_num)
-                seat_btn.setText(btn_text)
+                # 🆕 修复：显示真实座位号（n字段）
+                # 物理座位号（rn, cn）用于构建座位图布局
+                # 真实座位号（r, n）用于显示和提交
+                real_seat_num = seat.get('num', '')  # 这里的num已经是处理过的真实座位号n
+                if not real_seat_num:
+                    # 备选：使用物理列号
+                    real_seat_num = str(seat.get('col', col_num))
+
+                seat_btn.setText(real_seat_num)
                 
                 # 设置样式
                 self._update_seat_button_style(seat_btn, status)
@@ -204,7 +221,7 @@ class SeatMapPanelPyQt5(QWidget):
                 else:
                     seat_btn.setEnabled(False)
                 
-                # 添加到布局
+                # 添加到布局 - 🆕 使用正确的网格位置
                 self.seat_layout.addWidget(seat_btn, r, grid_col)
                 
                 # 保存引用
