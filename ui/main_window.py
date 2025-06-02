@@ -1219,19 +1219,15 @@ class CinemaOrderSimulatorUI(tk.Tk):  # 定义主窗口类，继承自tk.Tk
         self.bind_log_text.insert("end", "\n".join(log_lines))
         self.bind_log_text.config(state="normal")
         
-        # 完成提示
-        if success > 0:
-            if UIConstants.should_show_success_popup("bind_coupon"):
-                MessageManager.show_info(self, "绑定完成", f"成功绑定{success}张券，失败{fail}张券")
-        else:
-            MessageManager.show_warning(self, "绑定失败", f"所有{fail}张券绑定失败，请检查账号状态和券号")
+        # 不显示绑定完成弹窗，只在控制台记录
+        print(f"[券绑定] 绑定完成：成功{success}张券，失败{fail}张券")
 
     def copy_bind_log(self):
         log = self.bind_log_text.get("1.0", "end").strip()
         self.clipboard_clear()
         self.clipboard_append(log)
-        if UIConstants.should_show_success_popup("copy_log"):
-            MessageManager.show_info(self, "复制成功", "日志内容已复制到剪贴板！")
+        # 不显示复制成功弹窗，只在控制台记录
+        print(f"[券绑定] 日志内容已复制到剪贴板")
 
     def build_order_list_tab(self, tab):
         # 顶部刷新按钮

@@ -708,7 +708,8 @@ class ModularCinemaMainWindow(QMainWindow):
             # 清空输入
             self.tab_manager_widget.coupon_input.clear()
             
-            MessageManager.show_info(self, "绑定完成", f"券绑定完成\n成功：{success_count} 个\n失败：{fail_count} 个")
+            # 不显示绑定完成弹窗，只在控制台记录
+            print(f"[主窗口] 券绑定完成：成功 {success_count} 个，失败 {fail_count} 个")
             
         except Exception as e:
             print(f"[主窗口] 绑定券错误: {e}")

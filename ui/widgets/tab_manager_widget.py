@@ -345,8 +345,8 @@ class TabManagerWidget(QWidget):
             MessageManager.show_error(self, "无券号", "请输入至少一个券号！", auto_close=False)
             return
         
-        # 添加进度提示
-        MessageManager.show_info(self, "开始绑定", f"即将绑定{len(coupon_codes)}张券，每张券间隔0.2秒，请稍候...", auto_close=True)
+        # 不显示进度提示，直接开始绑定
+        print(f"[券绑定] 即将绑定{len(coupon_codes)}张券")
         
         # 执行绑定
         self.perform_batch_bind(account, coupon_codes)
@@ -428,11 +428,8 @@ class TabManagerWidget(QWidget):
         
         self.bind_log_text.setPlainText("\n".join(log_lines))
         
-        # 完成提示
-        if success > 0:
-            MessageManager.show_success(self, "绑定完成", f"成功绑定{success}张券，失败{fail}张券", auto_close=True)
-        else:
-            MessageManager.show_error(self, "绑定失败", f"所有{fail}张券绑定失败，请检查账号状态和券号", auto_close=False)
+        # 不显示完成提示弹窗，只在日志中记录
+        print(f"[券绑定] 绑定完成：成功{success}张券，失败{fail}张券")
 
     def copy_bind_log(self):
         """复制绑定日志"""
@@ -441,9 +438,11 @@ class TabManagerWidget(QWidget):
             from PyQt5.QtWidgets import QApplication
             clipboard = QApplication.clipboard()
             clipboard.setText(log)
-            MessageManager.show_success(self, "复制成功", "日志内容已复制到剪贴板！", auto_close=True)
+            # 不显示复制成功弹窗，只在控制台记录
+            print(f"[券绑定] 日志内容已复制到剪贴板")
         else:
-            MessageManager.show_error(self, "无内容", "没有日志内容可复制", auto_close=False)
+            # 不显示错误弹窗，只在控制台记录
+            print(f"[券绑定] 没有日志内容可复制")
 
     def update_bind_account_info(self):
         """更新券绑定界面的账号信息显示"""
