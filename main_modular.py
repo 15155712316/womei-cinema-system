@@ -2344,9 +2344,9 @@ class ModularCinemaMainWindow(QMainWindow):
                         # 我们的生成器已经优化了布局，应该保持原始大小
                         print(f"[主窗口] 📐 原始二维码尺寸: {pixmap.width()}x{pixmap.height()}")
 
-                        # 🎨 恢复到原来的尺寸限制
-                        max_width = 280   # 🎨 恢复到280px
-                        max_height = 280  # 🎨 恢复到280px
+                        # 🎨 调整尺寸限制到300x300
+                        max_width = 340   # 🎨 调整到300px
+                        max_height = 340  # 🎨 调整到300px
 
                         if pixmap.width() > max_width or pixmap.height() > max_height:
                             scaled_pixmap = pixmap.scaled(max_width, max_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)

@@ -10,15 +10,91 @@ from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 import io
 
-# 尝试导入qrcode，如果失败则使用备用方案
-try:
-    import qrcode
-    QRCODE_AVAILABLE = True
-    print(f"[二维码生成] ✅ qrcode模块导入成功")
-except ImportError as e:
+# 🔧 根本性解决方案：多重导入策略
+import sys
+import os
+
+# 全局变量，避免重复检查
+QRCODE_AVAILABLE = None
+qrcode = None
+
+def ensure_qrcode_import():
+    """确保qrcode模块可用的多重策略函数"""
+    global QRCODE_AVAILABLE, qrcode
+
+    if QRCODE_AVAILABLE is not None:
+        return QRCODE_AVAILABLE, qrcode
+
+    # 策略1: 直接导入
+    try:
+        import qrcode as qr_module
+        QRCODE_AVAILABLE = True
+        qrcode = qr_module
+        print(f"[二维码生成] ✅ 策略1-直接导入: 成功")
+        return True, qr_module
+    except ImportError:
+        pass
+
+    # 策略2: 使用importlib动态导入
+    try:
+        import importlib
+        qr_module = importlib.import_module('qrcode')
+        QRCODE_AVAILABLE = True
+        qrcode = qr_module
+        print(f"[二维码生成] ✅ 策略2-importlib导入: 成功")
+        return True, qr_module
+    except ImportError:
+        pass
+
+    # 策略3: 手动添加路径后导入
+    try:
+        # 获取Python安装路径
+        python_path = os.path.dirname(sys.executable)
+        site_packages = os.path.join(python_path, 'lib', 'site-packages')
+
+        if os.path.exists(site_packages) and site_packages not in sys.path:
+            sys.path.insert(0, site_packages)
+            print(f"[二维码生成] 🔧 策略3-添加路径: {site_packages}")
+
+        import qrcode as qr_module
+        QRCODE_AVAILABLE = True
+        qrcode = qr_module
+        print(f"[二维码生成] ✅ 策略3-路径修复导入: 成功")
+        return True, qr_module
+    except ImportError:
+        pass
+
+    # 策略4: 使用subprocess安装后导入
+    try:
+        import subprocess
+        print(f"[二维码生成] 🔧 策略4-尝试重新安装qrcode模块...")
+        result = subprocess.run([sys.executable, "-m", "pip", "install", "qrcode[pil]", "--force-reinstall"],
+                              capture_output=True, text=True, timeout=30)
+
+        if result.returncode == 0:
+            import qrcode as qr_module
+            QRCODE_AVAILABLE = True
+            qrcode = qr_module
+            print(f"[二维码生成] ✅ 策略4-重新安装导入: 成功")
+            return True, qr_module
+    except Exception as e:
+        print(f"[二维码生成] ⚠️ 策略4失败: {e}")
+
+    # 所有策略都失败
     QRCODE_AVAILABLE = False
-    print(f"[二维码生成] ⚠️ qrcode模块不可用: {e}")
-    print(f"[二维码生成] 🔄 将使用内置备用方案")
+    qrcode = None
+    print(f"[二维码生成] ❌ 所有导入策略都失败，使用备用方案")
+
+    # 详细诊断信息
+    print(f"[二维码生成] 🔍 导入失败诊断:")
+    print(f"[二维码生成] 📋 Python: {sys.executable}")
+    print(f"[二维码生成] 📋 工作目录: {os.getcwd()}")
+    print(f"[二维码生成] 📋 sys.path前3项: {sys.path[:3]}")
+
+    return False, None
+
+# 在模块加载时执行一次检查
+QRCODE_AVAILABLE, qrcode = ensure_qrcode_import()
 
 def get_cinema_name_by_id(cinema_id: str) -> str:
     """
@@ -126,13 +202,15 @@ def generate_ticket_qrcode(ticket_code: str, order_info: dict = None) -> bytes:
             print(f"[二维码生成] ❌ 取票码为空")
             return None
 
-        # 🎯 根据qrcode模块可用性选择生成方式
-        if QRCODE_AVAILABLE:
+        # 🎯 确保qrcode模块可用并选择生成方式
+        qr_available, qr_module = ensure_qrcode_import()
+
+        if qr_available and qr_module:
             print(f"[二维码生成] 🎯 使用完整二维码生成")
             # 🎯 创建二维码对象（优化清晰度）
-            qr = qrcode.QRCode(
+            qr = qr_module.QRCode(
                 version=1,  # 控制二维码大小，1是最小的
-                error_correction=qrcode.constants.ERROR_CORRECT_M,  # 中等错误纠正
+                error_correction=qr_module.constants.ERROR_CORRECT_M,  # 中等错误纠正
                 box_size=12,  # 🎨 增加每个小方块的像素数：从8提高到12
                 border=3,   # 🎨 增加边框大小：从2提高到3
             )
