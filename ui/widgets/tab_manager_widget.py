@@ -1548,16 +1548,20 @@ class TabManagerWidget(QWidget):
                     if cinema.get('cinemaShortName') == cinema_text:
                         selected_cinema = cinema
                         break
-            
+
             if not selected_cinema:
                 print(f"[Tab管理器] 未找到影院数据: {cinema_text}")
                 self.movie_combo.clear()
                 self.movie_combo.addItem("影院数据错误")
                 return
-            
+
+            # 🆕 保存当前影院数据 - 修复券选择功能需要的影院信息
+            self.current_cinema_data = selected_cinema
+            print(f"[Tab管理器] 保存当前影院数据: {selected_cinema.get('cinemaShortName')} (ID: {selected_cinema.get('cinemaid')})")
+
             # 🆕 发出影院选择信号 - 传递影院数据对象
             self.cinema_selected.emit(cinema_text)
-            
+
             # 🆕 发布全局影院选择事件 - 传递完整影院数据
             event_bus.cinema_selected.emit(selected_cinema)
             

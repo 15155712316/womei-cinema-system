@@ -70,11 +70,12 @@ class ModularCinemaMainWindow(QMainWindow):
         self.current_account = None
         self.current_order = None
         self.member_info = None
-        self.selected_coupons = []
-        self.selected_coupons_info = None
-        self.current_coupon_info = None
-        self.coupons_data = []
-        self.max_coupon_select = 1
+        # 🆕 券选择和支付相关状态变量
+        self.selected_coupons = []           # 存储选中券号列表
+        self.selected_coupons_info = None    # 选中券的详细信息
+        self.current_coupon_info = None      # 存储券价格查询结果
+        self.coupons_data = []              # 存储可用券数据
+        self.max_coupon_select = 1          # 券选择数量限制（等于座位数）
         self.ui_state = "initial"
         self.show_debug = False
         self.last_priceinfo = {}
@@ -734,55 +735,169 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[主窗口] 刷新订单列表错误: {e}")
     
     def on_one_click_pay(self):
-        """一键支付处理"""
+        """🆕 一键支付处理 - 完整的券支付逻辑"""
         try:
             if not self.current_order:
                 MessageManager.show_error(self, "支付失败", "没有待支付的订单")
                 return
-                
-            # 获取订单详情
-            order_detail = get_order_detail({
-                'order_id': self.current_order.get('order_id')
-            })
-            
-            if not order_detail or order_detail.get('resultCode') != '0':
-                MessageManager.show_error(self, "支付失败", "无法获取订单详情")
+
+            if not self.current_account:
+                MessageManager.show_error(self, "支付失败", "请先选择账号")
                 return
-            
-            # 调用支付API
-            pay_result = pay_order({
-                'account': self.current_account,
-                'order': self.current_order,
-                'coupons': self.selected_coupons
-            })
-            
+
+            # 获取订单和账号信息
+            order_detail = self.current_order
+            account = self.current_account
+            order_id = order_detail.get('orderno') or order_detail.get('order_id', '')
+
+            # 获取影院信息
+            cinema_data = None
+            if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'current_cinema_data'):
+                cinema_data = self.tab_manager_widget.current_cinema_data
+
+            if not cinema_data:
+                MessageManager.show_error(self, "支付失败", "缺少影院信息")
+                return
+
+            cinema_id = cinema_data.get('cinemaid', '')
+
+            print(f"[一键支付] 开始支付订单: {order_id}")
+
+            # 🆕 获取选中的券号
+            selected_coupons = getattr(self, 'selected_coupons', [])
+            couponcode = ','.join(selected_coupons) if selected_coupons else ''
+
+            # 🆕 获取券选择后的价格信息
+            coupon_info = getattr(self, 'current_coupon_info', None)
+
+            # 🆕 判断是否使用券支付
+            use_coupon = bool(couponcode and coupon_info and coupon_info.get('resultCode') == '0')
+
+            if use_coupon:
+                # 🆕 使用券支付：从券价格信息中获取支付参数
+                coupon_data = coupon_info['resultData']
+                pay_amount = coupon_data.get('paymentAmount', '0')  # 实付金额（分）
+                discount_price = coupon_data.get('discountprice', '0')  # 优惠价格（分）
+
+                # 🆕 检查会员支付金额
+                is_member = self.member_info and self.member_info.get('is_member')
+                if is_member:
+                    mem_payment = coupon_data.get('mempaymentAmount', '0')
+                    if mem_payment != '0':
+                        pay_amount = mem_payment  # 会员优先使用会员支付金额
+
+                print(f"[一键支付] 使用券支付，券号: {couponcode}")
+                print(f"[一键支付] 实付金额: {pay_amount}分，优惠: {discount_price}分")
+            else:
+                # 🆕 不使用券，按原价支付
+                couponcode = ''  # 清空券号
+
+                # 获取原价支付金额
+                is_member = self.member_info and self.member_info.get('is_member')
+                if is_member:
+                    # 会员：使用会员总价
+                    pay_amount = str(order_detail.get('mem_totalprice', 0))  # 会员总价（分）
+                else:
+                    # 非会员：使用订单总价
+                    pay_amount = str(order_detail.get('payAmount', 0))  # 订单总价（分）
+
+                discount_price = '0'  # 无优惠
+
+                print(f"[一键支付] 不使用券，按原价支付")
+                print(f"[一键支付] 支付金额: {pay_amount}分（{'会员价' if is_member else '原价'}）")
+
+            # 🆕 构建支付参数 - 完全按照原版格式
+            pay_params = {
+                'orderno': order_id,
+                'payprice': pay_amount,        # 实付金额（分）
+                'discountprice': discount_price, # 优惠价格（分）
+                'couponcodes': couponcode,     # 券号列表（逗号分隔，无券时为空字符串）
+                'groupid': '',
+                'cinemaid': cinema_id,
+                'cardno': account.get('cardno', ''),
+                'userid': account['userid'],
+                'openid': account['openid'],
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': account['token'],
+                'source': '2'
+            }
+
+            print(f"[一键支付] 支付参数: {pay_params}")
+            print(f"[一键支付] 正在支付订单: {order_id}")
+
+            # 🆕 调用支付API
+            pay_result = pay_order(pay_params)
+
+            print(f"[一键支付] 支付结果: {pay_result}")
+
             if pay_result and pay_result.get('resultCode') == '0':
-                # 支付成功
-                MessageManager.show_info(self, "支付成功", "订单支付成功！")
-                
-                # 获取取票码
-                qr_result = get_order_qrcode_api({
-                    'order_id': self.current_order.get('order_id')
-                })
-                
-                if qr_result and qr_result.get('resultCode') == '0':
-                    qr_code = qr_result.get('data', {}).get('qrcode', '')
-                    self._show_qr_code(qr_code)
-                
-                # 发布支付成功事件
-                event_bus.order_paid.emit(self.current_order.get('order_id', ''))
-                
-                # 清空当前订单
+                # 🆕 支付成功处理流程
+                print(f"[支付成功] 订单支付成功: {order_id}")
+
+                # 🆕 获取已支付订单详情
+                detail_params = {
+                    'orderno': order_id,
+                    'groupid': '',
+                    'cinemaid': cinema_id,
+                    'cardno': account.get('cardno', ''),
+                    'userid': account['userid'],
+                    'openid': account['openid'],
+                    'CVersion': '3.9.12',
+                    'OS': 'Windows',
+                    'token': account['token'],
+                    'source': '2'
+                }
+
+                print(f"[支付成功] 正在获取订单详情: {order_id}")
+                updated_order_detail = get_order_detail(detail_params)
+
+                if updated_order_detail and updated_order_detail.get('resultCode') == '0':
+                    print(f"[支付成功] 订单详情获取成功")
+
+                    # 🆕 获取订单二维码/取票码
+                    print(f"[支付成功] 正在获取订单二维码: {order_id}")
+                    qr_result = get_order_qrcode_api(order_id, cinema_id)
+
+                    if qr_result:
+                        # get_order_qrcode_api 返回二进制图片内容，不是JSON
+                        print(f"[支付成功] 取票二维码获取成功，大小: {len(qr_result)} bytes")
+                        # 这里可以保存二维码图片或进一步处理
+                        # 暂时显示成功信息
+                        self._show_qr_code("二维码获取成功")
+                    else:
+                        print(f"[支付成功] 取票二维码获取失败")
+
+                    # 🆕 更新订单详情显示为支付成功状态
+                    self.current_order = updated_order_detail
+                    self._update_order_detail_with_coupon_info()
+
+                    print(f"[支付成功] 订单状态已更新")
+                else:
+                    print(f"[支付成功] 获取订单详情失败: {updated_order_detail}")
+                    MessageManager.show_warning(self, "提示", "支付成功，但获取订单详情失败，请手动在订单列表中查看")
+
+                # 🆕 发布支付成功事件
+                event_bus.order_paid.emit(order_id)
+
+                # 🆕 清空当前订单和券选择状态
                 self.current_order = None
                 self.selected_coupons.clear()
-                
+                self.current_coupon_info = None
+
+                MessageManager.show_info(self, "支付成功", "订单支付成功！")
+
             else:
-                error_msg = pay_result.get('resultDesc', '支付失败') if pay_result else '网络错误'
-                MessageManager.show_error(self, "支付失败", error_msg)
-                
+                # 🆕 支付失败处理
+                error_msg = pay_result.get('resultDesc', '未知错误') if pay_result else '支付请求失败'
+                print(f"[一键支付] 支付失败: {error_msg}")
+                MessageManager.show_error(self, "支付失败", f"支付失败: {error_msg}")
+
         except Exception as e:
-            print(f"[主窗口] 支付错误: {e}")
-            MessageManager.show_error(self, "支付失败", f"支付处理失败: {str(e)}")
+            print(f"[一键支付] 支付异常: {e}")
+            import traceback
+            traceback.print_exc()
+            MessageManager.show_error(self, "支付失败", f"支付过程中发生错误: {e}")
     
     def show_order_detail(self, detail):
         """显示订单详情"""
@@ -2231,9 +2346,18 @@ class ModularCinemaMainWindow(QMainWindow):
                 pass
 
     def _show_coupon_list(self, coupons: list):
-        """显示券列表 - 修复：使用现有的券列表区域"""
+        """显示券列表 - 🆕 添加券选择事件处理和实时价格查询"""
         try:
             print(f"[主窗口] 显示券列表: {len(coupons)} 张券")
+
+            # 🆕 保存券数据到实例变量
+            self.coupons_data = coupons
+
+            # 🆕 根据当前订单的座位数设置券选择数量限制
+            if self.current_order:
+                seat_count = len(self.current_order.get('seats', []))
+                self.max_coupon_select = max(1, seat_count)  # 至少允许选择1张券
+                print(f"[主窗口] 设置券选择数量限制: {self.max_coupon_select} 张（座位数: {seat_count}）")
 
             # 查找现有的券列表组件
             coupon_list_widget = None
@@ -2263,6 +2387,22 @@ class ModularCinemaMainWindow(QMainWindow):
             # 修复：使用 is not None 而不是 bool() 检查
             if coupon_list_widget is not None:
                 print(f"[主窗口] 券列表组件有效，类型: {type(coupon_list_widget)}")
+
+                # 🆕 设置券列表为多选模式
+                from PyQt5.QtWidgets import QAbstractItemView
+                coupon_list_widget.setSelectionMode(QAbstractItemView.MultiSelection)
+
+                # 🆕 连接券选择事件
+                if hasattr(coupon_list_widget, 'itemSelectionChanged'):
+                    # 先断开可能存在的连接，避免重复连接
+                    try:
+                        coupon_list_widget.itemSelectionChanged.disconnect()
+                    except:
+                        pass
+                    # 连接新的事件处理器
+                    coupon_list_widget.itemSelectionChanged.connect(self._on_coupon_selection_changed)
+                    print(f"[主窗口] 已连接券选择事件处理器")
+
                 # 清空现有券列表
                 coupon_list_widget.clear()
                 print(f"[主窗口] 已清空现有券列表")
@@ -2314,6 +2454,296 @@ class ModularCinemaMainWindow(QMainWindow):
 
         except Exception as e:
             print(f"[主窗口] 显示券列表错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _on_coupon_selection_changed(self):
+        """券选择事件处理器 - 🆕 实现券选择和实时价格查询功能"""
+        try:
+            print(f"[主窗口] 券选择发生变化")
+
+            # 获取券列表组件
+            coupon_list_widget = None
+            if hasattr(self, 'coupon_list'):
+                coupon_list_widget = self.coupon_list
+            elif hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
+                coupon_list_widget = self.tab_manager_widget.coupon_list
+
+            if not coupon_list_widget:
+                print(f"[主窗口] 未找到券列表组件")
+                return
+
+            # 获取选中的券项目索引
+            selected_items = coupon_list_widget.selectedItems()
+            selected_indices = [coupon_list_widget.row(item) for item in selected_items]
+
+            print(f"[主窗口] 选中券索引: {selected_indices}")
+
+            # 检查选择数量限制
+            if len(selected_indices) > self.max_coupon_select:
+                MessageManager.show_warning(
+                    self, "选择限制",
+                    f"最多只能选择 {self.max_coupon_select} 张券"
+                )
+                # 清除多余的选择，保留前面的选择
+                for i, item in enumerate(selected_items):
+                    if i >= self.max_coupon_select:
+                        item.setSelected(False)
+                return
+
+            # 获取选中的券号
+            selected_codes = []
+            for index in selected_indices:
+                if 0 <= index < len(self.coupons_data):
+                    coupon = self.coupons_data[index]
+                    coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or coupon.get('code', '')
+                    if coupon_code:
+                        selected_codes.append(coupon_code)
+
+            print(f"[主窗口] 选中券号: {selected_codes}")
+
+            # 验证必要参数
+            if not self.current_order or not self.current_account:
+                print(f"[主窗口] 缺少订单或账号信息，无法查询券价格")
+                return
+
+            # 获取订单和账号信息
+            order_id = self.current_order.get('orderno') or self.current_order.get('order_id', '')
+            account = self.current_account
+
+            # 获取影院信息 - 🆕 修复影院信息获取逻辑
+            cinema_data = None
+
+            # 方法1: 从Tab管理器获取当前选中的影院
+            if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'cinema_combo'):
+                cinema_name = self.tab_manager_widget.cinema_combo.currentText()
+                if cinema_name and cinema_name not in ["加载中...", "请选择影院"]:
+                    cinema_data = self._get_cinema_info_by_name(cinema_name)
+                    print(f"[主窗口] 从Tab管理器获取影院信息: {cinema_name}")
+
+            # 方法2: 从Tab管理器的current_cinema_data属性获取
+            if not cinema_data and hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'current_cinema_data'):
+                cinema_data = self.tab_manager_widget.current_cinema_data
+                print(f"[主窗口] 从current_cinema_data获取影院信息")
+
+            if not cinema_data:
+                print(f"[主窗口] 缺少影院信息，无法查询券价格")
+                print(f"[主窗口] 调试信息:")
+                if hasattr(self, 'tab_manager_widget'):
+                    print(f"  - tab_manager_widget存在: True")
+                    if hasattr(self.tab_manager_widget, 'cinema_combo'):
+                        current_text = self.tab_manager_widget.cinema_combo.currentText()
+                        print(f"  - 当前选中影院: {current_text}")
+                    else:
+                        print(f"  - cinema_combo不存在")
+                    if hasattr(self.tab_manager_widget, 'current_cinema_data'):
+                        print(f"  - current_cinema_data存在: {self.tab_manager_widget.current_cinema_data}")
+                    else:
+                        print(f"  - current_cinema_data不存在")
+                else:
+                    print(f"  - tab_manager_widget不存在")
+                return
+
+            cinema_id = cinema_data.get('cinemaid', '')
+            print(f"[主窗口] 获取到影院ID: {cinema_id}")
+
+            # 🆕 实时请求券抵扣信息
+            if selected_codes and selected_codes[0]:  # 确保券号不为空
+                try:
+                    couponcode = ','.join(selected_codes)
+
+                    # 构建API参数 - 完全按照原版格式
+                    prepay_params = {
+                        'orderno': order_id,
+                        'couponcode': couponcode,
+                        'groupid': '',
+                        'cinemaid': cinema_id,
+                        'cardno': account.get('cardno', ''),
+                        'userid': account['userid'],
+                        'openid': account['openid'],
+                        'CVersion': '3.9.12',
+                        'OS': 'Windows',
+                        'token': account['token'],
+                        'source': '2'
+                    }
+
+                    print(f"[券价格查询] 请求参数: {prepay_params}")
+
+                    # 调用券价格查询API
+                    coupon_info = get_coupon_prepay_info(prepay_params)
+                    print(f"[券价格查询] 返回结果: {coupon_info}")
+
+                    if coupon_info.get('resultCode') == '0':
+                        # 🆕 保存券价格信息
+                        self.current_coupon_info = coupon_info
+                        self.selected_coupons = selected_codes
+                        print(f"[券选择] 已选择券: {selected_codes}")
+                        print(f"[券选择] 券数: {len(selected_codes)}/{self.max_coupon_select}")
+
+                        # 🆕 刷新订单详情显示，包含券抵扣信息
+                        self._update_order_detail_with_coupon_info()
+
+                    else:
+                        # 查询失败，清空选择
+                        self.current_coupon_info = None
+                        self.selected_coupons = []
+                        error_desc = coupon_info.get('resultDesc', '未知错误')
+                        MessageManager.show_warning(self, "选券失败", error_desc)
+
+                        # 取消选择
+                        for item in selected_items:
+                            item.setSelected(False)
+
+                        print(f"[券选择] 券验证失败: {error_desc}")
+
+                except Exception as e:
+                    print(f"[券价格查询] 异常: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+                    self.current_coupon_info = None
+                    self.selected_coupons = []
+                    MessageManager.show_error(self, "选券异常", f"查询券价格信息失败: {e}")
+
+                    # 取消选择
+                    for item in selected_items:
+                        item.setSelected(False)
+            else:
+                # 券号为空，清空券信息
+                self.current_coupon_info = None
+                self.selected_coupons = []
+                print(f"[券选择] 券号为空，已清空选择")
+
+                # 🆕 刷新订单详情显示，移除券抵扣信息
+                self._update_order_detail_with_coupon_info()
+
+        except Exception as e:
+            print(f"[主窗口] 券选择事件处理错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _update_order_detail_with_coupon_info(self):
+        """🆕 更新订单详情显示，包含券抵扣信息"""
+        try:
+            if not self.current_order:
+                return
+
+            print(f"[主窗口] 更新订单详情，包含券抵扣信息")
+
+            # 获取基础订单信息
+            order_detail = self.current_order
+
+            # 构建格式化的订单详情
+            details = ""
+
+            # 订单号
+            order_id = order_detail.get('orderno', order_detail.get('order_id', 'N/A'))
+            details += f"订单号: {order_id}\n\n"
+
+            # 影片信息
+            movie = order_detail.get('movie', order_detail.get('film_name', 'N/A'))
+            details += f"影片: {movie}\n\n"
+
+            # 时间信息
+            show_time = order_detail.get('showTime', '')
+            if not show_time:
+                date = order_detail.get('date', '')
+                session = order_detail.get('session', '')
+                if date and session:
+                    show_time = f"{date} {session}"
+            details += f"时间: {show_time}\n\n"
+
+            # 影厅信息
+            cinema = order_detail.get('cinema', order_detail.get('cinema_name', 'N/A'))
+            hall = order_detail.get('hall_name', '')
+            if hall:
+                details += f"影厅: {hall}\n\n"
+            else:
+                details += f"影院: {cinema}\n\n"
+
+            # 座位信息
+            seats = order_detail.get('seats', [])
+            if isinstance(seats, list) and seats:
+                if len(seats) == 1:
+                    details += f"座位: {seats[0]}\n\n"
+                else:
+                    seat_str = " ".join(seats)
+                    details += f"座位: {seat_str}\n\n"
+            else:
+                details += f"座位: {seats}\n\n"
+
+            # 🆕 票价和券抵扣信息
+            original_amount = order_detail.get('amount', 0)
+            seat_count = order_detail.get('seat_count', len(seats) if isinstance(seats, list) else 1)
+
+            # 显示原价
+            if seat_count > 1:
+                unit_price = original_amount / seat_count if seat_count > 0 else original_amount
+                details += f"原价: {seat_count}张×¥{unit_price:.2f} = ¥{original_amount:.2f}\n\n"
+            else:
+                details += f"原价: ¥{original_amount:.2f}\n\n"
+
+            # 🆕 券抵扣信息
+            if self.current_coupon_info and self.selected_coupons:
+                coupon_data = self.current_coupon_info.get('resultData', {})
+
+                # 获取券抵扣金额（分）
+                discount_price_fen = int(coupon_data.get('discountprice', '0'))
+                discount_price_yuan = discount_price_fen / 100.0
+
+                # 获取实付金额（分）
+                pay_amount_fen = int(coupon_data.get('paymentAmount', '0'))
+
+                # 检查会员支付金额
+                is_member = self.member_info and self.member_info.get('is_member')
+                if is_member:
+                    mem_payment_fen = int(coupon_data.get('mempaymentAmount', '0'))
+                    if mem_payment_fen != 0:
+                        pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
+
+                pay_amount_yuan = pay_amount_fen / 100.0
+
+                # 显示券信息
+                coupon_count = len(self.selected_coupons)
+                details += f"使用券: {coupon_count}张\n"
+                details += f"券抵扣: -¥{discount_price_yuan:.2f}\n\n"
+
+                # 显示实付金额
+                if pay_amount_yuan == 0:
+                    details += f"实付金额: ¥0.00 (纯券支付)"
+                else:
+                    details += f"实付金额: ¥{pay_amount_yuan:.2f}"
+                    if is_member and mem_payment_fen != 0:
+                        details += " (会员价)"
+
+                print(f"[主窗口] 券抵扣信息: 优惠¥{discount_price_yuan:.2f}, 实付¥{pay_amount_yuan:.2f}")
+
+            else:
+                # 无券抵扣，显示原价
+                # 检查会员价格
+                is_member = self.member_info and self.member_info.get('is_member')
+                if is_member:
+                    mem_total_price = order_detail.get('mem_totalprice', 0)
+                    if mem_total_price > 0:
+                        details += f"实付金额: ¥{mem_total_price/100.0:.2f} (会员价)"
+                    else:
+                        details += f"实付金额: ¥{original_amount:.2f}"
+                else:
+                    details += f"实付金额: ¥{original_amount:.2f}"
+
+            # 状态信息
+            status = order_detail.get('status', '待支付')
+            details += f"\n\n状态: {status}"
+
+            # 设置文本内容
+            if hasattr(self, 'order_detail_text'):
+                self.order_detail_text.setPlainText(details)
+                print(f"[主窗口] 订单详情已更新显示（含券信息）")
+            else:
+                print(f"[主窗口] 未找到订单详情显示组件")
+
+        except Exception as e:
+            print(f"[主窗口] 更新订单详情（含券信息）错误: {e}")
             import traceback
             traceback.print_exc()
 
