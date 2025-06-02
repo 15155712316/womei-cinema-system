@@ -212,7 +212,7 @@ class ClassicComboBox(QComboBox):
                 padding: 6px 12px;
                 font: 13px "Microsoft YaHei";
                 color: #333333;
-                min-width: 180px;
+                min-width: 320px;
                 min-height: 26px;
                 background-color: white !important;
                 background: white !important;

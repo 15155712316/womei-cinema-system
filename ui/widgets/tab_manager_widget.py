@@ -134,67 +134,79 @@ class TabManagerWidget(QWidget):
     def _build_cinema_select(self, parent_group):
         """构建影院选择区域"""
         layout = QVBoxLayout(parent_group)
-        layout.setContentsMargins(10, 20, 10, 10)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 20, 10, 10)  # 🆕 左边距改为0，让下拉框与账号信息对齐
+        layout.setSpacing(5)  # 🆕 减少垂直间距，让整体更紧密
         
         # 当前账号显示
         self.current_account_label = ClassicLabel("当前账号: 未选择", "info")
         layout.addWidget(self.current_account_label)
         
-        # 影院选择 - 精确对齐布局
+        # 影院选择 - 🆕 简化布局，与账号信息区域左边缘对齐
         cinema_layout = QHBoxLayout()
-        cinema_layout.setSpacing(8)
+        cinema_layout.setContentsMargins(0, 0, 0, 0)
         cinema_label = ClassicLabel("影院:")
-        cinema_label.setMinimumWidth(50)
-        cinema_label.setMaximumWidth(50)
+        cinema_label.setFixedWidth(30)
         cinema_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        cinema_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
         self.cinema_combo = ClassicComboBox()
         self.cinema_combo.addItem("加载中...")
+        # 🆕 设置下拉框宽度
+        self.cinema_combo.setFixedWidth(320)
         cinema_layout.addWidget(cinema_label)
+        cinema_layout.addSpacing(5)
         cinema_layout.addWidget(self.cinema_combo)
-        cinema_layout.addStretch()  # 添加弹性空间
+        cinema_layout.addStretch()
         layout.addLayout(cinema_layout)
         
-        # 影片选择 - 精确对齐布局
+        # 影片选择 - 🆕 简化布局，与账号信息区域左边缘对齐
         movie_layout = QHBoxLayout()
-        movie_layout.setSpacing(8)
+        movie_layout.setContentsMargins(0, 0, 0, 0)
         movie_label = ClassicLabel("影片:")
-        movie_label.setMinimumWidth(50)
-        movie_label.setMaximumWidth(50)
+        movie_label.setFixedWidth(30)
         movie_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        movie_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
         self.movie_combo = ClassicComboBox()
         self.movie_combo.addItems(["请先选择影院"])
+        # 🆕 设置下拉框宽度
+        self.movie_combo.setFixedWidth(320)
         movie_layout.addWidget(movie_label)
+        movie_layout.addSpacing(5)
         movie_layout.addWidget(self.movie_combo)
-        movie_layout.addStretch()  # 添加弹性空间
+        movie_layout.addStretch()
         layout.addLayout(movie_layout)
         
-        # 日期选择 - 精确对齐布局
+        # 日期选择 - 🆕 简化布局，与账号信息区域左边缘对齐
         date_layout = QHBoxLayout()
-        date_layout.setSpacing(8)
+        date_layout.setContentsMargins(0, 0, 0, 0)
         date_label = ClassicLabel("日期:")
-        date_label.setMinimumWidth(50)
-        date_label.setMaximumWidth(50)
+        date_label.setFixedWidth(30)
         date_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        date_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
         self.date_combo = ClassicComboBox()
         self.date_combo.addItems(["请先选择影片"])
+        # 🆕 设置下拉框宽度
+        self.date_combo.setFixedWidth(320)
         date_layout.addWidget(date_label)
+        date_layout.addSpacing(5)
         date_layout.addWidget(self.date_combo)
-        date_layout.addStretch()  # 添加弹性空间
+        date_layout.addStretch()
         layout.addLayout(date_layout)
         
-        # 场次选择 - 精确对齐布局
+        # 场次选择 - 🆕 简化布局，与账号信息区域左边缘对齐
         session_layout = QHBoxLayout()
-        session_layout.setSpacing(8)
+        session_layout.setContentsMargins(0, 0, 0, 0)
         session_label = ClassicLabel("场次:")
-        session_label.setMinimumWidth(50)
-        session_label.setMaximumWidth(50)
+        session_label.setFixedWidth(30)
         session_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        session_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
         self.session_combo = ClassicComboBox()
         self.session_combo.addItems(["请先选择日期"])
+        # 🆕 设置下拉框宽度
+        self.session_combo.setFixedWidth(320)
         session_layout.addWidget(session_label)
+        session_layout.addSpacing(5)
         session_layout.addWidget(self.session_combo)
-        session_layout.addStretch()  # 添加弹性空间
+        session_layout.addStretch()
         layout.addLayout(session_layout)
         
         # 选座按钮 - 缩小高度，避免占用座位区域空间

@@ -81,8 +81,7 @@ class ModularCinemaMainWindow(QMainWindow):
         
         # 定时器相关（使用QTimer替代tkinter.after）
         self.auth_check_timer = None
-        self.countdown_timer = None
-        self.countdown_seconds = 0
+        # 🆕 移除倒计时定时器
         
         # 初始化状态变量
         self.login_window = None
@@ -270,17 +269,7 @@ class ModularCinemaMainWindow(QMainWindow):
         """)
         order_layout.addWidget(self.order_detail_text)
         
-        # 倒计时标签
-        self.countdown_label = ClassicLabel("", "info")
-        self.countdown_label.setStyleSheet("""
-            QLabel {
-                color: #0077ff;
-                font: bold 10px "Microsoft YaHei";
-                padding: 2px 4px;
-                background-color: transparent;
-            }
-        """)
-        order_layout.addWidget(self.countdown_label)
+        # 🆕 移除倒计时标签
         
         # 一键支付按钮
         self.pay_button = ClassicButton("一键支付", "warning")
@@ -1096,84 +1085,9 @@ class ModularCinemaMainWindow(QMainWindow):
 
     # ===== 定时器相关方法（PyQt5替换tkinter.after） =====
     
-    def start_countdown(self, seconds=900):
-        """启动倒计时（默认15分钟）"""
-        try:
-            self.countdown_seconds = seconds
-            
-            if not self.countdown_timer:
-                self.countdown_timer = QTimer()
-                self.countdown_timer.timeout.connect(self.update_countdown)
-            
-            self.countdown_timer.start(1000)  # 每秒更新一次
-            self.update_countdown()
-            
-        except Exception as e:
-            print(f"[主窗口] 启动倒计时错误: {e}")
+    # 🆕 移除倒计时相关方法
     
-    def update_countdown(self):
-        """更新倒计时显示"""
-        try:
-            if self.countdown_seconds <= 0:
-                # 倒计时结束
-                self.countdown_label.setText("时间已到")
-                self.countdown_label.setStyleSheet("""
-                    QLabel {
-                        color: #f44336;
-                        font: bold 10px "Microsoft YaHei";
-                        padding: 2px 4px;
-                        background-color: transparent;
-                    }
-                """)
-                
-                if self.countdown_timer:
-                    self.countdown_timer.stop()
-                
-                # 处理超时逻辑
-                self._handle_countdown_timeout()
-                return
-            
-            # 计算分钟和秒
-            minutes = self.countdown_seconds // 60
-            seconds = self.countdown_seconds % 60
-            
-            # 更新显示
-            self.countdown_label.setText(f"支付倒计时: {minutes:02d}:{seconds:02d}")
-            
-            # 减少1秒
-            self.countdown_seconds -= 1
-            
-        except Exception as e:
-            print(f"[主窗口] 更新倒计时错误: {e}")
-    
-    def stop_countdown(self):
-        """停止倒计时"""
-        try:
-            if self.countdown_timer:
-                self.countdown_timer.stop()
-            
-            self.countdown_label.setText("")
-            
-        except Exception as e:
-            print(f"[主窗口] 停止倒计时错误: {e}")
-    
-    def _handle_countdown_timeout(self):
-        """处理倒计时超时"""
-        try:
-            if self.current_order:
-                # 取消当前订单
-                QMessageBox.warning(self, "订单超时", "支付时间已到，订单将被取消")
-                
-                # 清空当前订单
-                self.current_order = None
-                self.selected_coupons.clear()
-                
-                # 清空订单详情
-                self.order_detail_text.clear()
-                self.qr_display.setText("(二维码/取票码展示区)")
-                
-        except Exception as e:
-            print(f"[主窗口] 处理倒计时超时错误: {e}")
+    # 🆕 移除倒计时显示和处理方法
 
     def _on_session_selected(self, session_info: dict):
         """场次选择处理 - 加载座位图"""
@@ -1758,16 +1672,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 }
             """)
             
-            # 更新倒计时显示
-            self.countdown_label.setText("支付完成")
-            self.countdown_label.setStyleSheet("""
-                QLabel {
-                    color: #2e7d32;
-                    font: bold 10px "Microsoft YaHei";
-                    padding: 2px 4px;
-                    background-color: transparent;
-                }
-            """)
+            # 🆕 移除倒计时显示更新
             
         except Exception as e:
             print(f"[主窗口] 全局订单支付处理错误: {e}")
@@ -1817,11 +1722,7 @@ class ModularCinemaMainWindow(QMainWindow):
             
             self.order_detail_text.setPlainText(details)
             
-            # 更新倒计时（可选）
-            if order_data.get('status') == '待支付':
-                self.countdown_label.setText("支付倒计时: 15:00")
-            else:
-                self.countdown_label.setText("")
+            # 🆕 移除倒计时更新
                 
         except Exception as e:
             print(f"[主窗口] 更新订单详情错误: {e}")
@@ -2126,8 +2027,7 @@ class ModularCinemaMainWindow(QMainWindow):
             # 发布订单创建事件
             event_bus.order_created.emit(self.current_order)
 
-            # 启动支付倒计时
-            self.start_countdown(900)  # 15分钟倒计时
+            # 🆕 移除支付倒计时功能
 
             print(f"[主窗口] 订单创建成功: {order_id}")
             return True
