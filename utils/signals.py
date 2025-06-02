@@ -53,6 +53,7 @@ class EventBus(QObject):
     order_cancelled = pyqtSignal(str)  # 订单取消
     order_list_updated = pyqtSignal(list)  # 订单列表更新
     order_detail_updated = pyqtSignal(dict)  # 订单详情更新
+    show_qrcode = pyqtSignal(object)  # 显示二维码 (二维码数据字典或文本信息)
 
     # ===== 券管理事件 =====
     coupon_bound = pyqtSignal(dict)  # 券绑定

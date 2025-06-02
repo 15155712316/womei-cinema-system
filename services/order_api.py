@@ -1,8 +1,57 @@
 import requests
 import urllib3
+import os
+from datetime import datetime
 from .api_base import api_get, api_post
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+def save_qrcode_image(image_data: bytes, order_no: str, cinema_id: str) -> str:
+    """
+    保存二维码图片到本地
+    :param image_data: 图片二进制数据
+    :param order_no: 订单号
+    :param cinema_id: 影院ID
+    :return: 保存的文件路径，失败返回None
+    """
+    try:
+        # 🎯 获取影院名称映射
+        cinema_name_map = {
+            "35fec8259e74": "华夏优加荟大都荟",
+            "b8e8b8b8b8b8": "其他影院1",  # 示例
+            "c9f9c9f9c9f9": "其他影院2"   # 示例
+        }
+
+        cinema_name = cinema_name_map.get(cinema_id, "未知影院")
+
+        # 🎯 生成日期字符串 (MMDD格式)
+        current_date = datetime.now().strftime("%m%d")
+
+        # 🎯 构建文件名：影院+日期+订单号.png
+        filename = f"{cinema_name}_{current_date}_{order_no}.png"
+
+        # 🎯 确保data/img目录存在
+        img_dir = os.path.join("data", "img")
+        os.makedirs(img_dir, exist_ok=True)
+
+        # 🎯 完整文件路径
+        file_path = os.path.join(img_dir, filename)
+
+        # 🎯 保存图片
+        with open(file_path, 'wb') as f:
+            f.write(image_data)
+
+        print(f"[图片保存] ✅ 二维码图片保存成功:")
+        print(f"[图片保存] 📁 路径: {file_path}")
+        print(f"[图片保存] 📏 大小: {len(image_data)} bytes")
+
+        return file_path
+
+    except Exception as e:
+        print(f"[图片保存] ❌ 保存失败: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
 
 def create_order(params: dict) -> dict:
     """创建订单 - 使用动态base_url"""
@@ -127,43 +176,115 @@ def get_order_detail(params: dict) -> dict:
     
     return api_get('MiniTicket/index.php/MiniOrder/getOrderDetail', cinemaid, params=params)
 
-def get_order_qrcode_api(orderno: str, cinemaid: str) -> bytes:
+def get_order_qrcode_api(orderno: str, cinemaid: str, account: dict = None) -> bytes:
     """
     获取订单取票二维码图片（MiniTicket/Cqrcode/generateQrcode/<orderno>） - 使用动态base_url
     :param orderno: 订单号（字符串）
     :param cinemaid: 影院ID
+    :param account: 账号信息（包含userid、openid、token等认证信息）
     :return: 二进制图片内容，异常时返回None
     """
     from .api_base import api_base
-    
+
     if not cinemaid:
-        print(f"[订单二维码] 缺少影院ID参数")
+        print(f"[订单二维码API] 缺少影院ID参数")
         return None
-    
+
     base_url = api_base.get_base_url_for_cinema(cinemaid)
-    url = api_base.build_url(base_url, f'MiniTicket/index.php/Cqrcode/generateQrcode/{orderno}')
-    
+
+    # 🔧 修复：构建带认证参数的URL
+    if account:
+        # 添加认证参数到URL
+        auth_params = {
+            'userid': account.get('userid', ''),
+            'openid': account.get('openid', ''),
+            'token': account.get('token', ''),
+            'cinemaid': cinemaid,
+            'CVersion': '3.9.12',
+            'OS': 'Windows',
+            'source': '2'
+        }
+
+        # 构建带参数的URL
+        from urllib.parse import urlencode
+        base_path = f'MiniTicket/index.php/Cqrcode/generateQrcode/{orderno}'
+        query_string = urlencode(auth_params)
+        url = api_base.build_url(base_url, f'{base_path}?{query_string}')
+    else:
+        # 不带认证参数的URL（向后兼容）
+        url = api_base.build_url(base_url, f'MiniTicket/index.php/Cqrcode/generateQrcode/{orderno}')
+
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13639',
         'Accept': 'image/wxpic,image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        'sec-fetch-site': 'cross-site',
-        'sec-fetch-mode': 'no-cors',
-        'sec-fetch-dest': 'image',
-        'referer': 'https://servicewechat.com/wxaea711f302cc71ec/1/page-frame.html',
-        'accept-language': 'zh-CN,zh;q=0.9',
-        'priority': 'i'
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-Mode': 'no-cors',
+        'Sec-Fetch-Dest': 'image',
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+        # 🔧 移除Referer参数，按照您的要求
     }
-    
+
     try:
-        print(f"[订单二维码] 请求URL: {url}")
+        print(f"[订单二维码API] 🚀 开始请求二维码")
+        print(f"[订单二维码API] 订单号: {orderno}")
+        print(f"[订单二维码API] 影院ID: {cinemaid}")
+        print(f"[订单二维码API] 请求URL: {url}")
+        print(f"[订单二维码API] 请求头: {headers}")
+
         resp = requests.get(url, headers=headers, timeout=10, verify=False)
+
+        print(f"[订单二维码API] 📊 响应状态码: {resp.status_code}")
+        print(f"[订单二维码API] 📊 响应头: {dict(resp.headers)}")
+        print(f"[订单二维码API] 📊 响应内容长度: {len(resp.content)} bytes")
+
         if resp.status_code == 200:
+            # 检查响应内容类型
+            content_type = resp.headers.get('content-type', '')
+            print(f"[订单二维码API] 📊 内容类型: {content_type}")
+
+            # 显示响应内容的前100个字符（用于调试）
+            if len(resp.content) > 0:
+                try:
+                    # 尝试解码为文本（如果是文本响应）
+                    content_preview = resp.content[:100].decode('utf-8', errors='ignore')
+                    print(f"[订单二维码API] 📊 响应内容预览（前100字符）: {repr(content_preview)}")
+                except:
+                    # 如果是二进制数据，显示十六进制
+                    content_preview = resp.content[:50].hex()
+                    print(f"[订单二维码API] 📊 响应内容预览（十六进制前50字节）: {content_preview}")
+
+                # 检查是否为有效的图片格式
+                if resp.content.startswith(b'\x89PNG'):
+                    print(f"[订单二维码API] ✅ 检测到PNG图片格式")
+                elif resp.content.startswith(b'\xff\xd8\xff'):
+                    print(f"[订单二维码API] ✅ 检测到JPEG图片格式")
+                elif resp.content.startswith(b'GIF'):
+                    print(f"[订单二维码API] ✅ 检测到GIF图片格式")
+                elif resp.content.startswith(b'<'):
+                    print(f"[订单二维码API] ⚠️ 响应似乎是HTML/XML文本，不是图片")
+                else:
+                    print(f"[订单二维码API] ⚠️ 未知的响应格式")
+
+            print(f"[订单二维码API] ✅ 二维码获取成功，返回 {len(resp.content)} bytes")
+
+            # 🎯 保存二维码图片到本地
+            if account:
+                try:
+                    save_path = save_qrcode_image(resp.content, orderno, account.get('cinemaid', cinemaid))
+                    if save_path:
+                        print(f"[订单二维码API] 💾 二维码图片已保存: {save_path}")
+                except Exception as e:
+                    print(f"[订单二维码API] ⚠️ 保存图片失败: {e}")
+
             return resp.content
         else:
-            print(f"[订单二维码] HTTP错误: {resp.status_code}")
+            print(f"[订单二维码API] ❌ HTTP错误: {resp.status_code}")
+            print(f"[订单二维码API] ❌ 错误响应内容: {resp.text[:200]}")
             return None
     except Exception as e:
-        print(f"[订单二维码] 请求异常: {e}")
+        print(f"[订单二维码API] ❌ 请求异常: {e}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def get_order_list(params: dict) -> dict:

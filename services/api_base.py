@@ -100,9 +100,24 @@ class APIBase:
                 try:
                     # 处理BOM编码
                     content = response.content.decode('utf-8-sig')
+
+                    # 🔧 修复：处理多个JSON对象连在一起的情况
+                    if content.count('{"resultCode"') > 1:
+                        print(f"[API响应] 检测到多个JSON对象，尝试分割...")
+                        # 找到第二个JSON对象的开始位置
+                        first_end = content.find('}') + 1
+                        second_start = content.find('{"resultCode"', first_end)
+
+                        if second_start > 0:
+                            # 取第二个JSON对象（通常是有效数据）
+                            second_json = content[second_start:]
+                            print(f"[API响应] 使用第二个JSON对象: {second_json[:100]}...")
+                            return json.loads(second_json)
+
                     return json.loads(content)
                 except json.JSONDecodeError as e:
                     print(f"[API响应] JSON解析失败: {e}")
+                    print(f"[API响应] 原始响应内容: {response.text[:500]}")  # 显示前500个字符
                     return {"resultCode": "-1", "resultDesc": f"JSON解析失败: {e}", "resultData": None}
             else:
                 return {"resultCode": "-1", "resultDesc": f"HTTP错误: {response.status_code}", "resultData": None}

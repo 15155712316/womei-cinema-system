@@ -15,8 +15,11 @@ from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
 
 # 导入插件系统
 from ui.interfaces.plugin_interface import (
-    IWidgetInterface, event_bus, plugin_manager
+    IWidgetInterface, plugin_manager
 )
+
+# 导入正确的事件总线
+from utils.signals import event_bus
 
 # 导入模块化组件
 from ui.widgets.classic_components import apply_classic_theme_to_widget
@@ -332,6 +335,7 @@ class ModularCinemaMainWindow(QMainWindow):
         event_bus.cinema_selected.connect(self._on_global_cinema_selected)
         event_bus.order_created.connect(self._on_global_order_created)
         event_bus.order_paid.connect(self._on_global_order_paid)
+        event_bus.show_qrcode.connect(self._on_show_qrcode)  # 🔧 添加二维码显示信号监听
     
     def _start_auth_check(self):
         """启动用户认证检查"""
@@ -1792,6 +1796,365 @@ class ModularCinemaMainWindow(QMainWindow):
             
         except Exception as e:
             print(f"[主窗口] 全局订单支付处理错误: {e}")
+
+    def _on_show_qrcode(self, qr_data):
+        """显示二维码处理"""
+        try:
+            print(f"[主窗口] 🎯 收到二维码显示请求")
+            print(f"[主窗口] 🔍 数据类型: {type(qr_data)}")
+
+            # 检查数据格式
+            if isinstance(qr_data, dict):
+                display_type = qr_data.get('display_type', 'qr_image')
+
+                if display_type == 'ticket_code':
+                    # 🎯 处理取票码文本显示
+                    print(f"[主窗口] 📱 接收到取票码数据:")
+                    print(f"[主窗口] 📱 - 订单号: {qr_data.get('order_no', 'N/A')}")
+                    print(f"[主窗口] 📱 - 取票码: {qr_data.get('ticket_code', 'N/A')}")
+                    print(f"[主窗口] 📱 - 影片: {qr_data.get('film_name', 'N/A')}")
+
+                    # 显示取票码信息
+                    self._display_ticket_code_info(qr_data)
+
+                elif display_type == 'combined':
+                    # 🎯 处理组合显示（文本+二维码图片）
+                    print(f"[主窗口] 🎭 接收到组合显示数据:")
+                    print(f"[主窗口] 🎭 - 订单号: {qr_data.get('order_no', 'N/A')}")
+                    print(f"[主窗口] 🎭 - 取票码: {qr_data.get('ticket_code', 'N/A')}")
+                    print(f"[主窗口] 🎭 - 影片: {qr_data.get('film_name', 'N/A')}")
+                    print(f"[主窗口] 🎭 - 图片大小: {qr_data.get('data_size', 0)} bytes")
+
+                    # 显示组合信息（文本+图片）
+                    self._display_combined_ticket_info(qr_data)
+
+                elif display_type == 'generated_qrcode':
+                    # 🎯 处理生成的取票码二维码
+                    print(f"[主窗口] 🎨 接收到生成的二维码数据:")
+                    print(f"[主窗口] 🎨 - 订单号: {qr_data.get('order_no', 'N/A')}")
+                    print(f"[主窗口] 🎨 - 取票码: {qr_data.get('ticket_code', 'N/A')}")
+                    print(f"[主窗口] 🎨 - 影片: {qr_data.get('film_name', 'N/A')}")
+                    print(f"[主窗口] 🎨 - 图片大小: {qr_data.get('data_size', 0)} bytes")
+                    print(f"[主窗口] 🎨 - 是否生成: {qr_data.get('is_generated', False)}")
+
+                    # 显示生成的二维码
+                    self._display_generated_qrcode(qr_data)
+
+                else:
+                    # 🎯 处理二维码图片显示
+                    print(f"[主窗口] 📊 接收到二维码数据字典:")
+                    print(f"[主窗口] 📊 - 订单号: {qr_data.get('order_no', 'N/A')}")
+                    print(f"[主窗口] 📊 - 数据大小: {qr_data.get('data_size', 0)} bytes")
+                    print(f"[主窗口] 📊 - 数据格式: {qr_data.get('data_format', 'UNKNOWN')}")
+
+                    # 获取二维码字节数据
+                    qr_bytes = qr_data.get('qr_bytes')
+                    order_no = qr_data.get('order_no', '')
+                    data_format = qr_data.get('data_format', 'UNKNOWN')
+
+                    if qr_bytes and len(qr_bytes) > 0:
+                        print(f"[主窗口] 🖼️ 开始处理二维码图片数据...")
+
+                        # 尝试将二进制数据转换为QPixmap并显示
+                        success = self._display_qrcode_image(qr_bytes, order_no, data_format)
+
+                        if not success:
+                            # 如果图片显示失败，显示文本信息
+                            self._display_qrcode_text(f"订单 {order_no} 取票码\n(图片加载失败)")
+                    else:
+                        print(f"[主窗口] ⚠️ 二维码数据为空")
+                        self._display_qrcode_text(f"订单 {qr_data.get('order_no', '')} 取票码\n(数据为空)")
+
+            elif isinstance(qr_data, str):
+                # 兼容旧的字符串格式
+                print(f"[主窗口] 📊 接收到文本消息: {qr_data}")
+                self._display_qrcode_text(qr_data)
+            else:
+                print(f"[主窗口] ⚠️ 未知的数据格式: {type(qr_data)}")
+                self._display_qrcode_text("二维码数据格式错误")
+
+        except Exception as e:
+            print(f"[主窗口] ❌ 显示二维码错误: {e}")
+            import traceback
+            traceback.print_exc()
+            # 显示错误信息
+            self._display_qrcode_text("二维码显示错误")
+
+    def _display_qrcode_image(self, qr_bytes: bytes, order_no: str, data_format: str) -> bool:
+        """显示二维码图片"""
+        try:
+            from PyQt5.QtGui import QPixmap
+            from PyQt5.QtCore import QByteArray
+
+            print(f"[主窗口] 🖼️ 尝试加载 {data_format} 格式的二维码图片...")
+
+            # 将bytes转换为QByteArray
+            byte_array = QByteArray(qr_bytes)
+
+            # 创建QPixmap
+            pixmap = QPixmap()
+            success = pixmap.loadFromData(byte_array)
+
+            if success and not pixmap.isNull():
+                print(f"[主窗口] ✅ 二维码图片加载成功: {pixmap.width()}x{pixmap.height()}")
+
+                # 缩放图片以适应显示区域
+                scaled_pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+                # 在取票码区域显示图片
+                if hasattr(self, 'qr_display'):
+                    self.qr_display.setPixmap(scaled_pixmap)
+                    self.qr_display.setText("")  # 清空文本
+                    self.qr_display.setAlignment(Qt.AlignCenter)
+                    self.qr_display.setStyleSheet("""
+                        QLabel {
+                            background-color: #ffffff;
+                            border: 2px solid #4caf50;
+                            padding: 10px;
+                            border-radius: 5px;
+                        }
+                    """)
+
+                    print(f"[主窗口] ✅ 二维码图片已显示在取票码区域")
+                    return True
+                else:
+                    print(f"[主窗口] ❌ 取票码显示区域不存在")
+                    return False
+            else:
+                print(f"[主窗口] ❌ 二维码图片加载失败")
+                return False
+
+        except Exception as e:
+            print(f"[主窗口] ❌ 显示二维码图片错误: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _display_ticket_code_info(self, ticket_data: dict):
+        """显示取票码详细信息"""
+        try:
+            order_no = ticket_data.get('order_no', '')
+            ticket_code = ticket_data.get('ticket_code', '')
+            film_name = ticket_data.get('film_name', '')
+            show_time = ticket_data.get('show_time', '')
+            hall_name = ticket_data.get('hall_name', '')
+            seat_info = ticket_data.get('seat_info', '')
+            cinema_name = ticket_data.get('cinema_name', '')
+
+            # 构建详细的取票信息文本
+            info_text = f"🎬 {film_name}\n"
+            info_text += f"🏛️ {cinema_name}\n"
+            info_text += f"🕐 {show_time}\n"
+            info_text += f"🎭 {hall_name}\n"
+            info_text += f"💺 {seat_info}\n\n"
+            info_text += f"🎫 取票码: {ticket_code}\n"
+            info_text += f"📋 订单号: {order_no}"
+
+            if hasattr(self, 'qr_display'):
+                self.qr_display.clear()  # 清空图片
+                self.qr_display.setText(info_text)
+                self.qr_display.setAlignment(Qt.AlignCenter)
+                self.qr_display.setStyleSheet("""
+                    QLabel {
+                        color: #1976d2;
+                        font: bold 11px "Microsoft YaHei";
+                        background-color: #e3f2fd;
+                        border: 2px solid #2196f3;
+                        padding: 15px;
+                        border-radius: 8px;
+                        line-height: 1.4;
+                    }
+                """)
+                print(f"[主窗口] ✅ 取票码详细信息已显示")
+            else:
+                print(f"[主窗口] ❌ 取票码显示区域不存在")
+
+        except Exception as e:
+            print(f"[主窗口] ❌ 显示取票码信息错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _display_combined_ticket_info(self, combined_data: dict):
+        """显示组合信息（文本+二维码图片）"""
+        try:
+            from PyQt5.QtWidgets import QVBoxLayout, QWidget, QLabel
+            from PyQt5.QtGui import QPixmap
+            from PyQt5.QtCore import QByteArray, Qt
+
+            order_no = combined_data.get('order_no', '')
+            ticket_code = combined_data.get('ticket_code', '')
+            film_name = combined_data.get('film_name', '')
+            show_time = combined_data.get('show_time', '')
+            hall_name = combined_data.get('hall_name', '')
+            seat_info = combined_data.get('seat_info', '')
+            cinema_name = combined_data.get('cinema_name', '')
+            qr_bytes = combined_data.get('qr_bytes')
+            data_format = combined_data.get('data_format', 'UNKNOWN')
+
+            print(f"[主窗口] 🎭 开始显示组合信息:")
+            print(f"[主窗口] 🎭 - 取票码: {ticket_code}")
+            print(f"[主窗口] 🎭 - 二维码: {len(qr_bytes) if qr_bytes else 0} bytes {data_format}")
+
+            if hasattr(self, 'qr_display'):
+                # 🎯 方案1：在同一个区域显示文本+图片
+                # 创建包含文本和图片的组合内容
+
+                # 先尝试加载二维码图片
+                qr_pixmap = None
+                if qr_bytes and len(qr_bytes) > 0:
+                    try:
+                        byte_array = QByteArray(qr_bytes)
+                        pixmap = QPixmap()
+                        success = pixmap.loadFromData(byte_array)
+
+                        if success and not pixmap.isNull():
+                            # 缩放图片
+                            qr_pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                            print(f"[主窗口] ✅ 二维码图片加载成功: {pixmap.width()}x{pixmap.height()}")
+                        else:
+                            print(f"[主窗口] ❌ 二维码图片加载失败")
+                    except Exception as e:
+                        print(f"[主窗口] ❌ 处理二维码图片错误: {e}")
+
+                if qr_pixmap:
+                    # 显示二维码图片
+                    self.qr_display.setPixmap(qr_pixmap)
+                    self.qr_display.setText("")  # 清空文本
+                    self.qr_display.setAlignment(Qt.AlignCenter)
+                    self.qr_display.setStyleSheet("""
+                        QLabel {
+                            background-color: #ffffff;
+                            border: 2px solid #2196f3;
+                            padding: 10px;
+                            border-radius: 8px;
+                        }
+                    """)
+
+                    # 🎯 在二维码下方显示取票码信息（可以考虑添加到状态栏或其他位置）
+                    print(f"[主窗口] ✅ 组合信息显示完成 - 二维码图片 + 取票码: {ticket_code}")
+
+                else:
+                    # 如果图片加载失败，显示文本信息
+                    info_text = f"🎬 {film_name}\n"
+                    info_text += f"🏛️ {cinema_name}\n"
+                    info_text += f"🕐 {show_time}\n"
+                    info_text += f"🎭 {hall_name}\n"
+                    info_text += f"💺 {seat_info}\n\n"
+                    info_text += f"🎫 取票码: {ticket_code}\n"
+                    info_text += f"📋 订单号: {order_no}\n\n"
+                    info_text += f"⚠️ 二维码图片加载失败"
+
+                    self.qr_display.clear()
+                    self.qr_display.setText(info_text)
+                    self.qr_display.setAlignment(Qt.AlignCenter)
+                    self.qr_display.setStyleSheet("""
+                        QLabel {
+                            color: #1976d2;
+                            font: bold 10px "Microsoft YaHei";
+                            background-color: #e3f2fd;
+                            border: 2px solid #2196f3;
+                            padding: 15px;
+                            border-radius: 8px;
+                            line-height: 1.4;
+                        }
+                    """)
+
+                    print(f"[主窗口] ✅ 组合信息显示完成 - 文本模式")
+            else:
+                print(f"[主窗口] ❌ 取票码显示区域不存在")
+
+        except Exception as e:
+            print(f"[主窗口] ❌ 显示组合信息错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _display_generated_qrcode(self, qr_data: dict):
+        """显示生成的取票码二维码"""
+        try:
+            from PyQt5.QtGui import QPixmap
+            from PyQt5.QtCore import QByteArray, Qt
+
+            order_no = qr_data.get('order_no', '')
+            ticket_code = qr_data.get('ticket_code', '')
+            film_name = qr_data.get('film_name', '')
+            qr_bytes = qr_data.get('qr_bytes')
+
+            print(f"[主窗口] 🎨 开始显示生成的二维码:")
+            print(f"[主窗口] 🎨 - 取票码: {ticket_code}")
+            print(f"[主窗口] 🎨 - 二维码: {len(qr_bytes) if qr_bytes else 0} bytes")
+
+            if hasattr(self, 'qr_display') and qr_bytes:
+                try:
+                    # 🎯 加载生成的二维码图片
+                    byte_array = QByteArray(qr_bytes)
+                    pixmap = QPixmap()
+                    success = pixmap.loadFromData(byte_array)
+
+                    if success and not pixmap.isNull():
+                        # 🎯 显示二维码图片（保持原始大小或适当缩放）
+                        # 由于是我们生成的，通常已经是合适的大小
+                        max_size = 250
+                        if pixmap.width() > max_size or pixmap.height() > max_size:
+                            scaled_pixmap = pixmap.scaled(max_size, max_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                        else:
+                            scaled_pixmap = pixmap
+
+                        self.qr_display.setPixmap(scaled_pixmap)
+                        self.qr_display.setText("")  # 清空文本
+                        self.qr_display.setAlignment(Qt.AlignCenter)
+                        self.qr_display.setStyleSheet("""
+                            QLabel {
+                                background-color: #ffffff;
+                                border: 2px solid #4CAF50;
+                                padding: 15px;
+                                border-radius: 8px;
+                            }
+                        """)
+
+                        print(f"[主窗口] ✅ 生成的二维码显示成功: {pixmap.width()}x{pixmap.height()}")
+                        print(f"[主窗口] 🎫 扫描此二维码可获取取票码: {ticket_code}")
+
+                    else:
+                        print(f"[主窗口] ❌ 生成的二维码加载失败")
+                        # 降级显示文本信息
+                        self._display_qrcode_text(f"🎫 取票码: {ticket_code}\n📋 订单号: {order_no}\n⚠️ 二维码显示失败")
+
+                except Exception as e:
+                    print(f"[主窗口] ❌ 处理生成的二维码错误: {e}")
+                    # 降级显示文本信息
+                    self._display_qrcode_text(f"🎫 取票码: {ticket_code}\n📋 订单号: {order_no}\n⚠️ 二维码处理失败")
+            else:
+                print(f"[主窗口] ❌ 取票码显示区域不存在或二维码数据为空")
+
+        except Exception as e:
+            print(f"[主窗口] ❌ 显示生成的二维码错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _display_qrcode_text(self, text: str):
+        """显示二维码文本信息"""
+        try:
+            if hasattr(self, 'qr_display'):
+                self.qr_display.clear()  # 清空图片
+                self.qr_display.setText(text)
+                self.qr_display.setAlignment(Qt.AlignCenter)
+                self.qr_display.setStyleSheet("""
+                    QLabel {
+                        color: #2e7d32;
+                        font: bold 12px "Microsoft YaHei";
+                        background-color: #e8f5e8;
+                        border: 2px solid #4caf50;
+                        padding: 20px;
+                        border-radius: 5px;
+                    }
+                """)
+                print(f"[主窗口] ✅ 二维码文本信息已显示")
+            else:
+                print(f"[主窗口] ❌ 取票码显示区域不存在")
+        except Exception as e:
+            print(f"[主窗口] ❌ 显示二维码文本错误: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _update_seat_selection(self, seats: list):
         """更新座位选择显示"""
