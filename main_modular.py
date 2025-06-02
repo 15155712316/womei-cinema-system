@@ -1941,17 +1941,39 @@ class ModularCinemaMainWindow(QMainWindow):
             seat_info = ticket_data.get('seat_info', '')
             cinema_name = ticket_data.get('cinema_name', '')
 
+            # 🔍 调试：检查所有字段值
+            print(f"[主窗口] 🔍 显示数据调试:")
+            print(f"[主窗口] 🔍 - order_no: '{order_no}'")
+            print(f"[主窗口] 🔍 - ticket_code: '{ticket_code}'")
+            print(f"[主窗口] 🔍 - film_name: '{film_name}'")
+            print(f"[主窗口] 🔍 - show_time: '{show_time}'")
+            print(f"[主窗口] 🔍 - hall_name: '{hall_name}'")
+            print(f"[主窗口] 🔍 - seat_info: '{seat_info}'")
+            print(f"[主窗口] 🔍 - cinema_name: '{cinema_name}'")
+
             # 构建详细的取票信息文本
             info_text = f"🎬 {film_name}\n"
             info_text += f"🏛️ {cinema_name}\n"
             info_text += f"🕐 {show_time}\n"
             info_text += f"🎭 {hall_name}\n"
             info_text += f"💺 {seat_info}\n\n"
-            info_text += f"🎫 取票码: {ticket_code}\n"
+
+            # 🔧 修复：确保取票码显示
+            if ticket_code:
+                info_text += f"🎫 取票码: {ticket_code}\n"
+            else:
+                info_text += f"🎫 取票码: (未获取到)\n"
+                print(f"[主窗口] ⚠️ 取票码为空，检查数据传递")
+
             info_text += f"📋 订单号: {order_no}"
 
+            print(f"[主窗口] 🔍 构建的文本内容:")
+            print(f"[主窗口] 🔍 文本长度: {len(info_text)}")
+            print(f"[主窗口] 🔍 文本内容: {repr(info_text[:200])}...")
+
             if hasattr(self, 'qr_display'):
-                self.qr_display.clear()  # 清空图片
+                # 简单清空和设置
+                self.qr_display.clear()  # 清空图片和文本
                 self.qr_display.setText(info_text)
                 self.qr_display.setAlignment(Qt.AlignCenter)
                 self.qr_display.setStyleSheet("""

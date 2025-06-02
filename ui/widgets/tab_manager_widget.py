@@ -2177,26 +2177,15 @@ class TabManagerWidget(QWidget):
     def _on_order_double_click(self, item):
         """订单双击事件 - 查看订单二维码"""
         try:
-            print(f"[订单二维码] 🖱️ 双击事件触发")
-
             if not item:
-                print(f"[订单二维码] ❌ item为空")
                 return
 
             row = item.row()
-            print(f"[订单二维码] 📋 双击行号: {row}")
-
-            if not hasattr(self, 'order_data_cache'):
-                print(f"[订单二维码] ❌ 没有order_data_cache属性")
-                return
-
-            if row >= len(self.order_data_cache):
-                print(f"[订单二维码] ❌ 行号超出范围: {row} >= {len(self.order_data_cache)}")
+            if not hasattr(self, 'order_data_cache') or row >= len(self.order_data_cache):
                 return
 
             order = self.order_data_cache[row]
-            print(f"[订单二维码] 📋 订单数据: {order}")
-            print(f"[订单二维码] 🖱️ 双击查看订单二维码")
+            print(f"[订单二维码] 双击查看订单二维码")
 
             # 🎯 获取订单状态，只有已支付状态的订单才能查看二维码
             status_text = order.get('orderS', '')
@@ -2295,20 +2284,14 @@ class TabManagerWidget(QWidget):
             if final_ticket_code:
                 print(f"[订单二维码] ✅ 找到取票码: {final_ticket_code}")
 
-                # 🎯 使用取票码生成二维码图片
-                print(f"[订单二维码] 🖼️ 生成取票码二维码...")
+                # 🎯 生成取票码二维码并保存到本地
                 self._generate_and_show_ticket_qrcode(order_no, final_ticket_code, detail_data, cinemaid)
 
             else:
                 print(f"[订单二维码] ⚠️ 订单详情中没有找到取票码")
-                print(f"[订单二维码] 🎭 为了演示功能，生成模拟取票码二维码...")
 
-                # 🎯 生成模拟取票码用于演示
-                mock_ticket_code = f"DEMO_{order_no[-8:]}"  # 使用订单号后8位
-                print(f"[订单二维码] 🎭 模拟取票码: {mock_ticket_code}")
-
-                # 使用模拟取票码生成二维码
-                self._generate_and_show_ticket_qrcode(order_no, mock_ticket_code, detail_data, cinemaid)
+                # 显示订单详情信息
+                self._show_ticket_code_text(order_no, "无取票码", detail_data)
 
 
 
