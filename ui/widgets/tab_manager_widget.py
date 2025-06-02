@@ -913,9 +913,8 @@ class TabManagerWidget(QWidget):
         self.order_table.setContextMenuPolicy(Qt.CustomContextMenu)
         
         layout.addWidget(self.order_table)
-        
-        # 加载示例订单数据
-        self._load_sample_orders()
+
+        # 不加载示例数据，等待用户手动刷新
 
     def _on_add_cinema(self):
         """添加影院功能 - 直接从源代码复制"""
@@ -1201,49 +1200,7 @@ class TabManagerWidget(QWidget):
                 "深圳万友影城BCMall店"
             ])
     
-    def _load_sample_orders(self):
-        """加载示例订单数据"""
-        try:
-            sample_orders = [
-                {
-                    "movie": "阿凡达：水之道",
-                    "cinema": "深影国际影城(佐伦虹湾购物中心店)",
-                    "status": "已完成",
-                    "order_id": "ORDER2024122701"
-                },
-                {
-                    "movie": "流浪地球2", 
-                    "cinema": "深影国际影城(佐伦虹湾购物中心店)",
-                    "status": "待支付",
-                    "order_id": "ORDER2024122702"
-                },
-                {
-                    "movie": "满江红",
-                    "cinema": "华夏优加金太都会",
-                    "status": "已取消",
-                    "order_id": "ORDER2024122703"
-                }
-            ]
-            
-            self.order_table.setRowCount(len(sample_orders))
-            for i, order in enumerate(sample_orders):
-                self.order_table.setItem(i, 0, self.order_table.__class__.createItem(order["movie"]))
-                self.order_table.setItem(i, 1, self.order_table.__class__.createItem(order["cinema"]))
-                
-                # 设置状态项的颜色
-                if order["status"] == "已完成":
-                    self.order_table.add_colored_item(i, 2, order["status"], "#4caf50")
-                elif order["status"] == "待支付":
-                    self.order_table.add_colored_item(i, 2, order["status"], "#ff9800")
-                elif order["status"] == "已取消":
-                    self.order_table.add_colored_item(i, 2, order["status"], "#f44336")
-                else:
-                    self.order_table.setItem(i, 2, self.order_table.__class__.createItem(order["status"]))
-                
-                self.order_table.setItem(i, 3, self.order_table.__class__.createItem(order["order_id"]))
-                
-        except Exception as e:
-            print(f"[Tab管理器] 加载订单错误: {e}")
+
     
     def _load_sample_cinemas(self):
         """加载示例影院数据"""
@@ -1290,113 +1247,7 @@ class TabManagerWidget(QWidget):
         except Exception as e:
             print(f"[Tab管理器] 更新影院列表错误: {e}")
 
-    def _show_order_context_menu(self, position):
-        """显示订单右键菜单"""
-        menu = QMenu()
-        menu.addAction("查看详情", self._show_order_details)
-        menu.addAction("取消订单", self._cancel_order)
-        menu.exec_(self.order_table.viewport().mapToGlobal(position))
 
-    def _show_order_details(self):
-        """显示订单详情"""
-        selected_items = self.order_table.selectedIndexes()
-        if selected_items:
-            row = selected_items[0].row()
-            order = self.order_data_cache[row]
-            self._show_order_details_dialog(order)
-
-    def _show_order_details_dialog(self, order):
-        """显示订单详情对话框"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("订单详情")
-        layout = QVBoxLayout(dialog)
-        
-        # 添加订单详情到对话框
-        for key, value in order.items():
-            if key != "account":
-                label = ClassicLabel(f"{key}:")
-                value_label = ClassicLabel(str(value))
-                layout.addWidget(label)
-                layout.addWidget(value_label)
-        
-        # 添加按钮
-        button_layout = QHBoxLayout()
-        confirm_btn = ClassicButton("确认", "success")
-        cancel_btn = ClassicButton("取消", "default")
-        button_layout.addWidget(confirm_btn)
-        button_layout.addWidget(cancel_btn)
-        layout.addLayout(button_layout)
-        
-        # 事件绑定
-        confirm_btn.clicked.connect(dialog.accept)
-        cancel_btn.clicked.connect(dialog.reject)
-        
-        dialog.exec_()
-
-    def _cancel_order(self):
-        """取消订单"""
-        selected_items = self.order_table.selectedIndexes()
-        if selected_items:
-            row = selected_items[0].row()
-            order = self.order_data_cache[row]
-            self._cancel_order_dialog(order)
-
-    def _cancel_order_dialog(self, order):
-        """显示取消订单对话框"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("取消订单")
-        layout = QVBoxLayout(dialog)
-        
-        # 添加取消订单的原因输入
-        reason_layout = QHBoxLayout()
-        reason_label = ClassicLabel("取消原因:")
-        reason_input = ClassicTextEdit()
-        reason_input.setPlaceholderText("请输入取消原因")
-        reason_layout.addWidget(reason_label)
-        reason_layout.addWidget(reason_input)
-        layout.addLayout(reason_layout)
-        
-        # 添加按钮
-        button_layout = QHBoxLayout()
-        confirm_btn = ClassicButton("确认取消", "success")
-        cancel_btn = ClassicButton("取消", "default")
-        button_layout.addWidget(confirm_btn)
-        button_layout.addWidget(cancel_btn)
-        layout.addLayout(button_layout)
-        
-        # 事件绑定
-        def validate_and_cancel():
-            reason = reason_input.toPlainText().strip()
-            if not reason:
-                QMessageBox.warning(dialog, "输入错误", "请输入取消原因")
-                return
-            
-            # 处理取消逻辑
-            self._handle_order_cancel(order, reason)
-            dialog.accept()
-        
-        confirm_btn.clicked.connect(validate_and_cancel)
-        cancel_btn.clicked.connect(dialog.reject)
-        
-        dialog.exec_()
-
-    def _handle_order_cancel(self, order, reason):
-        """处理取消订单逻辑"""
-        # 实现取消订单的逻辑
-        print(f"[Tab管理器] 取消订单: {order['order_id']}, 原因: {reason}")
-
-    def _on_order_double_click(self, index):
-        """处理订单表格的双击事件"""
-        if index.column() == 0:  # 假设双击事件发生在第一列（影片列）
-            selected_item = self.order_table.item(index.row(), index.column())
-            if selected_item:
-                movie_name = selected_item.text()
-                self._show_movie_details(movie_name)
-
-    def _show_movie_details(self, movie_name):
-        """显示电影详情"""
-        # 实现显示电影详情的逻辑
-        print(f"[Tab管理器] 显示电影详情: {movie_name}")
     
     def _load_cinema_list(self):
         """加载影院列表"""
@@ -1440,19 +1291,42 @@ class TabManagerWidget(QWidget):
     def get_selected_cinemaid(self):
         """获取当前选择的影院ID"""
         try:
-            # 从当前账号中获取影院ID，或者从影院管理器中查找
+            # 🔧 修复：优先从当前影院数据获取
+            if hasattr(self, 'current_cinema_data') and self.current_cinema_data:
+                cinemaid = self.current_cinema_data.get('cinemaid')
+                if cinemaid:
+                    print(f"[Tab管理器] 从当前影院数据获取ID: {cinemaid}")
+                    return cinemaid
+
+            # 🔧 修复：从当前账号中获取影院ID
             if hasattr(self, 'current_account') and self.current_account:
-                return self.current_account.get('cinemaid')
-                
+                cinemaid = self.current_account.get('cinemaid')
+                if cinemaid:
+                    print(f"[Tab管理器] 从当前账号获取影院ID: {cinemaid}")
+                    return cinemaid
+
+            # 🔧 修复：从影院下拉框选择获取
+            if hasattr(self, 'cinema_combo') and self.cinema_combo.currentText():
+                cinema_name = self.cinema_combo.currentText()
+                if hasattr(self, 'cinemas_data') and self.cinemas_data:
+                    for cinema in self.cinemas_data:
+                        if cinema.get('cinemaShortName') == cinema_name:
+                            cinemaid = cinema.get('cinemaid')
+                            print(f"[Tab管理器] 从下拉框选择获取影院ID: {cinemaid}")
+                            return cinemaid
+
             # 如果没有当前账号，尝试从影院表格获取第一个影院ID
             if hasattr(self, 'cinema_table') and self.cinema_table.rowCount() > 0:
                 id_item = self.cinema_table.item(0, 1)
                 if id_item:
-                    return id_item.text()
-                    
+                    cinemaid = id_item.text()
+                    print(f"[Tab管理器] 从影院表格获取ID: {cinemaid}")
+                    return cinemaid
+
             # 默认返回一个测试影院ID
+            print(f"[Tab管理器] 使用默认影院ID")
             return "11b7e4bcc265"
-            
+
         except Exception as e:
             print(f"[Tab管理器] 获取影院ID错误: {e}")
             return "11b7e4bcc265"
@@ -2082,63 +1956,178 @@ class TabManagerWidget(QWidget):
         try:
             account = getattr(self, 'current_account', None)
             if not account:
-                QMessageBox.warning(self, "未选择账号", "请先选择账号！")
+                MessageManager.show_error(self, "未选择账号", "请先选择账号！", auto_close=False)
                 return
-            
+
             cinemaid = self.get_selected_cinemaid()
             if not cinemaid:
-                QMessageBox.warning(self, "未选择影院", "请先选择影院！")
+                MessageManager.show_error(self, "未选择影院", "请先选择影院！", auto_close=False)
                 return
-            
-            # 调用现有的订单API
+
+            # 显示加载状态
+            self.order_refresh_btn.setText("刷新中...")
+            self.order_refresh_btn.setEnabled(False)
+
+            # 调用现有的订单API - 使用标准参数格式
             from services.order_api import get_order_list
-            
+
+            # 🔧 修复：使用标准API参数格式
             params = {
-                'userid': account['userid'],
-                'token': account['token'], 
-                'openid': account['openid'],
-                'cinemaid': cinemaid,
-                'pageIndex': 1,
-                'pageSize': 50
+                'pageNo': 1,                           # 标准参数名
+                'groupid': '',                         # 集团ID
+                'cinemaid': cinemaid,                  # 影院ID
+                'cardno': account.get('cardno', ''),   # 会员卡号
+                'userid': account['userid'],           # 用户ID
+                'openid': account['openid'],           # 微信openid
+                'CVersion': '3.9.12',                  # 客户端版本
+                'OS': 'Windows',                       # 操作系统
+                'token': account['token'],             # 访问令牌
+                'source': '2'                          # 来源：2=小程序
             }
-            
+
+            print(f"[订单刷新] 请求参数: {params}")
             result = get_order_list(params)
-            
+            print(f"[订单刷新] API响应: {result}")
+
             if result.get('resultCode') == '0':
-                orders = result.get('data', {}).get('orderList', [])
+                # 🔧 修复：详细分析API返回的数据结构
+                result_data = result.get('resultData', {})
+
+                print(f"[订单刷新] API返回数据结构分析:")
+                print(f"  - resultData类型: {type(result_data)}")
+                print(f"  - resultData内容: {result_data}")
+
+                if isinstance(result_data, dict):
+                    print(f"  - resultData字段: {list(result_data.keys())}")
+
+                # 🔧 尝试多种可能的数据路径
+                orders = None
+
+                # 路径1: resultData.orders
+                if 'orders' in result_data:
+                    orders = result_data['orders']
+                    print(f"[订单刷新] 使用路径 resultData.orders，获取到 {len(orders)} 个订单")
+
+                # 路径2: resultData.orderList
+                elif 'orderList' in result_data:
+                    orders = result_data['orderList']
+                    print(f"[订单刷新] 使用路径 resultData.orderList，获取到 {len(orders)} 个订单")
+
+                # 路径3: resultData.data.orders
+                elif 'data' in result_data and isinstance(result_data['data'], dict):
+                    data = result_data['data']
+                    if 'orders' in data:
+                        orders = data['orders']
+                        print(f"[订单刷新] 使用路径 resultData.data.orders，获取到 {len(orders)} 个订单")
+                    elif 'orderList' in data:
+                        orders = data['orderList']
+                        print(f"[订单刷新] 使用路径 resultData.data.orderList，获取到 {len(orders)} 个订单")
+
+                # 路径4: 直接是数组
+                elif isinstance(result_data, list):
+                    orders = result_data
+                    print(f"[订单刷新] resultData直接是数组，获取到 {len(orders)} 个订单")
+
+                if orders is None:
+                    orders = []
+                    print(f"[订单刷新] 未找到订单数据，使用空数组")
+
+                # 🔧 分析第一个订单的数据结构（简化版）
+                if orders and len(orders) > 0:
+                    first_order = orders[0]
+                    print(f"[订单刷新] 第一个订单数据结构:")
+                    print(f"  - 订单类型: {type(first_order)}")
+                    if isinstance(first_order, dict):
+                        print(f"  - 订单字段: {list(first_order.keys())}")
+                        # 只显示关键字段的值
+                        key_fields = ['orderName', 'orderS', 'orderno']
+                        for field in key_fields:
+                            if field in first_order:
+                                print(f"  - {field}: {first_order[field]}")
+
                 self.update_order_table(orders)
-                QMessageBox.information(self, "刷新成功", f"已获取到 {len(orders)} 个订单")
+
+                # 不显示成功弹窗，只在控制台记录
+                print(f"[订单刷新] 订单列表刷新成功，共 {len(orders)} 个订单")
             else:
                 error_msg = result.get('resultDesc', '获取订单列表失败')
-                QMessageBox.warning(self, "获取失败", error_msg)
-                self._load_sample_orders()
-                
+                print(f"[订单刷新] 获取失败: {error_msg}")
+                MessageManager.show_error(self, "获取失败", error_msg, auto_close=False)
+
+                # 清空表格而不是显示示例数据
+                self.order_table.setRowCount(0)
+
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"刷新订单列表时出错：{str(e)}")
-            self._load_sample_orders()
+            print(f"[订单刷新] 异常: {e}")
+            import traceback
+            traceback.print_exc()
+            MessageManager.show_error(self, "刷新失败", f"刷新订单列表时出错：{str(e)}", auto_close=False)
+
+        finally:
+            # 恢复按钮状态
+            self.order_refresh_btn.setText("刷新")
+            self.order_refresh_btn.setEnabled(True)
 
     def update_order_table(self, orders):
         """更新订单表格显示"""
         try:
             self.order_table.setRowCount(len(orders))
             self.order_data_cache = orders
-            
+
             for row, order in enumerate(orders):
-                # 影片名称
-                movie_name = order.get('movieName', '未知影片')
+                print(f"[订单表格] 处理订单 {row}")
+
+                # 🔧 修复：影片名称 - 根据实际API数据调整
+                movie_name = (order.get('orderName') or      # ✅ 实际字段名
+                             order.get('movieName') or
+                             order.get('movie') or
+                             order.get('filmName') or
+                             order.get('film_name') or
+                             order.get('movieN') or
+                             order.get('filmN') or
+                             order.get('fn') or
+                             order.get('name') or
+                             '未知影片')
+                print(f"[订单表格] 订单 {row} 影片名称: {movie_name}")
                 self.order_table.setItem(row, 0, self.order_table.__class__.createItem(movie_name))
-                
-                # 影院名称
-                cinema_name = order.get('cinemaName', '未知影院')
+
+                # 🔧 修复：影院名称 - 从当前选择的影院获取
+                # 由于API数据中没有影院名称，从当前选择的影院获取
+                if hasattr(self, 'current_cinema_data') and self.current_cinema_data:
+                    cinema_name = self.current_cinema_data.get('cinemaShortName', '当前影院')
+                elif hasattr(self, 'cinema_combo') and self.cinema_combo.currentText():
+                    cinema_name = self.cinema_combo.currentText()
+                else:
+                    cinema_name = '未知影院'
+                print(f"[订单表格] 订单 {row} 影院名称: {cinema_name}")
                 self.order_table.setItem(row, 1, self.order_table.__class__.createItem(cinema_name))
-                
-                # 订单状态
-                status = self.get_order_status_text(order.get('orderStatus', 0))
-                
-                # 根据状态设置颜色
-                if '待支付' in status:
+
+                # 🔧 修复：订单状态 - 根据实际API数据调整
+                status_text = (order.get('orderS') or        # ✅ 实际字段名
+                              order.get('status') or
+                              order.get('state') or
+                              order.get('orderState'))
+
+                # 也检查状态码
+                status_code = order.get('orderStatus') or order.get('orderState')
+
+                print(f"[订单表格] 订单 {row} 状态信息: status_code={status_code}, status_text={status_text}")
+
+                if status_text:
+                    # 直接使用状态文本
+                    status = status_text
+                elif status_code is not None:
+                    # 使用状态码转换
+                    status = self.get_order_status_text(status_code)
+                else:
+                    status = '未知状态'
+
+                print(f"[订单表格] 订单 {row} 最终状态: {status}")
+
+                # 根据状态设置颜色 - 适配实际状态文本
+                if '待支付' in status or '待付款' in status or '待使用' in status:
                     self.order_table.add_colored_item(row, 2, status, "#ff9800")
-                elif '已支付' in status:
+                elif '已支付' in status or '已完成' in status or '已付款' in status:
                     self.order_table.add_colored_item(row, 2, status, "#4caf50")
                 elif '已取票' in status:
                     self.order_table.add_colored_item(row, 2, status, "#2196f3")
@@ -2146,26 +2135,315 @@ class TabManagerWidget(QWidget):
                     self.order_table.add_colored_item(row, 2, status, "#f44336")
                 else:
                     self.order_table.setItem(row, 2, self.order_table.__class__.createItem(status))
-                
-                # 订单号
-                order_no = order.get('orderNo', '无订单号')
+
+                # 🔧 修复：订单号 - 根据实际API数据调整
+                order_no = (order.get('orderno') or          # ✅ 实际字段名
+                           order.get('orderNo') or
+                           order.get('order_id') or
+                           order.get('orderid') or
+                           order.get('orderN') or
+                           order.get('on') or
+                           order.get('id') or
+                           '无订单号')
+                print(f"[订单表格] 订单 {row} 订单号: {order_no}")
                 self.order_table.setItem(row, 3, self.order_table.__class__.createItem(order_no))
-                
+
+            print(f"[订单表格] 成功更新 {len(orders)} 个订单到表格")
+
         except Exception as e:
-            print(f"[Tab管理器] 更新订单表格错误: {e}")
+            print(f"[订单表格] 更新订单表格错误: {e}")
+            import traceback
+            traceback.print_exc()
 
     def get_order_status_text(self, status_code):
         """转换订单状态码为中文"""
         status_map = {
             0: "待支付",
-            1: "已支付", 
+            1: "已支付",
             2: "已取票",
             3: "已取消",
             4: "已退款",
             5: "支付失败"
         }
         return status_map.get(status_code, "未知状态")
-    
+
+    def _on_order_double_click(self, item):
+        """订单双击事件 - 查看订单详情和二维码"""
+        try:
+            if not item:
+                return
+
+            row = item.row()
+            if not hasattr(self, 'order_data_cache') or row >= len(self.order_data_cache):
+                return
+
+            order = self.order_data_cache[row]
+            print(f"[订单详情] 双击查看订单: {order}")
+
+            # 获取订单详情
+            self._show_order_detail_dialog(order)
+
+        except Exception as e:
+            print(f"[订单详情] 双击处理错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _show_order_context_menu(self, position):
+        """显示订单右键菜单"""
+        try:
+            item = self.order_table.itemAt(position)
+            if not item:
+                return
+
+            row = item.row()
+            if not hasattr(self, 'order_data_cache') or row >= len(self.order_data_cache):
+                return
+
+            order = self.order_data_cache[row]
+            status = order.get('orderStatus', -1)
+
+            # 创建右键菜单
+            menu = QMenu(self)
+
+            # 查看详情（所有订单都可以）
+            detail_action = menu.addAction("查看详情")
+            detail_action.triggered.connect(lambda: self._show_order_detail_dialog(order))
+
+            # 取消订单（只有待支付订单可以）
+            if status == 0:  # 待支付
+                menu.addSeparator()
+                cancel_action = menu.addAction("取消订单")
+                cancel_action.triggered.connect(lambda: self._cancel_order(order))
+
+            # 查看二维码（已支付订单可以）
+            if status in [1, 2]:  # 已支付或已取票
+                menu.addSeparator()
+                qr_action = menu.addAction("查看取票码")
+                qr_action.triggered.connect(lambda: self._show_order_qrcode(order))
+
+            # 显示菜单
+            menu.exec_(self.order_table.mapToGlobal(position))
+
+        except Exception as e:
+            print(f"[订单菜单] 右键菜单错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _show_order_detail_dialog(self, order):
+        """显示订单详情对话框"""
+        try:
+            account = getattr(self, 'current_account', None)
+            if not account:
+                MessageManager.show_error(self, "错误", "缺少账号信息", auto_close=False)
+                return
+
+            cinemaid = self.get_selected_cinemaid()
+            if not cinemaid:
+                MessageManager.show_error(self, "错误", "缺少影院信息", auto_close=False)
+                return
+
+            # 获取订单号
+            order_no = (order.get('orderNo') or
+                       order.get('orderno') or
+                       order.get('order_id') or
+                       order.get('orderid'))
+
+            if not order_no:
+                MessageManager.show_error(self, "错误", "订单号不存在", auto_close=False)
+                return
+
+            # 调用订单详情API
+            from services.order_api import get_order_detail
+
+            params = {
+                'orderno': order_no,
+                'groupid': '',
+                'cinemaid': cinemaid,
+                'cardno': account.get('cardno', ''),
+                'userid': account['userid'],
+                'openid': account['openid'],
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': account['token'],
+                'source': '2'
+            }
+
+            print(f"[订单详情] 获取订单详情: {order_no}")
+            result = get_order_detail(params)
+
+            if result and result.get('resultCode') == '0':
+                detail_data = result.get('resultData', {})
+                self._display_order_detail(detail_data, order_no)
+            else:
+                error_msg = result.get('resultDesc', '获取订单详情失败') if result else '网络错误'
+                MessageManager.show_error(self, "获取失败", error_msg, auto_close=False)
+
+        except Exception as e:
+            print(f"[订单详情] 获取详情错误: {e}")
+            import traceback
+            traceback.print_exc()
+            MessageManager.show_error(self, "错误", f"获取订单详情时出错：{str(e)}", auto_close=False)
+
+    def _cancel_order(self, order):
+        """取消订单"""
+        try:
+            account = getattr(self, 'current_account', None)
+            if not account:
+                MessageManager.show_error(self, "错误", "缺少账号信息", auto_close=False)
+                return
+
+            cinemaid = self.get_selected_cinemaid()
+            if not cinemaid:
+                MessageManager.show_error(self, "错误", "缺少影院信息", auto_close=False)
+                return
+
+            # 获取订单号
+            order_no = (order.get('orderNo') or
+                       order.get('orderno') or
+                       order.get('order_id') or
+                       order.get('orderid'))
+
+            if not order_no:
+                MessageManager.show_error(self, "错误", "订单号不存在", auto_close=False)
+                return
+
+            # 确认取消
+            reply = QMessageBox.question(self, "确认取消",
+                                       f"确定要取消订单 {order_no} 吗？",
+                                       QMessageBox.Yes | QMessageBox.No,
+                                       QMessageBox.No)
+
+            if reply != QMessageBox.Yes:
+                return
+
+            # 调用取消订单API
+            from services.order_api import cancel_order
+
+            params = {
+                'orderno': order_no,
+                'groupid': '',
+                'cinemaid': cinemaid,
+                'cardno': account.get('cardno', ''),
+                'userid': account['userid'],
+                'openid': account['openid'],
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': account['token'],
+                'source': '2'
+            }
+
+            print(f"[取消订单] 取消订单: {order_no}")
+            result = cancel_order(params)
+
+            if result and result.get('resultCode') == '0':
+                print(f"[取消订单] 订单取消成功: {order_no}")
+                MessageManager.show_success(self, "取消成功", "订单已成功取消", auto_close=True)
+                # 自动刷新订单列表
+                self._on_refresh_orders()
+            else:
+                error_msg = result.get('resultDesc', '取消订单失败') if result else '网络错误'
+                MessageManager.show_error(self, "取消失败", error_msg, auto_close=False)
+
+        except Exception as e:
+            print(f"[取消订单] 取消订单错误: {e}")
+            import traceback
+            traceback.print_exc()
+            MessageManager.show_error(self, "错误", f"取消订单时出错：{str(e)}", auto_close=False)
+
+    def _show_order_qrcode(self, order):
+        """显示订单二维码"""
+        try:
+            cinemaid = self.get_selected_cinemaid()
+            if not cinemaid:
+                MessageManager.show_error(self, "错误", "缺少影院信息", auto_close=False)
+                return
+
+            # 获取订单号
+            order_no = (order.get('orderNo') or
+                       order.get('orderno') or
+                       order.get('order_id') or
+                       order.get('orderid'))
+
+            if not order_no:
+                MessageManager.show_error(self, "错误", "订单号不存在", auto_close=False)
+                return
+
+            # 调用二维码API
+            from services.order_api import get_order_qrcode_api
+
+            print(f"[订单二维码] 获取二维码: {order_no}")
+            qr_result = get_order_qrcode_api(order_no, cinemaid)
+
+            if qr_result:
+                print(f"[订单二维码] 二维码获取成功，大小: {len(qr_result)} bytes")
+                # 发送信号到主窗口显示二维码
+                from utils.signals import event_bus
+                event_bus.show_qrcode.emit(f"订单 {order_no} 取票码获取成功")
+            else:
+                MessageManager.show_error(self, "获取失败", "获取取票码失败", auto_close=False)
+
+        except Exception as e:
+            print(f"[订单二维码] 获取二维码错误: {e}")
+            import traceback
+            traceback.print_exc()
+            MessageManager.show_error(self, "错误", f"获取取票码时出错：{str(e)}", auto_close=False)
+
+    def _display_order_detail(self, detail_data, order_no):
+        """显示订单详情信息"""
+        try:
+            # 构建详情文本
+            details = f"订单详情\n{'='*30}\n\n"
+            details += f"订单号: {order_no}\n\n"
+
+            # 影片信息
+            movie = detail_data.get('movieName', detail_data.get('movie', '未知影片'))
+            details += f"影片: {movie}\n\n"
+
+            # 时间信息
+            show_time = detail_data.get('showTime', '')
+            if not show_time:
+                date = detail_data.get('date', '')
+                session = detail_data.get('session', '')
+                if date and session:
+                    show_time = f"{date} {session}"
+            details += f"时间: {show_time}\n\n"
+
+            # 影厅信息
+            cinema = detail_data.get('cinemaName', detail_data.get('cinema', '未知影院'))
+            hall = detail_data.get('hallName', detail_data.get('hall_name', ''))
+            if hall:
+                details += f"影厅: {hall}\n\n"
+            else:
+                details += f"影院: {cinema}\n\n"
+
+            # 座位信息
+            seats = detail_data.get('seats', [])
+            if isinstance(seats, list) and seats:
+                seat_str = " ".join(seats)
+                details += f"座位: {seat_str}\n\n"
+            else:
+                details += f"座位: {seats}\n\n"
+
+            # 价格信息
+            amount = detail_data.get('amount', detail_data.get('totalPrice', 0))
+            details += f"金额: ¥{amount}\n\n"
+
+            # 状态信息
+            status = self.get_order_status_text(detail_data.get('orderStatus', -1))
+            details += f"状态: {status}"
+
+            # 显示详情对话框
+            dialog = QMessageBox(self)
+            dialog.setWindowTitle("订单详情")
+            dialog.setText(details)
+            dialog.setStandardButtons(QMessageBox.Ok)
+            dialog.exec_()
+
+        except Exception as e:
+            print(f"[订单详情] 显示详情错误: {e}")
+            import traceback
+            traceback.print_exc()
+
     def _build_cinema_tab(self):
         """构建影院Tab页面"""
         layout = QVBoxLayout(self.cinema_tab)
