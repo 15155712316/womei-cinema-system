@@ -973,18 +973,9 @@ class ModularCinemaMainWindow(QMainWindow):
                 if updated_order_detail and updated_order_detail.get('resultCode') == '0':
                     print(f"[支付成功] 订单详情获取成功")
 
-                    # 🆕 获取订单二维码/取票码
-                    print(f"[支付成功] 正在获取订单二维码: {order_id}")
-                    qr_result = get_order_qrcode_api(order_id, cinema_id)
-
-                    if qr_result:
-                        # get_order_qrcode_api 返回二进制图片内容，不是JSON
-                        print(f"[支付成功] 取票二维码获取成功，大小: {len(qr_result)} bytes")
-                        # 这里可以保存二维码图片或进一步处理
-                        # 暂时显示成功信息
-                        self._show_qr_code("二维码获取成功")
-                    else:
-                        print(f"[支付成功] 取票二维码获取失败")
+                    # 🎯 集成取票码获取和显示流程（与双击订单流程一致）
+                    print(f"[支付成功] 正在获取取票码: {order_id}")
+                    self._get_ticket_code_after_payment(order_id, cinema_id, updated_order_detail.get('resultData', {}))
 
                     # 🆕 更新订单详情显示为支付成功状态
                     self.current_order = updated_order_detail
@@ -1909,6 +1900,123 @@ class ModularCinemaMainWindow(QMainWindow):
             
         except Exception as e:
             print(f"[主窗口] 全局订单支付处理错误: {e}")
+
+    def _get_ticket_code_after_payment(self, order_id: str, cinema_id: str, detail_data: dict):
+        """支付成功后获取取票码并显示（与双击订单流程一致）"""
+        try:
+            print(f"[支付成功] 🎯 开始获取取票码: 订单号={order_id}, 影院ID={cinema_id}")
+
+            # 🎯 从订单详情中提取取票码（与双击订单流程一致）
+            qr_code = detail_data.get('qrCode', '')
+            ticket_code = detail_data.get('ticketCode', '') or detail_data.get('ticketcode', '')
+            ds_code = detail_data.get('dsValidateCode', '')
+
+            print(f"[支付成功] 📋 订单详情中的取票码信息:")
+            print(f"[支付成功] 📋 - qrCode: {qr_code}")
+            print(f"[支付成功] 📋 - ticketCode: {ticket_code}")
+            print(f"[支付成功] 📋 - dsValidateCode: {ds_code}")
+
+            # 🎯 确定最终的取票码（优先使用qrCode）
+            final_ticket_code = qr_code or ds_code or ticket_code
+
+            if final_ticket_code:
+                print(f"[支付成功] ✅ 找到取票码: {final_ticket_code}")
+
+                # 🎯 生成取票码二维码并显示（与双击订单流程一致）
+                self._generate_payment_success_qrcode(order_id, final_ticket_code, detail_data, cinema_id)
+
+            else:
+                print(f"[支付成功] ⚠️ 订单详情中没有找到取票码，显示支付成功信息")
+                # 显示支付成功但无取票码的信息
+                self._show_payment_success_without_qrcode(order_id)
+
+        except Exception as e:
+            print(f"[支付成功] ❌ 获取取票码错误: {e}")
+            import traceback
+            traceback.print_exc()
+            # 降级显示支付成功信息
+            self._show_payment_success_without_qrcode(order_id)
+
+    def _generate_payment_success_qrcode(self, order_id: str, ticket_code: str, detail_data: dict, cinema_id: str):
+        """支付成功后生成并显示取票码二维码"""
+        try:
+            print(f"[支付成功] 🎯 开始生成取票码二维码")
+            print(f"[支付成功] 📋 取票码: {ticket_code}")
+
+            # 🔧 导入二维码生成器
+            from utils.qrcode_generator import generate_ticket_qrcode, save_qrcode_image
+            print(f"[支付成功] ✅ 二维码生成器导入成功")
+
+            # 🎯 生成二维码图片
+            qr_bytes = generate_ticket_qrcode(ticket_code, detail_data)
+
+            if qr_bytes:
+                print(f"[支付成功] ✅ 取票码二维码生成成功: {len(qr_bytes)} bytes")
+
+                # 🎯 保存二维码图片到本地
+                save_path = save_qrcode_image(qr_bytes, order_id, cinema_id)
+                if save_path:
+                    print(f"[支付成功] 💾 二维码图片已保存: {save_path}")
+
+                # 🎯 创建显示数据（与双击订单流程一致）
+                qr_data = {
+                    'order_no': order_id,
+                    'qr_bytes': qr_bytes,
+                    'qr_path': save_path,
+                    'data_size': len(qr_bytes),
+                    'data_format': 'PNG',
+                    'display_type': 'generated_qrcode',  # 标识为生成的二维码
+                    'ticket_code': ticket_code,
+                    'film_name': detail_data.get('filmName', ''),
+                    'show_time': detail_data.get('showTime', ''),
+                    'hall_name': detail_data.get('hallName', ''),
+                    'seat_info': detail_data.get('seatInfo', ''),
+                    'cinema_name': detail_data.get('cinemaName', ''),
+                    'is_generated': True,  # 标识这是自主生成的二维码
+                    'is_payment_success': True  # 标识这是支付成功后的显示
+                }
+
+                print(f"[支付成功] 📤 显示取票码二维码:")
+                print(f"[支付成功] 📤 - 订单号: {order_id}")
+                print(f"[支付成功] 📤 - 取票码: {ticket_code}")
+                print(f"[支付成功] 📤 - 图片大小: {len(qr_bytes)} bytes")
+
+                # 🎯 直接调用显示方法（不通过事件总线，避免延迟）
+                self._on_show_qrcode(qr_data)
+
+                print(f"[支付成功] ✅ 取票码二维码已显示")
+
+            else:
+                print(f"[支付成功] ❌ 取票码二维码生成失败")
+                # 降级显示支付成功信息
+                self._show_payment_success_without_qrcode(order_id)
+
+        except Exception as e:
+            print(f"[支付成功] ❌ 生成取票码二维码错误: {e}")
+            import traceback
+            traceback.print_exc()
+            # 降级显示支付成功信息
+            self._show_payment_success_without_qrcode(order_id)
+
+    def _show_payment_success_without_qrcode(self, order_id: str):
+        """显示支付成功但无取票码的信息"""
+        try:
+            success_text = f"支付成功！\n\n订单号: {order_id}\n\n请在订单列表中查看取票码"
+            self.qr_display.setText(success_text)
+            self.qr_display.setStyleSheet("""
+                QLabel {
+                    color: #2e7d32;
+                    font: bold 14px "Microsoft YaHei";
+                    background-color: #e8f5e8;
+                    border: 2px solid #4caf50;
+                    padding: 20px;
+                    border-radius: 5px;
+                }
+            """)
+            print(f"[支付成功] ✅ 支付成功信息已显示")
+
+        except Exception as e:
+            print(f"[支付成功] ❌ 显示支付成功信息错误: {e}")
 
     def _on_show_qrcode(self, qr_data):
         """显示二维码处理"""
