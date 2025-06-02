@@ -9,7 +9,7 @@ import sys
 import os
 from typing import Dict, List, Optional, Any
 from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QApplication, QMessageBox
+    QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QApplication, QMessageBox, QPushButton
 )
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
 
@@ -215,27 +215,81 @@ class ModularCinemaMainWindow(QMainWindow):
         layout.setContentsMargins(5, 5, 5, 5)
         layout.setSpacing(10)
         
-        # 取票码区 (上部45%)
+        # 取票码区 (上部50%)
         qr_group = ClassicGroupBox("取票码区")
         qr_layout = QVBoxLayout(qr_group)
         qr_layout.setContentsMargins(10, 20, 10, 10)
-        
+
+        # 🎯 添加按钮区域
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+
+        # 复制路径按钮
+        self.copy_path_btn = QPushButton("复制路径")
+        self.copy_path_btn.setFixedSize(80, 30)
+        self.copy_path_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2196f3;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font: 12px "Microsoft YaHei";
+            }
+            QPushButton:hover {
+                background-color: #1976d2;
+            }
+            QPushButton:pressed {
+                background-color: #0d47a1;
+            }
+        """)
+        self.copy_path_btn.clicked.connect(self._on_copy_path)
+
+        # 复制图片按钮
+        self.copy_image_btn = QPushButton("复制图片")
+        self.copy_image_btn.setFixedSize(80, 30)
+        self.copy_image_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4caf50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font: 12px "Microsoft YaHei";
+            }
+            QPushButton:hover {
+                background-color: #388e3c;
+            }
+            QPushButton:pressed {
+                background-color: #2e7d32;
+            }
+        """)
+        self.copy_image_btn.clicked.connect(self._on_copy_image)
+
+        # 添加按钮到布局
+        button_layout.addWidget(self.copy_path_btn)
+        button_layout.addWidget(self.copy_image_btn)
+        button_layout.addStretch()  # 左对齐
+
+        # 取票码显示区域
         self.qr_display = ClassicLabel("(二维码/取票码展示区)", "default")
         self.qr_display.setAlignment(Qt.AlignCenter)
+        # 🎨 恢复到默认设置，移除最小尺寸限制
         self.qr_display.setStyleSheet("""
             QLabel {
                 color: #666666;
                 font: 12px "Microsoft YaHei";
                 background-color: #f0f0f0;
                 border: 1px solid #dddddd;
-                padding: 20px;
+                padding: 20px;  /* 🎨 恢复到原来的20px padding */
                 border-radius: 5px;
             }
         """)
-        qr_layout.addWidget(self.qr_display)
+
+        # 添加到布局
+        qr_layout.addLayout(button_layout)  # 先添加按钮
+        qr_layout.addWidget(self.qr_display)  # 再添加显示区域
         
-        layout.addWidget(qr_group, 45)
-        
+        layout.addWidget(qr_group, 45)  # 🔄 恢复为45%
+
         # 订单详情区 (下部55%)
         order_group = ClassicGroupBox("订单详情区")
         order_layout = QVBoxLayout(order_group)
@@ -300,10 +354,69 @@ class ModularCinemaMainWindow(QMainWindow):
         """)
         order_layout.addWidget(self.pay_button)
         
-        layout.addWidget(order_group, 55)
+        layout.addWidget(order_group, 55)  # 🔄 恢复为55%
         
         return widget
-    
+
+    def _on_copy_path(self):
+        """复制路径按钮点击事件"""
+        try:
+            # 获取当前显示的二维码图片路径
+            if hasattr(self, 'current_qr_path') and self.current_qr_path:
+                from PyQt5.QtWidgets import QApplication
+                clipboard = QApplication.clipboard()
+                clipboard.setText(self.current_qr_path)
+                print(f"[主窗口] ✅ 已复制路径到剪贴板: {self.current_qr_path}")
+            else:
+                print(f"[主窗口] ⚠️ 没有可复制的图片路径")
+        except Exception as e:
+            print(f"[主窗口] ❌ 复制路径失败: {e}")
+
+    def _on_copy_image(self):
+        """复制图片按钮点击事件"""
+        try:
+            # 🎨 优先使用原始图片数据，确保最佳质量
+            if hasattr(self, 'current_qr_bytes') and self.current_qr_bytes:
+                from PyQt5.QtWidgets import QApplication
+                from PyQt5.QtGui import QPixmap
+                from PyQt5.QtCore import QByteArray
+
+                # 从原始字节数据创建高质量pixmap
+                byte_array = QByteArray(self.current_qr_bytes)
+                pixmap = QPixmap()
+                pixmap.loadFromData(byte_array, 'PNG')
+
+                if not pixmap.isNull():
+                    clipboard = QApplication.clipboard()
+                    clipboard.setPixmap(pixmap)
+                    print(f"[主窗口] ✅ 已复制高质量图片到剪贴板 ({pixmap.width()}x{pixmap.height()})")
+                else:
+                    print(f"[主窗口] ❌ 无法从原始数据创建图片")
+                    # 备用方案：使用界面显示的图片
+                    self._copy_display_image()
+            else:
+                # 备用方案：使用界面显示的图片
+                self._copy_display_image()
+
+        except Exception as e:
+            print(f"[主窗口] ❌ 复制图片失败: {e}")
+            # 最后备用方案
+            self._copy_display_image()
+
+    def _copy_display_image(self):
+        """备用方案：复制界面显示的图片"""
+        try:
+            if hasattr(self, 'qr_display') and self.qr_display.pixmap():
+                from PyQt5.QtWidgets import QApplication
+                clipboard = QApplication.clipboard()
+                pixmap = self.qr_display.pixmap()
+                clipboard.setPixmap(pixmap)
+                print(f"[主窗口] ✅ 已复制界面图片到剪贴板 ({pixmap.width()}x{pixmap.height()})")
+            else:
+                print(f"[主窗口] ⚠️ 没有可复制的图片")
+        except Exception as e:
+            print(f"[主窗口] ❌ 复制界面图片失败: {e}")
+
     def _connect_signals(self):
         """连接信号槽"""
         # 账号管理模块信号
@@ -2100,10 +2213,16 @@ class ModularCinemaMainWindow(QMainWindow):
             ticket_code = qr_data.get('ticket_code', '')
             film_name = qr_data.get('film_name', '')
             qr_bytes = qr_data.get('qr_bytes')
+            qr_path = qr_data.get('qr_path', '')  # 🎯 获取图片路径
 
             print(f"[主窗口] 🎨 开始显示生成的二维码:")
             print(f"[主窗口] 🎨 - 取票码: {ticket_code}")
             print(f"[主窗口] 🎨 - 二维码: {len(qr_bytes) if qr_bytes else 0} bytes")
+            print(f"[主窗口] 🎨 - 路径: {qr_path}")
+
+            # 🎯 保存图片路径和原始数据供按钮使用
+            self.current_qr_path = qr_path
+            self.current_qr_bytes = qr_bytes  # 🎨 保存原始图片数据用于高质量复制
 
             if hasattr(self, 'qr_display') and qr_bytes:
                 try:
@@ -2113,13 +2232,20 @@ class ModularCinemaMainWindow(QMainWindow):
                     success = pixmap.loadFromData(byte_array)
 
                     if success and not pixmap.isNull():
-                        # 🎯 显示二维码图片（保持原始大小或适当缩放）
-                        # 由于是我们生成的，通常已经是合适的大小
-                        max_size = 250
-                        if pixmap.width() > max_size or pixmap.height() > max_size:
-                            scaled_pixmap = pixmap.scaled(max_size, max_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                        # 🎯 显示优化后的二维码图片（保持原始尺寸以体现布局优化）
+                        # 我们的生成器已经优化了布局，应该保持原始大小
+                        print(f"[主窗口] 📐 原始二维码尺寸: {pixmap.width()}x{pixmap.height()}")
+
+                        # 🎨 恢复到原来的尺寸限制
+                        max_width = 280   # 🎨 恢复到280px
+                        max_height = 280  # 🎨 恢复到280px
+
+                        if pixmap.width() > max_width or pixmap.height() > max_height:
+                            scaled_pixmap = pixmap.scaled(max_width, max_height, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                            print(f"[主窗口] 📐 缩放后尺寸: {scaled_pixmap.width()}x{scaled_pixmap.height()}")
                         else:
                             scaled_pixmap = pixmap
+                            print(f"[主窗口] 📐 保持原始尺寸: {scaled_pixmap.width()}x{scaled_pixmap.height()}")
 
                         self.qr_display.setPixmap(scaled_pixmap)
                         self.qr_display.setText("")  # 清空文本

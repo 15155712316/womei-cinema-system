@@ -2392,10 +2392,12 @@ class TabManagerWidget(QWidget):
     def _generate_and_show_ticket_qrcode(self, order_no, ticket_code, detail_data, cinema_id):
         """生成并显示取票码二维码"""
         try:
-            from utils.qrcode_generator import generate_ticket_qrcode, save_qrcode_image
-
             print(f"[订单二维码] 🎯 开始生成取票码二维码")
             print(f"[订单二维码] 📋 取票码: {ticket_code}")
+
+            # 🔧 直接导入完整二维码生成器（根据诊断结果，模块是可用的）
+            from utils.qrcode_generator import generate_ticket_qrcode, save_qrcode_image
+            print(f"[订单二维码] ✅ 二维码生成器导入成功")
 
             # 🎯 生成二维码图片
             qr_bytes = generate_ticket_qrcode(ticket_code, detail_data)
@@ -2412,6 +2414,7 @@ class TabManagerWidget(QWidget):
                 combined_data = {
                     'order_no': order_no,
                     'qr_bytes': qr_bytes,
+                    'qr_path': save_path,  # 🎯 添加图片路径
                     'data_size': len(qr_bytes),
                     'data_format': 'PNG',
                     'display_type': 'generated_qrcode',  # 标识为生成的二维码
