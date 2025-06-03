@@ -1203,10 +1203,13 @@ class TabManagerWidget(QWidget):
             
             # 立即刷新界面 - 修复显示问题
             self._refresh_cinema_table_display()
-            
+
             # 更新统计信息
             self._update_cinema_stats()
-            
+
+            # 🆕 刷新出票Tab的影院列表
+            self._refresh_ticket_tab_cinema_list()
+
             QMessageBox.information(self, "删除成功", f"影院 {cinema_name} 已删除！")
             return True
             
@@ -1595,7 +1598,26 @@ class TabManagerWidget(QWidget):
 
             # 🆕 发布全局影院选择事件 - 传递完整影院数据
             event_bus.cinema_selected.emit(selected_cinema)
-            
+
+            # 🆕 检查影院是否有关联账号
+            if not self._check_cinema_has_accounts(selected_cinema.get('cinemaid')):
+                # 显示友好提示
+                self.movie_combo.clear()
+                self.movie_combo.addItem("无登录账号 请尽快添加账号")
+                self.date_combo.clear()
+                self.date_combo.addItem("请先添加账号")
+                self.session_combo.clear()
+                self.session_combo.addItem("请先添加账号")
+
+                # 🆕 显示提示对话框
+                QMessageBox.information(
+                    self,
+                    "影院无账号",
+                    f"影院 {selected_cinema.get('cinemaShortName', '未知')} 还没有关联的账号。\n\n"
+                    f"请在账号Tab页面为该影院添加账号后再使用。"
+                )
+                return
+
             # 🆕 延迟检查账号状态，等待账号组件处理完影院切换
             QTimer.singleShot(200, lambda: self._check_and_load_movies(selected_cinema))
                 
@@ -1603,7 +1625,34 @@ class TabManagerWidget(QWidget):
             print(f"[Tab管理器] 影院选择错误: {e}")
             self.movie_combo.clear()
             self.movie_combo.addItem("加载失败")
-    
+
+    def _check_cinema_has_accounts(self, cinema_id: str) -> bool:
+        """🆕 检查指定影院是否有关联的账号"""
+        try:
+            import json
+            import os
+
+            # 加载账号数据
+            accounts_file = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'accounts.json')
+
+            if not os.path.exists(accounts_file):
+                print(f"[Tab管理器] 账号文件不存在: {accounts_file}")
+                return False
+
+            with open(accounts_file, "r", encoding="utf-8") as f:
+                accounts = json.load(f)
+
+            # 检查是否有该影院的账号
+            cinema_accounts = [acc for acc in accounts if acc.get('cinemaid') == cinema_id]
+
+            print(f"[Tab管理器] 影院 {cinema_id} 的账号数量: {len(cinema_accounts)}")
+
+            return len(cinema_accounts) > 0
+
+        except Exception as e:
+            print(f"[Tab管理器] 检查影院账号错误: {e}")
+            return False
+
     def _check_and_load_movies(self, selected_cinema):
         """检查账号状态并加载影片数据"""
         try:

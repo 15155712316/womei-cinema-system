@@ -32,17 +32,5 @@
     "cinemaState": 0,
     "createTime": "2025-05-25 01:10:52",
     "updateTime": "2025-05-25 01:10:52"
-  },
-  {
-    "cinemaid": "e86dd1541e93",
-    "cinemaShortName": "中影星感觉巨幕影城",
-    "cityName": "哈尔滨",
-    "cinemaAddress": "哈尔滨市南岗区西大直街4号567漫天地6层",
-    "cinemaPhone": "",
-    "base_url": "fxc0.xingganjue.fun",
-    "limitTicketAmount": "6",
-    "cinemaState": 0,
-    "createTime": "2025-06-03 13:26:25",
-    "updateTime": "2025-06-03 13:26:25"
   }
 ]
