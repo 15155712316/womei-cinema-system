@@ -924,75 +924,183 @@ class TabManagerWidget(QWidget):
         # 不加载示例数据，等待用户手动刷新
 
     def _on_add_cinema(self):
-        """添加影院功能 - 直接从源代码复制"""
+        """添加影院功能 - 🆕 简化输入，自动获取影院名称"""
         # 创建添加影院对话框
         add_dialog = QDialog(self)
         add_dialog.setWindowTitle("添加影院")
-        add_dialog.setFixedSize(400, 300)
-        
+        add_dialog.setFixedSize(450, 350)
+
         # 对话框布局
         layout = QVBoxLayout(add_dialog)
-        
-        # 影院名称输入
-        name_layout = QHBoxLayout()
-        name_layout.addWidget(ClassicLabel("影院名称:"))
-        name_input = ClassicLineEdit()
-        name_input.setPlaceholderText("例如：万友影城")
-        name_layout.addWidget(name_input)
-        layout.addLayout(name_layout)
-        
+
+        # 🆕 添加说明文字
+        info_label = ClassicLabel("请输入API域名和影院ID，系统将自动获取影院名称")
+        info_label.setStyleSheet("color: #666; font-size: 12px; margin-bottom: 10px;")
+        layout.addWidget(info_label)
+
         # 域名输入
         domain_layout = QHBoxLayout()
         domain_layout.addWidget(ClassicLabel("API域名:"))
         domain_input = ClassicLineEdit()
-        domain_input.setPlaceholderText("例如：api.cinema.com")
+        domain_input.setPlaceholderText("例如：www.heibaiyingye.cn")
         domain_layout.addWidget(domain_input)
         layout.addLayout(domain_layout)
-        
+
         # 影院ID输入
         id_layout = QHBoxLayout()
         id_layout.addWidget(ClassicLabel("影院ID:"))
         id_input = ClassicLineEdit()
-        id_input.setPlaceholderText("例如：11b7e4bcc265")
+        id_input.setPlaceholderText("例如：35fec8259e74")
         id_layout.addWidget(id_input)
         layout.addLayout(id_layout)
-        
+
+        # 🆕 验证结果显示区域
+        result_layout = QVBoxLayout()
+        result_label = ClassicLabel("验证结果:")
+        result_text = ClassicLabel("请输入域名和影院ID后点击验证")
+        result_text.setStyleSheet("color: #666; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f9f9f9;")
+        result_layout.addWidget(result_label)
+        result_layout.addWidget(result_text)
+        layout.addLayout(result_layout)
+
         # 按钮
         button_layout = QHBoxLayout()
-        confirm_btn = ClassicButton("确认添加", "success")
+        validate_btn = ClassicButton("验证并添加", "primary")
         cancel_btn = ClassicButton("取消", "default")
-        button_layout.addWidget(confirm_btn)
+        button_layout.addWidget(validate_btn)
         button_layout.addWidget(cancel_btn)
         layout.addLayout(button_layout)
-        
-        # 事件绑定
+
+        # 🆕 事件绑定 - 验证并添加
         def validate_and_add():
-            name = name_input.text().strip()
             domain = domain_input.text().strip()
             cinema_id = id_input.text().strip()
-            
+
             # 验证输入
-            if not all([name, domain, cinema_id]):
-                QMessageBox.warning(add_dialog, "输入错误", "请填写完整的影院信息！")
+            if not all([domain, cinema_id]):
+                QMessageBox.warning(add_dialog, "输入错误", "请填写API域名和影院ID！")
                 return
-                
-            # 验证域名格式
-            if not domain.startswith(('http://', 'https://')):
-                domain = f"https://{domain}"
-                
+
+            # 标准化域名格式
+            if domain.startswith(('http://', 'https://')):
+                # 移除协议前缀，只保留域名
+                domain = domain.replace('https://', '').replace('http://', '')
+
             # 验证影院ID格式
             if len(cinema_id) != 12:
                 QMessageBox.warning(add_dialog, "格式错误", "影院ID必须是12位字符！")
                 return
-                
-            # 添加到影院列表
-            self.add_cinema_to_list(name, domain, cinema_id)
-            add_dialog.accept()
-        
-        confirm_btn.clicked.connect(validate_and_add)
+
+            # 🆕 调用新的验证和添加方法
+            success = self.validate_and_add_cinema(domain, cinema_id, result_text, add_dialog)
+            if success:
+                add_dialog.accept()
+
+        validate_btn.clicked.connect(validate_and_add)
         cancel_btn.clicked.connect(add_dialog.reject)
-        
+
         add_dialog.exec_()
+
+    def validate_and_add_cinema(self, domain: str, cinema_id: str, result_text, dialog):
+        """🆕 验证API并自动获取影院名称，然后添加影院"""
+        try:
+            result_text.setText("🔄 正在验证API和获取影院信息...")
+            result_text.setStyleSheet("color: #2196f3; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f0f8ff;")
+
+            # 强制刷新界面
+            dialog.repaint()
+
+            # 🆕 调用影院信息API获取影院名称
+            from services.cinema_info_api import get_cinema_info, format_cinema_data
+
+            print(f"[添加影院] 开始验证影院: 域名={domain}, ID={cinema_id}")
+
+            # 调用API获取影院信息
+            cinema_info = get_cinema_info(domain, cinema_id)
+
+            if not cinema_info:
+                result_text.setText("❌ API验证失败：无法获取影院信息\n请检查域名和影院ID是否正确")
+                result_text.setStyleSheet("color: #f44336; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #ffebee;")
+                return False
+
+            # 🆕 从API响应中提取影院名称
+            cinema_name = cinema_info.get('cinemaShortName', '')
+            if not cinema_name:
+                result_text.setText("❌ 获取影院名称失败：API响应中缺少影院名称\n请确认影院ID是否正确")
+                result_text.setStyleSheet("color: #f44336; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #ffebee;")
+                return False
+
+            # 🆕 显示验证成功信息
+            success_text = f"✅ 验证成功！\n影院名称: {cinema_name}\n城市: {cinema_info.get('cityName', '未知')}\n地址: {cinema_info.get('cinemaAddress', '未知')}"
+            result_text.setText(success_text)
+            result_text.setStyleSheet("color: #4caf50; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f1f8e9;")
+
+            print(f"[添加影院] ✅ 验证成功: {cinema_name}")
+
+            # 🆕 检查影院是否已存在
+            from services.cinema_manager import cinema_manager
+            cinemas = cinema_manager.load_cinema_list()
+
+            for cinema in cinemas:
+                if cinema.get('cinemaid') == cinema_id:
+                    result_text.setText(f"❌ 添加失败：影院ID {cinema_id} 已存在\n影院名称: {cinema.get('cinemaShortName', '未知')}")
+                    result_text.setStyleSheet("color: #ff9800; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff3e0;")
+                    return False
+
+            # 🆕 使用标准的数据格式化方法
+            cinema_data = format_cinema_data(cinema_info, domain, cinema_id)
+
+            # 添加到影院列表
+            cinemas.append(cinema_data)
+
+            # 保存到文件
+            if cinema_manager.save_cinema_list(cinemas):
+                # 🆕 刷新界面
+                self._refresh_cinema_table_display()
+                self._update_cinema_stats()
+
+                # 🆕 刷新出票Tab的影院列表
+                self._refresh_ticket_tab_cinema_list()
+
+                result_text.setText(f"🎉 添加成功！\n影院名称: {cinema_name}\n已添加到系统中")
+                result_text.setStyleSheet("color: #4caf50; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f1f8e9;")
+
+                print(f"[添加影院] ✅ 影院添加成功: {cinema_name}")
+
+                QMessageBox.information(dialog, "添加成功", f"影院 {cinema_name} 已成功添加！")
+                return True
+            else:
+                result_text.setText("❌ 保存失败：无法保存影院数据到文件")
+                result_text.setStyleSheet("color: #f44336; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #ffebee;")
+                return False
+
+        except Exception as e:
+            error_msg = f"❌ 验证过程出错：{str(e)}"
+            result_text.setText(error_msg)
+            result_text.setStyleSheet("color: #f44336; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #ffebee;")
+            print(f"[添加影院] 验证错误: {e}")
+            return False
+
+    def _refresh_ticket_tab_cinema_list(self):
+        """刷新出票Tab的影院列表"""
+        try:
+            print(f"[Tab管理器] 🔄 刷新出票Tab影院列表")
+
+            # 重新加载影院数据
+            self._load_sample_data()
+
+            # 发送全局事件通知主窗口刷新
+            from utils.signals import event_bus
+            from services.cinema_manager import cinema_manager
+
+            # 获取最新的影院列表并发送事件
+            updated_cinemas = cinema_manager.load_cinema_list()
+            event_bus.cinema_list_updated.emit(updated_cinemas)
+
+            print(f"[Tab管理器] ✅ 出票Tab影院列表刷新完成")
+
+        except Exception as e:
+            print(f"[Tab管理器] 刷新出票Tab影院列表错误: {e}")
 
     def add_cinema_to_list(self, name, domain, cinema_id):
         """添加影院到数据文件 - 基于现有cinema_manager"""
