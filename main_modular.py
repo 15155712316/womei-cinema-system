@@ -47,7 +47,6 @@ from services.member_service import MemberService
 from services.account_api import get_account_list, save_account, delete_account
 
 # 工具类
-from utils.machine_code import get_machine_code
 import json, os, time, traceback
 
 # 导入登录窗口

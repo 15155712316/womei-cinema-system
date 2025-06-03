@@ -401,11 +401,49 @@ class LoginWindow(QWidget):
             # 关闭登录窗口
             self.close()
         else:
-            # 登录失败
-            MessageManager.show_error(self, "登录失败", f"{message}\n\n请检查手机号或联系管理员")
+            # 登录失败 - 根据服务器返回的具体错误信息显示对应提示
+            user_friendly_message = self._get_user_friendly_error_message(message)
+            MessageManager.show_error(self, "登录失败", user_friendly_message)
             self.phone_input.clear()
             self.phone_input.setFocus()
-    
+
+    def _get_user_friendly_error_message(self, server_message: str) -> str:
+        """将服务器错误信息转换为用户友好的提示信息"""
+        # 转换为小写便于匹配
+        message_lower = server_message.lower()
+
+        # 根据服务器返回的具体错误信息进行映射
+        if "not registered" in message_lower:
+            return "该手机号未注册\n\n请联系管理员添加账号"
+
+        elif "device not authorized" in message_lower:
+            return "设备未授权，机器码不匹配\n\n请联系管理员重新绑定设备"
+
+        elif "account disabled" in message_lower:
+            return "账号已被禁用\n\n请联系管理员启用账号"
+
+        elif "failed to bind device" in message_lower:
+            return "设备绑定失败\n\n请稍后重试或联系管理员"
+
+        elif "internal server error" in message_lower:
+            return "服务器内部错误\n\n请稍后重试或联系技术支持"
+
+        elif "database query error" in message_lower:
+            return "数据库查询错误\n\n请稍后重试或联系技术支持"
+
+        elif "无法连接到服务器" in server_message:
+            return "无法连接到服务器\n\n请检查网络连接"
+
+        elif "网络" in server_message or "network" in message_lower:
+            return "网络连接异常\n\n请检查网络连接后重试"
+
+        elif "timeout" in message_lower or "超时" in server_message:
+            return "连接超时\n\n请检查网络连接后重试"
+
+        else:
+            # 对于未知错误，显示原始信息但添加建议
+            return f"{server_message}\n\n如问题持续存在，请联系管理员"
+
     def set_login_state(self, is_logging: bool):
         """设置登录状态"""
         self.login_button.setEnabled(not is_logging)

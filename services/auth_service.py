@@ -290,18 +290,38 @@ class AuthService:
                 'Content-Type': 'application/json',
                 'User-Agent': 'LeYing-Auth-Client/1.0'
             }
-            
-            
+
+
             response = requests.post(url, json=data, headers=headers, timeout=10, verify=False)
-            response.raise_for_status()
-            
-            result = response.json()
-            
-            return result
-            
+
+            # 🔧 修复：不要对所有HTTP错误都抛出异常，而是根据状态码处理
+            if response.status_code == 200:
+                # 成功响应
+                result = response.json()
+                return result
+            elif response.status_code in [400, 401, 403, 404]:
+                # 业务逻辑错误（如账号不存在、机器码不匹配等），返回服务器的错误信息
+                try:
+                    error_result = response.json()
+                    return {
+                        "success": False,
+                        "message": error_result.get("message", f"HTTP {response.status_code} 错误")
+                    }
+                except:
+                    return {"success": False, "message": f"HTTP {response.status_code} 错误"}
+            else:
+                # 其他HTTP错误
+                return {"success": False, "message": f"服务器错误: HTTP {response.status_code}"}
+
+        except requests.exceptions.ConnectionError as e:
+            # 真正的连接错误
+            return {"success": False, "message": f"无法连接到服务器: 连接被拒绝"}
+        except requests.exceptions.Timeout as e:
+            # 超时错误
+            return {"success": False, "message": f"无法连接到服务器: 连接超时"}
         except requests.exceptions.RequestException as e:
-            # 网络异常时返回错误，不再fallback到本地模拟
-            return {"success": False, "message": f"无法连接到服务器: {str(e)}"}
+            # 其他网络异常
+            return {"success": False, "message": f"网络异常: {str(e)}"}
         except Exception as e:
             return {"success": False, "message": f"请求异常: {str(e)}"}
     
