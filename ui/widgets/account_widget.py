@@ -210,9 +210,17 @@ class AccountWidget(QWidget):
         """连接全局事件"""
         # 监听用户登录成功事件
         event_bus.user_login_success.connect(self._on_user_login_success)
-        
+
         # 🆕 监听影院选择事件
         event_bus.cinema_selected.connect(self._on_cinema_selected)
+
+        # 🆕 监听账号数据变更事件 - 修复curl采集后不刷新的问题
+        if hasattr(event_bus, 'account_list_updated'):
+            event_bus.account_list_updated.connect(self._on_account_list_updated)
+
+        # 🆕 监听影院列表更新事件
+        if hasattr(event_bus, 'cinema_list_updated'):
+            event_bus.cinema_list_updated.connect(self._on_cinema_list_updated)
     
     def _on_login_clicked(self):
         """登录按钮点击处理"""
@@ -443,6 +451,31 @@ class AccountWidget(QWidget):
             
         except Exception as e:
             print(f"[账号组件] 影院选择处理错误: {e}")
+
+    def _on_account_list_updated(self, accounts: List[Dict] = None):
+        """🆕 账号列表更新事件处理 - 修复curl采集后不刷新的问题"""
+        try:
+            print(f"[账号组件] 🔄 收到账号列表更新事件")
+
+            # 重新刷新账号数据
+            self.refresh_accounts()
+
+            print(f"[账号组件] ✅ 账号列表已刷新")
+
+        except Exception as e:
+            print(f"[账号组件] 账号列表更新处理错误: {e}")
+
+    def _on_cinema_list_updated(self, cinemas: List[Dict] = None):
+        """🆕 影院列表更新事件处理"""
+        try:
+            print(f"[账号组件] 🔄 收到影院列表更新事件")
+
+            # 如果当前没有选择影院，重新设置默认影院
+            if not self.current_cinema_id:
+                self._set_default_cinema()
+
+        except Exception as e:
+            print(f"[账号组件] 影院列表更新处理错误: {e}")
 
     def _find_main_account_for_cinema(self, cinema_id: str) -> Optional[dict]:
         """查找指定影院的主账号"""

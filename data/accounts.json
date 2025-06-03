@@ -59,5 +59,17 @@
     "cardno": "",
     "score": 0,
     "is_main": true
+  },
+  {
+    "userid": "15155712316",
+    "cinemaid": "e86dd1541e93",
+    "openid": "ow_Go7fN6tuIAueHz8UcPBKRlBZ8",
+    "token": "40d231efd19a40e8",
+    "balance": 0,
+    "score": 0,
+    "is_main": false,
+    "auto_added": true,
+    "add_time": "2025-06-03 13:49:36",
+    "source": "curl_collection"
   }
 ]

@@ -2916,7 +2916,12 @@ class TabManagerWidget(QWidget):
         refresh_cinema_btn = ClassicButton("刷新列表", "default")
         refresh_cinema_btn.clicked.connect(self._load_cinema_list)
         button_layout.addWidget(refresh_cinema_btn)
-        
+
+        # 🆕 添加影院采集按钮
+        cinema_collect_btn = ClassicButton("影院采集", "primary")
+        cinema_collect_btn.clicked.connect(self._on_cinema_collect)
+        button_layout.addWidget(cinema_collect_btn)
+
         button_layout.addStretch()
         layout.addLayout(button_layout)
         
@@ -2943,7 +2948,81 @@ class TabManagerWidget(QWidget):
         
         # 加载影院数据
         self._load_cinema_list()
-    
+
+    def _on_cinema_collect(self):
+        """🆕 影院采集功能 - 打开curl命令输入对话框"""
+        try:
+            print("[影院采集] 🚀 启动影院采集功能")
+
+            # 导入curl参数提取对话框
+            from ui.dialogs.auto_parameter_extractor import AutoParameterExtractor
+
+            # 创建并显示对话框
+            extractor_dialog = AutoParameterExtractor(self)
+            extractor_dialog.setWindowTitle("影院采集 - curl命令解析")
+
+            # 设置对话框的回调函数，用于处理采集完成后的刷新
+            extractor_dialog.collection_completed = self._on_collection_completed
+
+            # 显示对话框
+            result = extractor_dialog.exec_()
+
+            if result == QDialog.Accepted:
+                print("[影院采集] ✅ 用户确认采集操作")
+            else:
+                print("[影院采集] ❌ 用户取消采集操作")
+
+        except Exception as e:
+            print(f"[影院采集] 启动采集功能错误: {e}")
+            QMessageBox.critical(
+                self,
+                "启动失败",
+                f"启动影院采集功能时发生错误：\n{str(e)}\n\n请检查系统配置。"
+            )
+
+    def _on_collection_completed(self, success: bool, message: str = ""):
+        """🆕 影院采集完成后的回调处理"""
+        try:
+            print(f"[影院采集] 📋 采集完成回调: success={success}, message={message}")
+
+            if success:
+                # 🆕 采集成功后刷新所有相关界面
+                print("[影院采集] 🔄 开始刷新界面...")
+
+                # 1. 刷新影院表格显示
+                self._refresh_cinema_table_display()
+
+                # 2. 更新统计信息
+                self._update_cinema_stats()
+
+                # 3. 刷新出票Tab的影院列表
+                self._refresh_ticket_tab_cinema_list()
+
+                # 4. 显示成功提示
+                QMessageBox.information(
+                    self,
+                    "采集成功",
+                    f"🎉 影院采集完成！\n\n{message}\n\n所有相关界面已自动刷新。"
+                )
+
+                print("[影院采集] ✅ 界面刷新完成")
+
+            else:
+                # 采集失败，显示错误信息
+                QMessageBox.warning(
+                    self,
+                    "采集失败",
+                    f"❌ 影院采集失败：\n\n{message}\n\n请检查curl命令格式或网络连接。"
+                )
+
+        except Exception as e:
+            print(f"[影院采集] 采集完成回调错误: {e}")
+            QMessageBox.critical(
+                self,
+                "回调错误",
+                f"处理采集结果时发生错误：\n{str(e)}"
+            )
+
     def _format_session_text(self, session):
         """格式化场次显示文本 - 简洁版本"""
         try:

@@ -123,6 +123,7 @@ class AutoParameterExtractor(QDialog):
         super().__init__(parent)
         self.extracted_params = {}
         self.auto_mode = True  # 默认使用自动模式
+        self.collection_completed = None  # 🆕 采集完成回调函数
 
         self.setWindowTitle("🎬 自动参数采集器")
         self.setMinimumSize(1000, 700)
@@ -902,9 +903,10 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
         display_text = "🎉 提取到的参数:\n\n"
 
         for key, value in self.extracted_params.items():
+            # 🔧 临时显示完整参数用于调试
             # 对敏感信息进行部分隐藏
             if key in ['token', 'openid'] and len(value) > 12:
-                display_value = value[:8] + "..." + value[-4:]
+                display_value = value[:8] + "..." + value[-4:] + f" (长度:{len(value)})"
             else:
                 display_value = value
 
@@ -990,24 +992,38 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
 
                 if account_success:
                     self.status_label.setText("🎉 curl采集完成：影院和账号都已成功添加")
-                    QMessageBox.information(self, "采集成功",
-                                          f"curl采集完成！\n\n"
-                                          f"✅ 影院已添加\n"
-                                          f"✅ 账号已添加\n\n"
-                                          f"所有数据已保存并刷新界面。")
+                    success_message = "✅ 影院已添加\n✅ 账号已添加\n\n所有数据已保存并刷新界面。"
+
+                    # 🆕 调用回调函数
+                    if self.collection_completed:
+                        self.collection_completed(True, success_message)
+                    else:
+                        QMessageBox.information(self, "采集成功", f"curl采集完成！\n\n{success_message}")
                 else:
                     self.status_label.setText("⚠️ 影院添加成功，账号添加失败")
-                    QMessageBox.warning(self, "部分成功",
-                                      f"影院添加成功，但账号添加失败。\n\n"
-                                      f"请手动在账号Tab页面添加账号。")
+                    partial_message = "影院添加成功，但账号添加失败。\n\n请手动在账号Tab页面添加账号。"
+
+                    # 🆕 调用回调函数
+                    if self.collection_completed:
+                        self.collection_completed(True, partial_message)  # 部分成功也算成功
+                    else:
+                        QMessageBox.warning(self, "部分成功", partial_message)
             elif cinema_success:
                 self.status_label.setText("✅ 影院添加成功（无账号参数）")
-                QMessageBox.information(self, "影院添加成功",
-                                      f"影院添加成功！\n\n"
-                                      f"由于curl命令中缺少账号参数，\n"
-                                      f"请手动在账号Tab页面添加账号。")
+                cinema_only_message = "影院添加成功！\n\n由于curl命令中缺少账号参数，\n请手动在账号Tab页面添加账号。"
+
+                # 🆕 调用回调函数
+                if self.collection_completed:
+                    self.collection_completed(True, cinema_only_message)
+                else:
+                    QMessageBox.information(self, "影院添加成功", cinema_only_message)
             else:
                 self.status_label.setText("❌ 影院添加失败")
+                error_message = "影院添加失败，请检查curl命令格式或网络连接。"
+
+                # 🆕 调用回调函数
+                if self.collection_completed:
+                    self.collection_completed(False, error_message)
                 return
 
             # 成功后关闭对话框
@@ -1016,7 +1032,13 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
         except Exception as e:
             print(f"[curl采集] 执行错误: {e}")
             self.status_label.setText(f"❌ 采集失败: {str(e)}")
-            QMessageBox.critical(self, "采集失败", f"curl采集过程中发生错误：\n{str(e)}")
+            error_message = f"curl采集过程中发生错误：\n{str(e)}"
+
+            # 🆕 调用回调函数
+            if self.collection_completed:
+                self.collection_completed(False, error_message)
+            else:
+                QMessageBox.critical(self, "采集失败", error_message)
             self.ok_button.setEnabled(True)
 
     def _execute_cinema_addition(self, cinema_params: dict) -> bool:
@@ -1039,16 +1061,43 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
             from services.cinema_info_api import get_cinema_info, format_cinema_data
             from services.cinema_manager import cinema_manager
 
+            # 🔧 增强调试信息
+            print(f"[curl采集] 🔍 详细参数检查:")
+            print(f"  - base_url: '{base_url}' (类型: {type(base_url)}, 长度: {len(base_url)})")
+            print(f"  - cinema_id: '{cinema_id}' (类型: {type(cinema_id)}, 长度: {len(cinema_id)})")
+
+            # 🔧 检查base_url格式
+            if base_url.startswith('https://'):
+                clean_base_url = base_url.replace('https://', '')
+                print(f"[curl采集] 🔧 移除https://前缀: {clean_base_url}")
+            elif base_url.startswith('http://'):
+                clean_base_url = base_url.replace('http://', '')
+                print(f"[curl采集] 🔧 移除http://前缀: {clean_base_url}")
+            else:
+                clean_base_url = base_url
+                print(f"[curl采集] 🔧 使用原始域名: {clean_base_url}")
+
             # API验证和信息获取
-            cinema_info = get_cinema_info(base_url, cinema_id)
+            print(f"[curl采集] 🚀 调用get_cinema_info API...")
+            print(f"[curl采集] 📡 API参数: base_url='{clean_base_url}', cinema_id='{cinema_id}'")
+
+            cinema_info = get_cinema_info(clean_base_url, cinema_id)
+
+            print(f"[curl采集] 📋 API响应: {type(cinema_info)}")
+            if cinema_info:
+                print(f"[curl采集] ✅ API响应成功，数据keys: {list(cinema_info.keys()) if isinstance(cinema_info, dict) else 'N/A'}")
+            else:
+                print(f"[curl采集] ❌ API响应为空或失败")
 
             if not cinema_info:
-                print(f"[curl采集] 影院验证失败: {base_url}, {cinema_id}")
+                print(f"[curl采集] 影院验证失败: {clean_base_url}, {cinema_id}")
                 self.status_label.setText("❌ 影院API验证失败")
                 return False
 
             # 格式化影院数据
-            cinema_data = format_cinema_data(cinema_info, base_url, cinema_id)
+            print(f"[curl采集] 🔧 格式化影院数据...")
+            cinema_data = format_cinema_data(cinema_info, clean_base_url, cinema_id)
+            print(f"[curl采集] ✅ 影院数据格式化完成: {cinema_data.get('cinemaShortName', 'N/A')}")
 
             # 保存影院数据
             cinemas = cinema_manager.load_cinema_list()
@@ -1236,8 +1285,10 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
         """触发账号列表刷新"""
         try:
             from utils.signals import event_bus
-            event_bus.account_changed.emit()
-            print(f"[curl采集] 已触发账号列表刷新事件")
+
+            # 🆕 发送账号列表更新事件 - 修复账号组件不刷新的问题
+            event_bus.account_list_updated.emit([])  # 发送空列表，让组件自己重新加载
+            print(f"[curl采集] ✅ 已触发账号列表更新事件")
 
         except Exception as e:
             print(f"[curl采集] 触发账号刷新事件错误: {e}")
