@@ -340,8 +340,8 @@ class ClassicTableWidget(QTableWidget):
                     self.setItem(row_count, col, item)
                     
         except Exception as e:
-            print(f"[经典表格] 添加行错误: {e}")
-    
+            pass
+
     def add_colored_item(self, row: int, col: int, text: str, color: str):
         """添加有颜色的表格项"""
         try:
@@ -350,14 +350,14 @@ class ClassicTableWidget(QTableWidget):
             self.setItem(row, col, item)
             
         except Exception as e:
-            print(f"[经典表格] 添加彩色项错误: {e}")
-    
+            pass
+
     def clear_all_data(self):
         """清空所有数据"""
         try:
             self.setRowCount(0)
         except Exception as e:
-            print(f"[经典表格] 清空数据错误: {e}")
+            pass
 
 
 class ClassicTabWidget(QTabWidget):
@@ -537,7 +537,7 @@ def apply_classic_theme_to_widget(widget):
         """)
         
     except Exception as e:
-        print(f"[主题应用] 错误: {e}")
+        pass
 
 
 # 主题应用函数的导出

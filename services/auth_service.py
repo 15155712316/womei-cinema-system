@@ -37,31 +37,28 @@ class AuthService:
             try:
                 computer_name = platform.node()
                 hardware_info["computer"] = computer_name
-                print(f"[机器码生成] 计算机名: {computer_name}")
             except Exception as e:
-                print(f"[机器码生成] 获取计算机名失败: {e}")
-            
+                pass
+
             # 2. 获取处理器信息
             try:
                 processor = platform.processor()
                 hardware_info["processor"] = processor
-                print(f"[机器码生成] 处理器: {processor}")
             except Exception as e:
-                print(f"[机器码生成] 获取处理器信息失败: {e}")
-            
+                pass
+
             # 3. 获取系统信息（固定格式）
             try:
                 system_info = f"{platform.system()}-{platform.machine()}"  # 移除release，因为可能变化
                 hardware_info["system"] = system_info
-                print(f"[机器码生成] 系统信息: {system_info}")
             except Exception as e:
-                print(f"[机器码生成] 获取系统信息失败: {e}")
-            
+                pass
+
             # 4. Windows平台特定信息
             if platform.system().lower() == 'windows':
                 try:
                     # 获取主板序列号
-                    result = subprocess.run(['wmic', 'baseboard', 'get', 'serialnumber'], 
+                    result = subprocess.run(['wmic', 'baseboard', 'get', 'serialnumber'],
                                           capture_output=True, text=True, timeout=10)
                     if result.returncode == 0:
                         lines = result.stdout.strip().split('\n')
@@ -69,11 +66,10 @@ class AuthService:
                             if line.strip() and 'SerialNumber' not in line:
                                 board_serial = line.strip()
                                 hardware_info["board"] = board_serial
-                                print(f"[机器码生成] 主板序列号: {board_serial}")
                                 break
                 except Exception as e:
-                    print(f"[机器码生成] 获取主板序列号失败: {e}")
-                
+                    pass
+
                 try:
                     # 获取CPU序列号
                     result = subprocess.run(['wmic', 'cpu', 'get', 'processorid'], 
@@ -84,14 +80,13 @@ class AuthService:
                             if line.strip() and 'ProcessorId' not in line:
                                 cpu_id = line.strip()
                                 hardware_info["cpu"] = cpu_id
-                                print(f"[机器码生成] CPU ID: {cpu_id}")
                                 break
                 except Exception as e:
-                    print(f"[机器码生成] 获取CPU ID失败: {e}")
-                
+                    pass
+
                 try:
                     # 获取硬盘序列号
-                    result = subprocess.run(['wmic', 'diskdrive', 'get', 'serialnumber'], 
+                    result = subprocess.run(['wmic', 'diskdrive', 'get', 'serialnumber'],
                                           capture_output=True, text=True, timeout=10)
                     if result.returncode == 0:
                         lines = result.stdout.strip().split('\n')
@@ -99,20 +94,18 @@ class AuthService:
                             if line.strip() and 'SerialNumber' not in line and line.strip() != '':
                                 disk_serial = line.strip()
                                 hardware_info["disk"] = disk_serial
-                                print(f"[机器码生成] 硬盘序列号: {disk_serial}")
                                 break
                 except Exception as e:
-                    print(f"[机器码生成] 获取硬盘序列号失败: {e}")
+                    pass
             
             # 5. 如果没有获取到足够的硬件信息，使用MAC地址作为补充
             if len(hardware_info) < 2:
                 try:
                     mac_address = hex(uuid.getnode())
                     hardware_info["mac"] = mac_address
-                    print(f"[机器码生成] MAC地址: {mac_address}")
                 except Exception as e:
-                    print(f"[机器码生成] 获取MAC地址失败: {e}")
-            
+                    pass
+
             # 6. 按键名排序并组合所有硬件信息，确保顺序一致
             sorted_keys = sorted(hardware_info.keys())
             combined_parts = []
@@ -120,20 +113,16 @@ class AuthService:
                 combined_parts.append(f"{key}:{hardware_info[key]}")
             
             combined_info = "|".join(combined_parts)
-            print(f"[机器码生成] 组合硬件信息: {combined_info}")
             
             # 7. 生成MD5哈希并取前16位作为机器码
             machine_code = hashlib.md5(combined_info.encode('utf-8')).hexdigest()[:16].upper()
-            print(f"[机器码生成] 生成的机器码: {machine_code}")
             
             return machine_code
             
         except Exception as e:
-            print(f"[机器码生成] 生成机器码时出现异常: {e}")
             # 如果生成失败，使用系统信息的简单哈希作为备用（不使用时间戳）
             fallback_info = f"{platform.node()}-{platform.system()}-{platform.machine()}"
             fallback_code = hashlib.md5(fallback_info.encode('utf-8')).hexdigest()[:16].upper()
-            print(f"[机器码生成] 使用备用机器码: {fallback_code}")
             return fallback_code
     
     def validate_phone(self, phone: str) -> bool:
@@ -175,7 +164,6 @@ class AuthService:
                 "timestamp": int(time.time())
             }
             
-            print(f"[登录验证] 手机号: {phone}, 机器码: {machine_code}")
             
             # 发送登录请求到API服务器
             response = self._call_api("login", login_data)
@@ -195,11 +183,9 @@ class AuthService:
                 return True, "登录成功", user_info
             else:
                 error_msg = response.get("message", "登录失败")
-                print(f"[登录验证] 登录失败: {error_msg}")
                 return False, error_msg, None
                 
         except Exception as e:
-            print(f"[登录验证] 登录异常: {e}")
             return False, f"登录异常: {str(e)}", None
     
     def check_auth(self) -> Tuple[bool, str, Optional[Dict]]:
@@ -227,7 +213,6 @@ class AuthService:
                 "timestamp": int(time.time())
             }
             
-            print(f"[认证检查] 使用登录API验证: {phone}, 机器码: {machine_code}")
             
             # 调用登录API进行验证
             response = self._call_api("login", login_data)
@@ -247,11 +232,9 @@ class AuthService:
                 return True, "认证有效", user_info
             else:
                 error_msg = response.get("message", "认证失败")
-                print(f"[认证检查] 认证失败: {error_msg}")
                 return False, error_msg, None
                 
         except Exception as e:
-            print(f"[认证检查] 验证异常: {e}")
             return False, f"验证异常: {str(e)}", None
     
     def use_points(self, operation: str, points: int) -> Tuple[bool, str]:
@@ -275,11 +258,9 @@ class AuthService:
             new_points = current_points - points
             self.current_user["points"] = new_points
             
-            print(f"[积分扣除] 操作: {operation}, 扣除: {points}, 剩余: {new_points}")
             return True, f"扣除成功，剩余积分: {new_points}"
                 
         except Exception as e:
-            print(f"[积分扣除] 扣除异常: {e}")
             return False, f"积分扣除异常: {str(e)}"
     
     def get_user_info(self) -> Optional[Dict]:
@@ -293,7 +274,6 @@ class AuthService:
         """用户登出"""
         self.local_token = None
         self.current_user = None
-        print("[用户认证] 已登出")
     
     def _call_api(self, endpoint: str, data: Dict) -> Dict:
         """调用API服务器"""
@@ -311,30 +291,24 @@ class AuthService:
                 'User-Agent': 'LeYing-Auth-Client/1.0'
             }
             
-            print(f"[API调用] 请求: {endpoint} -> {url}")
-            print(f"[API调用] 数据: {data}")
             
             response = requests.post(url, json=data, headers=headers, timeout=10, verify=False)
             response.raise_for_status()
             
             result = response.json()
-            print(f"[API调用] 响应: {result}")
             
             return result
             
         except requests.exceptions.RequestException as e:
-            print(f"[API调用] 网络异常: {e}")
             # 网络异常时返回错误，不再fallback到本地模拟
             return {"success": False, "message": f"无法连接到服务器: {str(e)}"}
         except Exception as e:
-            print(f"[API调用] 异常: {e}")
             return {"success": False, "message": f"请求异常: {str(e)}"}
     
     def _mock_api_response(self, endpoint: str, data: Dict) -> Dict:
         """
         模拟API响应（开发阶段使用，云函数不可用时的备用方案）
         """
-        print(f"[模拟API] 调用端点: {endpoint}, 数据: {data}")
         
         if endpoint == "login":
             username = data.get("username")  # 云函数参数名

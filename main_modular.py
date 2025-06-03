@@ -161,7 +161,7 @@ class ModularCinemaMainWindow(QMainWindow):
         self.right_widget.setFixedWidth(right_w - 10)
         main_layout.addWidget(self.right_widget)
         
-        print("[主窗口] 模块化UI初始化完成")
+
     
     def _create_seat_area(self) -> QWidget:
         """创建独立的座位选择区域"""
@@ -371,11 +371,8 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 clipboard = QApplication.clipboard()
                 clipboard.setText(absolute_path)
-                print(f"[主窗口] ✅ 已复制绝对路径到剪贴板: {absolute_path}")
-            else:
-                print(f"[主窗口] ⚠️ 没有可复制的图片路径")
         except Exception as e:
-            print(f"[主窗口] ❌ 复制路径失败: {e}")
+            pass
 
     def _on_copy_image(self):
         """复制图片按钮点击事件"""
@@ -394,17 +391,17 @@ class ModularCinemaMainWindow(QMainWindow):
                 if not pixmap.isNull():
                     clipboard = QApplication.clipboard()
                     clipboard.setPixmap(pixmap)
-                    print(f"[主窗口] ✅ 已复制高质量图片到剪贴板 ({pixmap.width()}x{pixmap.height()})")
                 else:
-                    print(f"[主窗口] ❌ 无法从原始数据创建图片")
+                    pass
                     # 备用方案：使用界面显示的图片
                     self._copy_display_image()
             else:
+                pass
                 # 备用方案：使用界面显示的图片
                 self._copy_display_image()
 
         except Exception as e:
-            print(f"[主窗口] ❌ 复制图片失败: {e}")
+            pass
             # 最后备用方案
             self._copy_display_image()
 
@@ -416,11 +413,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 clipboard = QApplication.clipboard()
                 pixmap = self.qr_display.pixmap()
                 clipboard.setPixmap(pixmap)
-                print(f"[主窗口] ✅ 已复制界面图片到剪贴板 ({pixmap.width()}x{pixmap.height()})")
-            else:
-                print(f"[主窗口] ⚠️ 没有可复制的图片")
         except Exception as e:
-            print(f"[主窗口] ❌ 复制界面图片失败: {e}")
+            pass
 
     def _connect_signals(self):
         """连接信号槽"""
@@ -465,7 +459,6 @@ class ModularCinemaMainWindow(QMainWindow):
             # 显示登录窗口
             self.login_window.show()
             
-            print("[主窗口] 启动用户认证检查")
             
         except Exception as e:
             QMessageBox.critical(self, "启动错误", f"启动认证检查失败: {str(e)}")
@@ -481,7 +474,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 self._restart_login()
                 return
             
-            print(f"[主窗口] 用户登录成功: {phone}")
             
             # 2. 简化验证逻辑 - 暂时跳过复杂的API和机器码验证
             # 后续可以根据需要恢复
@@ -523,7 +515,6 @@ class ModularCinemaMainWindow(QMainWindow):
             # 🆕 延迟触发默认影院设置，确保所有组件都已初始化
             QTimer.singleShot(500, self._trigger_default_cinema_selection)
             
-            print(f"[主窗口] 用户登录成功，主窗口已显示")
             
         except Exception as e:
             QMessageBox.critical(self, "显示主窗口错误", f"显示主窗口失败: {str(e)}")
@@ -533,14 +524,11 @@ class ModularCinemaMainWindow(QMainWindow):
     def _trigger_default_cinema_selection(self):
         """智能默认选择：影院 → 账号 - 避免等待账号选择"""
         try:
-            print(f"[主窗口] 🚀 开始智能默认选择流程...")
-
             # 第一步：获取影院列表
             from services.cinema_manager import cinema_manager
             cinemas = cinema_manager.load_cinema_list()
 
             if not cinemas:
-                print(f"[主窗口] ❌ 没有可用的影院数据")
                 return
 
             # 第二步：自动选择第一个影院
@@ -553,7 +541,6 @@ class ModularCinemaMainWindow(QMainWindow):
             # 更新Tab管理器的影院数据
             if hasattr(self.tab_manager_widget, 'update_cinema_list'):
                 self.tab_manager_widget.update_cinema_list(cinemas)
-                print(f"[主窗口] ✅ 已更新Tab管理器的影院数据列表")
 
             # 发布影院选择事件
             event_bus.cinema_selected.emit(first_cinema)
@@ -565,7 +552,6 @@ class ModularCinemaMainWindow(QMainWindow):
             QTimer.singleShot(400, lambda: self._update_tab_cinema_selection(cinema_name))
 
         except Exception as e:
-            print(f"[主窗口] ❌ 智能默认选择错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -575,17 +561,14 @@ class ModularCinemaMainWindow(QMainWindow):
             cinema_name = cinema_info.get('cinemaShortName', '')
             cinema_id = cinema_info.get('cinemaid', '')
 
-            print(f"[主窗口] 👤 步骤2: 为影院 {cinema_name} 自动选择关联账号")
 
             # 获取账号列表 - 修复account_manager引用
             if hasattr(self, 'account_widget') and hasattr(self.account_widget, 'load_account_list'):
                 all_accounts = self.account_widget.load_account_list()
             else:
-                print(f"[主窗口] ⚠️  账号组件不可用")
                 return
 
             if not all_accounts:
-                print(f"[主窗口] ⚠️  没有可用账号，请先添加账号")
                 return
 
             # 过滤该影院的关联账号
@@ -600,12 +583,11 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 有关联账号，选择第一个
                 first_account = cinema_accounts[0]
                 userid = first_account.get('userid', first_account.get('phone', ''))
-                print(f"[主窗口] ✅ 步骤3: 自动选择影院关联账号: {userid}")
             else:
+                pass
                 # 没有关联账号，选择第一个可用账号
                 first_account = all_accounts[0]
                 userid = first_account.get('userid', first_account.get('phone', ''))
-                print(f"[主窗口] ⚠️  影院无关联账号，选择第一个可用账号: {userid}")
 
             # 设置当前账号
             self.set_current_account(first_account)
@@ -617,11 +599,8 @@ class ModularCinemaMainWindow(QMainWindow):
             if hasattr(self, 'account_widget'):
                 self.account_widget.set_current_account(first_account)
 
-            print(f"[主窗口] 🎉 智能选择完成: 影院={cinema_name}, 账号={userid}")
-            print(f"[主窗口] 🎬 现在Tab管理器可以正常加载影片数据了")
 
         except Exception as e:
-            print(f"[主窗口] ❌ 自动选择账号错误: {e}")
             import traceback
             traceback.print_exc()
     
@@ -633,15 +612,14 @@ class ModularCinemaMainWindow(QMainWindow):
                 for i in range(self.tab_manager_widget.cinema_combo.count()):
                     if self.tab_manager_widget.cinema_combo.itemText(i) == cinema_name:
                         self.tab_manager_widget.cinema_combo.setCurrentIndex(i)
-                        print(f"[主窗口] Tab管理器影院选择已更新: {cinema_name}")
                         break
                 else:
-                    print(f"[主窗口] 在Tab管理器中未找到影院: {cinema_name}")
+                    pass
             else:
-                print(f"[主窗口] Tab管理器的cinema_combo不存在")
-                
+                pass
+
         except Exception as e:
-            print(f"[主窗口] 更新Tab影院选择错误: {e}")
+            pass
     
     def center_window(self):
         """将窗口居中显示"""
@@ -653,7 +631,7 @@ class ModularCinemaMainWindow(QMainWindow):
             y = (screen.height() - size.height()) // 2
             self.move(x, y)
         except Exception as e:
-            print(f"[主窗口] 居中窗口失败: {e}")
+            pass
     
     def _restart_login(self):
         """重新启动登录流程"""
@@ -690,7 +668,7 @@ class ModularCinemaMainWindow(QMainWindow):
             self.set_current_account(account_data)
             
         except Exception as e:
-            print(f"[主窗口] 账号选择处理错误: {e}")
+            pass
     
     def _on_account_login_requested(self, login_data: dict):
         """账号登录请求处理"""
@@ -699,8 +677,6 @@ class ModularCinemaMainWindow(QMainWindow):
     def _on_cinema_selected(self, cinema_name: str):
         """影院选择处理 - 对接到核心业务方法"""
         try:
-            print(f"[主窗口] 影院选择: {cinema_name}")
-            
             # 更新座位图占位符 - 移除多余提示
             self.seat_placeholder.setText(
                 f"已选择影院: {cinema_name}\n\n"
@@ -723,7 +699,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 self.order_detail_text.setPlainText(details)
             
         except Exception as e:
-            print(f"[主窗口] 影院选择处理错误: {e}")
+            pass
     
     def _on_order_submitted(self, order_data: dict):
         """处理订单提交信号 - 来自Tab管理器"""
@@ -774,7 +750,6 @@ class ModularCinemaMainWindow(QMainWindow):
         except Exception as e:
             from services.ui_utils import MessageManager
             MessageManager.show_error(self, "处理错误", f"处理订单时出错: {str(e)}", auto_close=False)
-            print(f"[主窗口] 处理订单错误: {e}")
             import traceback
             traceback.print_exc()
     
@@ -831,10 +806,8 @@ class ModularCinemaMainWindow(QMainWindow):
             self.tab_manager_widget.coupon_input.clear()
             
             # 不显示绑定完成弹窗，只在控制台记录
-            print(f"[主窗口] 券绑定完成：成功 {success_count} 个，失败 {fail_count} 个")
             
         except Exception as e:
-            print(f"[主窗口] 绑定券错误: {e}")
             MessageManager.show_error(self, "绑定失败", f"券绑定失败: {str(e)}")
     
     def refresh_order_list(self):
@@ -852,10 +825,9 @@ class ModularCinemaMainWindow(QMainWindow):
             if hasattr(self.tab_manager_widget, 'order_table') and orders:
                 self._update_order_table(orders)
                 
-            print(f"[主窗口] 订单列表已刷新")
             
         except Exception as e:
-            print(f"[主窗口] 刷新订单列表错误: {e}")
+            pass
     
     def on_one_click_pay(self):
         """🆕 一键支付处理 - 完整的券支付逻辑"""
@@ -884,7 +856,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
             cinema_id = cinema_data.get('cinemaid', '')
 
-            print(f"[一键支付] 开始支付订单: {order_id}")
 
             # 🆕 获取选中的券号
             selected_coupons = getattr(self, 'selected_coupons', [])
@@ -909,9 +880,8 @@ class ModularCinemaMainWindow(QMainWindow):
                     if mem_payment != '0':
                         pay_amount = mem_payment  # 会员优先使用会员支付金额
 
-                print(f"[一键支付] 使用券支付，券号: {couponcode}")
-                print(f"[一键支付] 实付金额: {pay_amount}分，优惠: {discount_price}分")
             else:
+                pass
                 # 🆕 不使用券，按原价支付
                 couponcode = ''  # 清空券号
 
@@ -921,13 +891,12 @@ class ModularCinemaMainWindow(QMainWindow):
                     # 会员：使用会员总价
                     pay_amount = str(order_detail.get('mem_totalprice', 0))  # 会员总价（分）
                 else:
+                    pass
                     # 非会员：使用订单总价
                     pay_amount = str(order_detail.get('payAmount', 0))  # 订单总价（分）
 
                 discount_price = '0'  # 无优惠
 
-                print(f"[一键支付] 不使用券，按原价支付")
-                print(f"[一键支付] 支付金额: {pay_amount}分（{'会员价' if is_member else '原价'}）")
 
             # 🆕 构建支付参数 - 完全按照原版格式
             pay_params = {
@@ -946,17 +915,13 @@ class ModularCinemaMainWindow(QMainWindow):
                 'source': '2'
             }
 
-            print(f"[一键支付] 支付参数: {pay_params}")
-            print(f"[一键支付] 正在支付订单: {order_id}")
 
             # 🆕 调用支付API
             pay_result = pay_order(pay_params)
 
-            print(f"[一键支付] 支付结果: {pay_result}")
 
             if pay_result and pay_result.get('resultCode') == '0':
                 # 🆕 支付成功处理流程
-                print(f"[支付成功] 订单支付成功: {order_id}")
 
                 # 🆕 获取已支付订单详情
                 detail_params = {
@@ -972,23 +937,17 @@ class ModularCinemaMainWindow(QMainWindow):
                     'source': '2'
                 }
 
-                print(f"[支付成功] 正在获取订单详情: {order_id}")
                 updated_order_detail = get_order_detail(detail_params)
 
                 if updated_order_detail and updated_order_detail.get('resultCode') == '0':
-                    print(f"[支付成功] 订单详情获取成功")
-
                     # 🎯 集成取票码获取和显示流程（与双击订单流程一致）
-                    print(f"[支付成功] 正在获取取票码: {order_id}")
                     self._get_ticket_code_after_payment(order_id, cinema_id, updated_order_detail.get('resultData', {}))
 
                     # 🆕 更新订单详情显示为支付成功状态
                     self.current_order = updated_order_detail
                     self._update_order_detail_with_coupon_info()
 
-                    print(f"[支付成功] 订单状态已更新")
                 else:
-                    print(f"[支付成功] 获取订单详情失败: {updated_order_detail}")
                     MessageManager.show_warning(self, "提示", "支付成功，但获取订单详情失败，请手动在订单列表中查看")
 
                 # 🆕 发布支付成功事件
@@ -1002,13 +961,12 @@ class ModularCinemaMainWindow(QMainWindow):
                 MessageManager.show_info(self, "支付成功", "订单支付成功！")
 
             else:
+                pass
                 # 🆕 支付失败处理
                 error_msg = pay_result.get('resultDesc', '未知错误') if pay_result else '支付请求失败'
-                print(f"[一键支付] 支付失败: {error_msg}")
                 MessageManager.show_error(self, "支付失败", f"支付失败: {error_msg}")
 
         except Exception as e:
-            print(f"[一键支付] 支付异常: {e}")
             import traceback
             traceback.print_exc()
             MessageManager.show_error(self, "支付失败", f"支付过程中发生错误: {e}")
@@ -1026,12 +984,12 @@ class ModularCinemaMainWindow(QMainWindow):
             })
             
             if result and result.get('resultCode') == '0':
-                print(f"[主窗口] 已取消未支付订单")
+                pass
             else:
                 print(f"[主窗口] 取消订单失败: {result.get('resultDesc', '未知错误') if result else '网络错误'}")
                 
         except Exception as e:
-            print(f"[主窗口] 取消订单错误: {e}")
+            pass
     
     def _get_member_info(self, account, cinemaid):
         """获取会员信息"""
@@ -1039,12 +997,11 @@ class ModularCinemaMainWindow(QMainWindow):
             member_info = self.member_service.get_member_info(account, cinemaid)
             if member_info:
                 self.member_info = member_info
-                print(f"[主窗口] 获取会员信息成功")
             else:
-                print(f"[主窗口] 获取会员信息失败")
+                pass
                 
         except Exception as e:
-            print(f"[主窗口] 获取会员信息错误: {e}")
+            pass
     
     def _create_order(self, account, cinemaid, selected_seats):
         """创建订单（保留原方法供其他地方调用）"""
@@ -1058,15 +1015,12 @@ class ModularCinemaMainWindow(QMainWindow):
             login_result = self.auth_service.cinema_login(phone, openid, token, cinemaid)
             
             if login_result and login_result.get('resultCode') == '0':
-                print(f"[主窗口] 影院账号登录成功")
                 return login_result
             else:
                 error_msg = login_result.get('resultDesc', '登录失败') if login_result else '网络错误'
-                print(f"[主窗口] 影院账号登录失败: {error_msg}")
                 return None
                 
         except Exception as e:
-            print(f"[主窗口] 影院登录错误: {e}")
             return None
     
     # ===== 辅助方法 =====
@@ -1083,22 +1037,19 @@ class ModularCinemaMainWindow(QMainWindow):
                 self.update_coupons(coupon_result)
                 
         except Exception as e:
-            print(f"[主窗口] 刷新账号相关数据错误: {e}")
+            pass
     
     def _save_account_data(self, account):
         """保存账号数据"""
         try:
             save_account(account)
-            print(f"[主窗口] 账号数据已保存")
             
         except Exception as e:
-            print(f"[主窗口] 保存账号数据错误: {e}")
+            pass
     
     def _get_cinema_info_by_name(self, cinema_name):
         """根据名称获取影院信息 - 增强版本"""
         try:
-            print(f"[主窗口] 正在查找影院信息: {cinema_name}")
-            
             # 方法1: 从cinema_manager获取数据 - 🆕 修复方法名
             cinemas = self.cinema_manager.load_cinema_list()  # 使用正确的方法名
             if cinemas:
@@ -1106,10 +1057,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 for cinema in cinemas:
                     cinema_short_name = cinema.get('cinemaShortName', '')
                     cinema_name_field = cinema.get('name', '')
-                    print(f"[主窗口] 检查影院: {cinema_short_name} / {cinema_name_field}")
                     
                     if cinema_short_name == cinema_name or cinema_name_field == cinema_name:
-                        print(f"[主窗口] 找到匹配影院: {cinema}")
                         return cinema
             
             # 方法2: 从Tab管理器的影院数据获取
@@ -1117,28 +1066,22 @@ class ModularCinemaMainWindow(QMainWindow):
                 for cinema in self.tab_manager_widget.cinemas_data:
                     cinema_short_name = cinema.get('cinemaShortName', '')
                     cinema_name_field = cinema.get('name', '')
-                    print(f"[主窗口] Tab数据检查影院: {cinema_short_name} / {cinema_name_field}")
                     
                     if cinema_short_name == cinema_name or cinema_name_field == cinema_name:
-                        print(f"[主窗口] 从Tab数据找到匹配影院: {cinema}")
                         return cinema
             
             # 方法3: 尝试重新加载影院数据
-            print(f"[主窗口] 尝试重新加载影院数据...")
             cinemas = self.cinema_manager.load_cinema_list()
             self.tab_manager_widget.cinemas_data = cinemas
             
             for cinema in cinemas:
                 cinema_short_name = cinema.get('cinemaShortName', '')
                 if cinema_short_name == cinema_name:
-                    print(f"[主窗口] 重新加载后找到影院: {cinema}")
                     return cinema
             
-            print(f"[主窗口] 未找到影院: {cinema_name}")
             return None
             
         except Exception as e:
-            print(f"[主窗口] 获取影院信息错误: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -1165,14 +1108,14 @@ class ModularCinemaMainWindow(QMainWindow):
                         for movie in movies:
                             self.tab_manager_widget.movie_combo.addItem(movie.get('name', ''))
                     else:
-                        print(f"[主窗口] 没有获取到电影数据")
+                        pass
                 else:
-                    print(f"[主窗口] 影院信息不完整，无法加载电影")
+                    pass
             else:
-                print(f"[主窗口] 没有当前账号，无法加载电影")
+                pass
                     
         except Exception as e:
-            print(f"[主窗口] 加载电影列表错误: {e}")
+            pass
             # 如果API调用失败，使用默认电影列表
             if hasattr(self.tab_manager_widget, 'movie_combo'):
                 self.tab_manager_widget.movie_combo.clear()
@@ -1258,10 +1201,8 @@ class ModularCinemaMainWindow(QMainWindow):
             else:
                 self.stop_countdown()
 
-            print(f"[主窗口] 订单详情已更新显示: {order_id}")
 
         except Exception as e:
-            print(f"[主窗口] 显示订单详情错误: {e}")
             import traceback
             traceback.print_exc()
     
@@ -1282,7 +1223,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 """)
             
         except Exception as e:
-            print(f"[主窗口] 显示取票码错误: {e}")
+            pass
     
     def _update_order_table(self, orders):
         """更新订单表格"""
@@ -1310,7 +1251,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 table.setItem(i, 3, table.__class__.createItem(order.get('order_id', '')))
                 
         except Exception as e:
-            print(f"[主窗口] 更新订单表格错误: {e}")
+            pass
 
     # ===== 定时器相关方法（PyQt5替换tkinter.after） =====
     
@@ -1329,7 +1270,6 @@ class ModularCinemaMainWindow(QMainWindow):
             cinema_data = session_info.get('cinema_data')
             
             if not all([session_data, account, cinema_data]):
-                print(f"[主窗口] 场次信息不完整，无法加载座位图")
                 self._safe_update_seat_area("场次信息不完整\n\n无法加载座位图")
                 return
 
@@ -1338,7 +1278,7 @@ class ModularCinemaMainWindow(QMainWindow):
             QTimer.singleShot(100, lambda: self._load_seat_map(session_info))
             
         except Exception as e:
-            print(f"[主窗口] 场次选择处理错误: {e}")
+            pass
             # 安全地更新座位区域显示
             self._safe_update_seat_area("加载座位图失败\n\n请重新选择场次")
 
@@ -1347,7 +1287,6 @@ class ModularCinemaMainWindow(QMainWindow):
         try:
             # 检查座位区域布局是否存在
             if not hasattr(self, 'seat_area_layout') or not self.seat_area_layout:
-                print(f"[主窗口] 座位区域布局不存在，消息: {message}")
                 return
 
             # 清理现有的座位组件
@@ -1369,10 +1308,8 @@ class ModularCinemaMainWindow(QMainWindow):
             """)
             self.seat_area_layout.addWidget(self.seat_placeholder)
 
-            print(f"[主窗口] 座位区域已安全更新: {message}")
 
         except Exception as e:
-            print(f"[主窗口] 安全更新座位区域错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -1381,7 +1318,6 @@ class ModularCinemaMainWindow(QMainWindow):
         try:
             # 检查座位区域布局是否存在
             if not hasattr(self, 'seat_area_layout') or not self.seat_area_layout:
-                print(f"[主窗口] 座位区域布局不存在，消息: {message}")
                 return
 
             # 清理现有的座位组件
@@ -1394,10 +1330,8 @@ class ModularCinemaMainWindow(QMainWindow):
             self.seat_placeholder.setStyleSheet(style)
             self.seat_area_layout.addWidget(self.seat_placeholder)
 
-            print(f"[主窗口] 座位区域已安全更新（带样式）: {message}")
 
         except Exception as e:
-            print(f"[主窗口] 安全更新座位区域（带样式）错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -1410,9 +1344,8 @@ class ModularCinemaMainWindow(QMainWindow):
                     child = self.seat_area_layout.takeAt(0)
                     if child.widget():
                         child.widget().deleteLater()
-                print(f"[主窗口] 座位区域已清理")
         except Exception as e:
-            print(f"[主窗口] 清理座位区域错误: {e}")
+            pass
 
     def _load_seat_map(self, session_info: dict):
         """加载座位图数据"""
@@ -1431,11 +1364,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 确保去掉协议前缀
                 base_url = base_url.replace('https://', '').replace('http://', '')
             
-            print(f"[主窗口] 影院数据检查:")
             print(f"  - 影院名称: {cinema_data.get('cinemaShortName', 'N/A')}")
             print(f"  - 影院ID: {cinema_data.get('cinemaid', 'N/A')}")
-            print(f"  - base_url: {base_url}")
-            print(f"  - 原始数据: {cinema_data}")
             
             # 构建API参数
             params = {
@@ -1453,19 +1383,16 @@ class ModularCinemaMainWindow(QMainWindow):
                 'cardno': account.get('cardno', '')
             }
             
-            print(f"[主窗口] 座位图API参数: {params}")
             
             # 验证参数完整性
             required_params = ['base_url', 'showCode', 'hallCode', 'filmCode', 'userid', 'openid', 'token', 'cinemaid']
             missing_params = [p for p in required_params if not params.get(p)]
             if missing_params:
                 error_msg = f"缺少必要参数: {', '.join(missing_params)}"
-                print(f"[主窗口] {error_msg}")
                 self._safe_update_seat_area(f"参数不完整\n\n{error_msg}")
                 return
             
             # 调用座位图API
-            print(f"[主窗口] 开始调用座位图API...")
             seat_result = get_plan_seat_info(**params)
             
             print(f"[主窗口] 座位图API响应: {type(seat_result)}")
@@ -1476,17 +1403,16 @@ class ModularCinemaMainWindow(QMainWindow):
                     seat_data = seat_result.get('resultData', {})
                     self._display_seat_map(seat_data, session_info)
                 else:
+                    pass
                     # API返回错误
                     error_msg = seat_result.get('resultDesc', '未知错误')
-                    print(f"[主窗口] 座位图API错误: {error_msg}")
                     self._safe_update_seat_area(f"获取座位图失败\n\n{error_msg}")
             else:
+                pass
                 # 响应格式错误
-                print(f"[主窗口] 座位图API响应格式错误")
                 self._safe_update_seat_area("座位图数据格式错误\n\n请重新选择场次")
                 
         except Exception as e:
-            print(f"[主窗口] 加载座位图错误: {e}")
             import traceback
             traceback.print_exc()
             self._safe_update_seat_area("加载座位图异常\n\n请检查网络连接")
@@ -1494,7 +1420,6 @@ class ModularCinemaMainWindow(QMainWindow):
     def _display_seat_map(self, seat_data: dict, session_info: dict):
         """显示座位图"""
         try:
-            print(f"[主窗口] 开始显示座位图")
             print(f"[主窗口] 座位数据字段: {list(seat_data.keys()) if seat_data else '空数据'}")
             
             # 🆕 解析座位图数据结构 - 使用实际API返回的数据格式
@@ -1515,7 +1440,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     seat_matrix = self._parse_seats_array(seats_array, hall_info)
                     print(f"[主窗口] 座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行")
                 else:
-                    print(f"[主窗口] 未找到seats数组数据")
+                    pass
             
             # 🆕 创建或更新座位图面板
             if seat_matrix and len(seat_matrix) > 0:
@@ -1557,24 +1482,20 @@ class ModularCinemaMainWindow(QMainWindow):
                             self.seat_input.setPlaceholderText("点击上方座位图选择座位...")
                             self.seat_input.setText("")  # 清空之前的选择
                         
-                        print(f"[主窗口] 座位图面板创建成功")
                         
                     else:
-                        print(f"[主窗口] 未找到座位区域布局")
                         self._safe_update_seat_area("座位区域初始化失败")
                         
                 except Exception as panel_error:
-                    print(f"[主窗口] 创建座位图面板错误: {panel_error}")
                     import traceback
                     traceback.print_exc()
                     self._safe_update_seat_area(f"座位图显示错误\n\n{str(panel_error)}")
             else:
+                pass
                 # 座位数据解析失败
-                print(f"[主窗口] 座位矩阵数据无效")
                 self._safe_update_seat_area("座位数据解析失败\n\n请重新选择场次或联系管理员")
                 
         except Exception as e:
-            print(f"[主窗口] 显示座位图错误: {e}")
             import traceback
             traceback.print_exc()
             self._safe_update_seat_area("显示座位图异常\n\n请重新选择场次")
@@ -1582,12 +1503,9 @@ class ModularCinemaMainWindow(QMainWindow):
     def _parse_seats_array(self, seats_array: List[Dict], hall_info: dict) -> List[List[Dict]]:
         """解析seats数组为座位矩阵"""
         try:
-            print(f"[主窗口] 开始解析seats数组")
-            print(f"[主窗口] 影厅信息: {hall_info}")
             print(f"[主窗口] 座位数据量: {len(seats_array)}")
             
             if not seats_array:
-                print(f"[主窗口] seats数组为空")
                 return []
             
             # 🆕 分析seats数组结构，使用正确的字段名
@@ -1595,7 +1513,6 @@ class ModularCinemaMainWindow(QMainWindow):
             max_col = 0
             
             # 🆕 详细打印前几个座位数据以调试座位号问题
-            print(f"[主窗口] === 座位数据详细调试 ===")
             for i, seat in enumerate(seats_array[:5]):  # 增加到5个
                 rn = seat.get('rn', 'N/A')
                 cn = seat.get('cn', 'N/A')
@@ -1603,9 +1520,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 r = seat.get('r', 'N/A')  # 🆕 逻辑排号
                 c = seat.get('c', 'N/A')  # 🆕 逻辑列数
                 s = seat.get('s', 'N/A')
-                print(f"[主窗口] 座位{i+1}: 物理rn={rn},cn={cn} 逻辑r={r},c={c} sn='{sn}', s={s}")
-                print(f"[主窗口] 座位{i+1}完整数据: {seat}")
-            print(f"[主窗口] === 调试结束 ===")
             
             for seat in seats_array:
                 # 🆕 使用物理座位号（rn, cn）来确定座位图的最大尺寸
@@ -1615,10 +1529,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 max_row = max(max_row, physical_row)
                 max_col = max(max_col, physical_col)
             
-            print(f"[主窗口] 座位矩阵尺寸: {max_row}行 x {max_col}列")
             
             if max_row == 0 or max_col == 0:
-                print(f"[主窗口] 矩阵尺寸无效，检查字段映射")
                 return []
             
             # 🆕 创建座位矩阵
@@ -1653,6 +1565,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     if logical_col:
                         real_seat_num = str(logical_col)
                     else:
+                        pass
                         # 备选：使用物理列号
                         real_seat_num = str(seat.get('cn', physical_col + 1))
 
@@ -1668,16 +1581,13 @@ class ModularCinemaMainWindow(QMainWindow):
 
                     seat_matrix[physical_row][physical_col] = seat_data
             
-            print(f"[主窗口] 座位矩阵填充完成")
             # 打印前几行座位数据用于调试，显示物理间隔
             for i, row in enumerate(seat_matrix[:3]):  # 只打印前3行
                 valid_seats = [seat['num'] if seat else 'None' for seat in row[:20]]  # 显示前20列以看到间隔
-                print(f"[主窗口] 第{i+1}行座位: {valid_seats}")
 
             # 🆕 专门检查5排的物理间隔
             if len(seat_matrix) >= 5:
                 row_5 = seat_matrix[4]  # 第5排（0基索引）
-                print(f"[主窗口] 第5排详细检查:")
                 for col_idx, seat in enumerate(row_5):
                     if seat:
                         original_data = seat.get('original_data', {})
@@ -1685,14 +1595,12 @@ class ModularCinemaMainWindow(QMainWindow):
                         logical_c = original_data.get('c', '?')
                         physical_cn = original_data.get('cn', '?')
                         physical_rn = original_data.get('rn', '?')
-                        print(f"  物理位置[{col_idx+1}] -> 逻辑{logical_r}排{logical_c}号, 物理rn={physical_rn},cn={physical_cn}")
                     else:
-                        print(f"  物理位置[{col_idx+1}] -> 空位")
+                        pass
             
             return seat_matrix
             
         except Exception as e:
-            print(f"[主窗口] 解析seats数组错误: {e}")
             import traceback
             traceback.print_exc()
             return []
@@ -1707,17 +1615,15 @@ class ModularCinemaMainWindow(QMainWindow):
                     # 显示选中的座位
                     seat_names = [seat.get('num', f"{seat.get('row', '?')}-{seat.get('col', '?')}") for seat in selected_seats]  # 🆕 使用简洁格式
                     self.seat_input.setText(", ".join(seat_names))
-                    print(f"[主窗口] 已选座位: {seat_names}")
                 else:
+                    pass
                     # 清空选择
                     self.seat_input.setText("")
-                    print(f"[主窗口] 清空座位选择")
             
             # 触发座位选择事件
             self._on_seat_selected(", ".join([seat.get('num', '') for seat in selected_seats]))
             
         except Exception as e:
-            print(f"[主窗口] 处理座位选择变化错误: {e}")
             import traceback
             traceback.print_exc()
     
@@ -1730,7 +1636,6 @@ class ModularCinemaMainWindow(QMainWindow):
             self.on_submit_order(selected_seats)
             
         except Exception as e:
-            print(f"[主窗口] 座位面板提交订单错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -1741,13 +1646,12 @@ class ModularCinemaMainWindow(QMainWindow):
             self.on_bind_coupons()
             
         except Exception as e:
-            print(f"[主窗口] 券绑定处理错误: {e}")
+            pass
 
     def _on_coupon_exchanged(self, exchange_data: dict):
         """券兑换处理"""
         coupon_type = exchange_data.get("type", "")
         quantity = exchange_data.get("quantity", 0)
-        print(f"[主窗口] 券兑换完成: {quantity}个{coupon_type}")
 
     def _on_seat_load_requested(self, seat_load_data: dict):
         """处理座位图加载请求信号 - 来自Tab管理器的选座按钮"""
@@ -1757,12 +1661,10 @@ class ModularCinemaMainWindow(QMainWindow):
             # 获取场次数据
             session_data = seat_load_data.get('session_data', {})
             if not session_data:
-                print(f"[主窗口] 座位图加载失败: 缺少场次数据")
                 from services.ui_utils import MessageManager
                 MessageManager.show_error(self, "加载失败", "缺少场次数据，请重新选择场次", auto_close=False)
                 return
 
-            print(f"[主窗口] 开始加载座位图...")
             print(f"  影院: {seat_load_data.get('cinema_name', 'N/A')}")
             print(f"  影片: {seat_load_data.get('movie_name', 'N/A')}")
             print(f"  日期: {seat_load_data.get('show_date', 'N/A')}")
@@ -1779,10 +1681,8 @@ class ModularCinemaMainWindow(QMainWindow):
             # 调用现有的场次选择处理方法来加载座位图
             self._on_session_selected(session_info)
 
-            print(f"[主窗口] 座位图加载请求处理完成")
 
         except Exception as e:
-            print(f"[主窗口] 座位图加载请求处理错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -1801,7 +1701,6 @@ class ModularCinemaMainWindow(QMainWindow):
                             return cinema
             return {}
         except Exception as e:
-            print(f"[主窗口] 获取当前影院数据错误: {e}")
             return {}
 
     def _on_seat_input_changed(self, text: str):
@@ -1815,7 +1714,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 self._on_seat_selected(','.join(seats))
 
         except Exception as e:
-            print(f"[主窗口] 座位输入处理错误: {e}")
+            pass
 
     def _on_pay_button_clicked(self):
         """支付按钮点击处理 - 对接到核心业务方法"""
@@ -1824,36 +1723,31 @@ class ModularCinemaMainWindow(QMainWindow):
             self.on_one_click_pay()
             
         except Exception as e:
-            print(f"[主窗口] 支付按钮处理错误: {e}")
+            pass
 
     def _on_seat_selected(self, seats: str):
         """座位选择处理 - 只记录日志，不替换座位图"""
-        print(f"[主窗口] 座位选择: {seats}")
         # 注意：不再调用_update_seat_selection，因为座位图面板会自己管理选座信息显示
 
     def _on_main_login_success(self, user_info: dict):
         """主窗口登录成功处理 - 触发账号列表刷新"""
         try:
-            print(f"[主窗口] 处理登录成功事件")
-            
             # 刷新账号列表
             self.refresh_account_list()
             
         except Exception as e:
-            print(f"[主窗口] 登录成功处理错误: {e}")
+            pass
 
     # ===== 全局事件处理方法 =====
 
     def _on_global_login_success(self, user_info: dict):
         """全局登录成功处理"""
-        print(f"[主窗口] 收到全局登录成功事件")
 
     def _on_global_account_changed(self, account_data: dict):
         """全局账号切换处理"""
         try:
             userid = account_data.get('userid', 'N/A')
             phone = account_data.get('phone', '')
-            print(f"[主窗口] 收到全局账号切换事件: {userid}")
             
             # 同步更新右栏显示
             if phone:
@@ -1862,13 +1756,12 @@ class ModularCinemaMainWindow(QMainWindow):
                 self.phone_display.setText(f"当前账号: {userid}")
                 
         except Exception as e:
-            print(f"[主窗口] 全局账号切换处理错误: {e}")
+            pass
 
     def _on_global_cinema_selected(self, cinema_data: dict):
         """🔧 全局影院选择处理 - 修复参数类型并添加账号自动选择"""
         try:
             if not cinema_data:
-                print(f"[主窗口] 收到空的影院选择事件")
                 return
 
             cinema_name = cinema_data.get('cinemaShortName', '未知影院')
@@ -1878,13 +1771,11 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 🔧 触发该影院的主账号自动选择
             if cinema_id:
-                print(f"[主窗口] 🎯 开始为影院 {cinema_name} 自动选择主账号")
                 self._auto_select_cinema_account(cinema_data)
             else:
-                print(f"[主窗口] ⚠️ 影院数据缺少cinemaid，跳过账号自动选择")
+                pass
 
         except Exception as e:
-            print(f"[主窗口] 全局影院选择处理错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -1892,7 +1783,6 @@ class ModularCinemaMainWindow(QMainWindow):
         """全局订单创建处理"""
         try:
             order_id = order_data.get('order_id', 'N/A')
-            print(f"[主窗口] 收到全局订单创建事件: {order_id}")
             
             # 更新右栏订单详情显示
             self._update_order_details(order_data)
@@ -1901,13 +1791,11 @@ class ModularCinemaMainWindow(QMainWindow):
             self.qr_display.setText(f"订单号: {order_id}\n\n取票码将在支付完成后显示")
             
         except Exception as e:
-            print(f"[主窗口] 全局订单创建处理错误: {e}")
+            pass
 
     def _on_global_order_paid(self, order_id: str):
         """全局订单支付处理"""
         try:
-            print(f"[主窗口] 收到全局订单支付事件: {order_id}")
-            
             # 更新取票码显示
             self.qr_display.setText(f"支付成功！\n\n订单号: {order_id}\n取票码: TK{order_id[-6:]}")
             self.qr_display.setStyleSheet("""
@@ -1924,39 +1812,30 @@ class ModularCinemaMainWindow(QMainWindow):
             # 🆕 移除倒计时显示更新
             
         except Exception as e:
-            print(f"[主窗口] 全局订单支付处理错误: {e}")
+            pass
 
     def _get_ticket_code_after_payment(self, order_id: str, cinema_id: str, detail_data: dict):
         """支付成功后获取取票码并显示（与双击订单流程一致）"""
         try:
-            print(f"[支付成功] 🎯 开始获取取票码: 订单号={order_id}, 影院ID={cinema_id}")
-
             # 🎯 从订单详情中提取取票码（与双击订单流程一致）
             qr_code = detail_data.get('qrCode', '')
             ticket_code = detail_data.get('ticketCode', '') or detail_data.get('ticketcode', '')
             ds_code = detail_data.get('dsValidateCode', '')
 
-            print(f"[支付成功] 📋 订单详情中的取票码信息:")
-            print(f"[支付成功] 📋 - qrCode: {qr_code}")
-            print(f"[支付成功] 📋 - ticketCode: {ticket_code}")
-            print(f"[支付成功] 📋 - dsValidateCode: {ds_code}")
 
             # 🎯 确定最终的取票码（优先使用qrCode）
             final_ticket_code = qr_code or ds_code or ticket_code
 
             if final_ticket_code:
-                print(f"[支付成功] ✅ 找到取票码: {final_ticket_code}")
-
                 # 🎯 生成取票码二维码并显示（与双击订单流程一致）
                 self._generate_payment_success_qrcode(order_id, final_ticket_code, detail_data, cinema_id)
 
             else:
-                print(f"[支付成功] ⚠️ 订单详情中没有找到取票码，显示支付成功信息")
+                pass
                 # 显示支付成功但无取票码的信息
                 self._show_payment_success_without_qrcode(order_id)
 
         except Exception as e:
-            print(f"[支付成功] ❌ 获取取票码错误: {e}")
             import traceback
             traceback.print_exc()
             # 降级显示支付成功信息
@@ -1965,12 +1844,8 @@ class ModularCinemaMainWindow(QMainWindow):
     def _generate_payment_success_qrcode(self, order_id: str, ticket_code: str, detail_data: dict, cinema_id: str):
         """支付成功后生成并显示取票码二维码"""
         try:
-            print(f"[支付成功] 🎯 开始生成取票码二维码")
-            print(f"[支付成功] 📋 取票码: {ticket_code}")
-
             # 🔧 导入二维码生成器
             from utils.qrcode_generator import generate_ticket_qrcode, save_qrcode_image
-            print(f"[支付成功] ✅ 二维码生成器导入成功")
 
             # 🎯 生成二维码图片
             qr_bytes = generate_ticket_qrcode(ticket_code, detail_data)
@@ -1981,7 +1856,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 🎯 保存二维码图片到本地
                 save_path = save_qrcode_image(qr_bytes, order_id, cinema_id)
                 if save_path:
-                    print(f"[支付成功] 💾 二维码图片已保存: {save_path}")
+                    pass
 
                 # 🎯 创建显示数据（与双击订单流程一致）
                 qr_data = {
@@ -2001,23 +1876,18 @@ class ModularCinemaMainWindow(QMainWindow):
                     'is_payment_success': True  # 标识这是支付成功后的显示
                 }
 
-                print(f"[支付成功] 📤 显示取票码二维码:")
-                print(f"[支付成功] 📤 - 订单号: {order_id}")
-                print(f"[支付成功] 📤 - 取票码: {ticket_code}")
                 print(f"[支付成功] 📤 - 图片大小: {len(qr_bytes)} bytes")
 
                 # 🎯 直接调用显示方法（不通过事件总线，避免延迟）
                 self._on_show_qrcode(qr_data)
 
-                print(f"[支付成功] ✅ 取票码二维码已显示")
 
             else:
-                print(f"[支付成功] ❌ 取票码二维码生成失败")
+                pass
                 # 降级显示支付成功信息
                 self._show_payment_success_without_qrcode(order_id)
 
         except Exception as e:
-            print(f"[支付成功] ❌ 生成取票码二维码错误: {e}")
             import traceback
             traceback.print_exc()
             # 降级显示支付成功信息
@@ -2038,15 +1908,13 @@ class ModularCinemaMainWindow(QMainWindow):
                     border-radius: 5px;
                 }
             """)
-            print(f"[支付成功] ✅ 支付成功信息已显示")
 
         except Exception as e:
-            print(f"[支付成功] ❌ 显示支付成功信息错误: {e}")
+            pass
 
     def _on_show_qrcode(self, qr_data):
         """显示二维码处理"""
         try:
-            print(f"[主窗口] 🎯 收到二维码显示请求")
             print(f"[主窗口] 🔍 数据类型: {type(qr_data)}")
 
             # 检查数据格式
@@ -2055,7 +1923,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 if display_type == 'ticket_code':
                     # 🎯 处理取票码文本显示
-                    print(f"[主窗口] 📱 接收到取票码数据:")
                     print(f"[主窗口] 📱 - 订单号: {qr_data.get('order_no', 'N/A')}")
                     print(f"[主窗口] 📱 - 取票码: {qr_data.get('ticket_code', 'N/A')}")
                     print(f"[主窗口] 📱 - 影片: {qr_data.get('film_name', 'N/A')}")
@@ -2065,7 +1932,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 elif display_type == 'combined':
                     # 🎯 处理组合显示（文本+二维码图片）
-                    print(f"[主窗口] 🎭 接收到组合显示数据:")
                     print(f"[主窗口] 🎭 - 订单号: {qr_data.get('order_no', 'N/A')}")
                     print(f"[主窗口] 🎭 - 取票码: {qr_data.get('ticket_code', 'N/A')}")
                     print(f"[主窗口] 🎭 - 影片: {qr_data.get('film_name', 'N/A')}")
@@ -2076,7 +1942,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 elif display_type == 'generated_qrcode':
                     # 🎯 处理生成的取票码二维码
-                    print(f"[主窗口] 🎨 接收到生成的二维码数据:")
                     print(f"[主窗口] 🎨 - 订单号: {qr_data.get('order_no', 'N/A')}")
                     print(f"[主窗口] 🎨 - 取票码: {qr_data.get('ticket_code', 'N/A')}")
                     print(f"[主窗口] 🎨 - 影片: {qr_data.get('film_name', 'N/A')}")
@@ -2087,8 +1952,8 @@ class ModularCinemaMainWindow(QMainWindow):
                     self._display_generated_qrcode(qr_data)
 
                 else:
+                    pass
                     # 🎯 处理二维码图片显示
-                    print(f"[主窗口] 📊 接收到二维码数据字典:")
                     print(f"[主窗口] 📊 - 订单号: {qr_data.get('order_no', 'N/A')}")
                     print(f"[主窗口] 📊 - 数据大小: {qr_data.get('data_size', 0)} bytes")
                     print(f"[主窗口] 📊 - 数据格式: {qr_data.get('data_format', 'UNKNOWN')}")
@@ -2099,8 +1964,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     data_format = qr_data.get('data_format', 'UNKNOWN')
 
                     if qr_bytes and len(qr_bytes) > 0:
-                        print(f"[主窗口] 🖼️ 开始处理二维码图片数据...")
-
                         # 尝试将二进制数据转换为QPixmap并显示
                         success = self._display_qrcode_image(qr_bytes, order_no, data_format)
 
@@ -2108,19 +1971,16 @@ class ModularCinemaMainWindow(QMainWindow):
                             # 如果图片显示失败，显示文本信息
                             self._display_qrcode_text(f"订单 {order_no} 取票码\n(图片加载失败)")
                     else:
-                        print(f"[主窗口] ⚠️ 二维码数据为空")
                         self._display_qrcode_text(f"订单 {qr_data.get('order_no', '')} 取票码\n(数据为空)")
 
             elif isinstance(qr_data, str):
                 # 兼容旧的字符串格式
-                print(f"[主窗口] 📊 接收到文本消息: {qr_data}")
                 self._display_qrcode_text(qr_data)
             else:
                 print(f"[主窗口] ⚠️ 未知的数据格式: {type(qr_data)}")
                 self._display_qrcode_text("二维码数据格式错误")
 
         except Exception as e:
-            print(f"[主窗口] ❌ 显示二维码错误: {e}")
             import traceback
             traceback.print_exc()
             # 显示错误信息
@@ -2131,9 +1991,6 @@ class ModularCinemaMainWindow(QMainWindow):
         try:
             from PyQt5.QtGui import QPixmap
             from PyQt5.QtCore import QByteArray
-
-            print(f"[主窗口] 🖼️ 尝试加载 {data_format} 格式的二维码图片...")
-
             # 将bytes转换为QByteArray
             byte_array = QByteArray(qr_bytes)
 
@@ -2161,17 +2018,13 @@ class ModularCinemaMainWindow(QMainWindow):
                         }
                     """)
 
-                    print(f"[主窗口] ✅ 二维码图片已显示在取票码区域")
                     return True
                 else:
-                    print(f"[主窗口] ❌ 取票码显示区域不存在")
                     return False
             else:
-                print(f"[主窗口] ❌ 二维码图片加载失败")
                 return False
 
         except Exception as e:
-            print(f"[主窗口] ❌ 显示二维码图片错误: {e}")
             import traceback
             traceback.print_exc()
             return False
@@ -2188,15 +2041,6 @@ class ModularCinemaMainWindow(QMainWindow):
             cinema_name = ticket_data.get('cinema_name', '')
 
             # 🔍 调试：检查所有字段值
-            print(f"[主窗口] 🔍 显示数据调试:")
-            print(f"[主窗口] 🔍 - order_no: '{order_no}'")
-            print(f"[主窗口] 🔍 - ticket_code: '{ticket_code}'")
-            print(f"[主窗口] 🔍 - film_name: '{film_name}'")
-            print(f"[主窗口] 🔍 - show_time: '{show_time}'")
-            print(f"[主窗口] 🔍 - hall_name: '{hall_name}'")
-            print(f"[主窗口] 🔍 - seat_info: '{seat_info}'")
-            print(f"[主窗口] 🔍 - cinema_name: '{cinema_name}'")
-
             # 构建详细的取票信息文本
             info_text = f"🎬 {film_name}\n"
             info_text += f"🏛️ {cinema_name}\n"
@@ -2209,11 +2053,9 @@ class ModularCinemaMainWindow(QMainWindow):
                 info_text += f"🎫 取票码: {ticket_code}\n"
             else:
                 info_text += f"🎫 取票码: (未获取到)\n"
-                print(f"[主窗口] ⚠️ 取票码为空，检查数据传递")
 
             info_text += f"📋 订单号: {order_no}"
 
-            print(f"[主窗口] 🔍 构建的文本内容:")
             print(f"[主窗口] 🔍 文本长度: {len(info_text)}")
             print(f"[主窗口] 🔍 文本内容: {repr(info_text[:200])}...")
 
@@ -2233,12 +2075,10 @@ class ModularCinemaMainWindow(QMainWindow):
                         line-height: 1.4;
                     }
                 """)
-                print(f"[主窗口] ✅ 取票码详细信息已显示")
             else:
-                print(f"[主窗口] ❌ 取票码显示区域不存在")
+                pass
 
         except Exception as e:
-            print(f"[主窗口] ❌ 显示取票码信息错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -2259,8 +2099,6 @@ class ModularCinemaMainWindow(QMainWindow):
             qr_bytes = combined_data.get('qr_bytes')
             data_format = combined_data.get('data_format', 'UNKNOWN')
 
-            print(f"[主窗口] 🎭 开始显示组合信息:")
-            print(f"[主窗口] 🎭 - 取票码: {ticket_code}")
             print(f"[主窗口] 🎭 - 二维码: {len(qr_bytes) if qr_bytes else 0} bytes {data_format}")
 
             if hasattr(self, 'qr_display'):
@@ -2280,9 +2118,9 @@ class ModularCinemaMainWindow(QMainWindow):
                             qr_pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                             print(f"[主窗口] ✅ 二维码图片加载成功: {pixmap.width()}x{pixmap.height()}")
                         else:
-                            print(f"[主窗口] ❌ 二维码图片加载失败")
+                            pass
                     except Exception as e:
-                        print(f"[主窗口] ❌ 处理二维码图片错误: {e}")
+                        pass
 
                 if qr_pixmap:
                     # 显示二维码图片
@@ -2299,9 +2137,8 @@ class ModularCinemaMainWindow(QMainWindow):
                     """)
 
                     # 🎯 在二维码下方显示取票码信息（可以考虑添加到状态栏或其他位置）
-                    print(f"[主窗口] ✅ 组合信息显示完成 - 二维码图片 + 取票码: {ticket_code}")
-
                 else:
+                    pass
                     # 如果图片加载失败，显示文本信息
                     info_text = f"🎬 {film_name}\n"
                     info_text += f"🏛️ {cinema_name}\n"
@@ -2327,12 +2164,10 @@ class ModularCinemaMainWindow(QMainWindow):
                         }
                     """)
 
-                    print(f"[主窗口] ✅ 组合信息显示完成 - 文本模式")
             else:
-                print(f"[主窗口] ❌ 取票码显示区域不存在")
+                pass
 
         except Exception as e:
-            print(f"[主窗口] ❌ 显示组合信息错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -2348,10 +2183,7 @@ class ModularCinemaMainWindow(QMainWindow):
             qr_bytes = qr_data.get('qr_bytes')
             qr_path = qr_data.get('qr_path', '')  # 🎯 获取图片路径
 
-            print(f"[主窗口] 🎨 开始显示生成的二维码:")
-            print(f"[主窗口] 🎨 - 取票码: {ticket_code}")
             print(f"[主窗口] 🎨 - 二维码: {len(qr_bytes) if qr_bytes else 0} bytes")
-            print(f"[主窗口] 🎨 - 路径: {qr_path}")
 
             # 🎯 保存图片路径和原始数据供按钮使用
             self.current_qr_path = qr_path
@@ -2393,22 +2225,20 @@ class ModularCinemaMainWindow(QMainWindow):
                         """)
 
                         print(f"[主窗口] ✅ 生成的二维码显示成功: {pixmap.width()}x{pixmap.height()}")
-                        print(f"[主窗口] 🎫 扫描此二维码可获取取票码: {ticket_code}")
 
                     else:
-                        print(f"[主窗口] ❌ 生成的二维码加载失败")
+                        pass
                         # 降级显示文本信息
                         self._display_qrcode_text(f"🎫 取票码: {ticket_code}\n📋 订单号: {order_no}\n⚠️ 二维码显示失败")
 
                 except Exception as e:
-                    print(f"[主窗口] ❌ 处理生成的二维码错误: {e}")
+                    pass
                     # 降级显示文本信息
                     self._display_qrcode_text(f"🎫 取票码: {ticket_code}\n📋 订单号: {order_no}\n⚠️ 二维码处理失败")
             else:
-                print(f"[主窗口] ❌ 取票码显示区域不存在或二维码数据为空")
+                pass
 
         except Exception as e:
-            print(f"[主窗口] ❌ 显示生成的二维码错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -2429,11 +2259,9 @@ class ModularCinemaMainWindow(QMainWindow):
                         border-radius: 5px;
                     }
                 """)
-                print(f"[主窗口] ✅ 二维码文本信息已显示")
             else:
-                print(f"[主窗口] ❌ 取票码显示区域不存在")
+                pass
         except Exception as e:
-            print(f"[主窗口] ❌ 显示二维码文本错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -2461,7 +2289,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 self._safe_update_seat_area("座位图将在此显示\n\n请先选择影院、影片、日期和场次")
                 
         except Exception as e:
-            print(f"[主窗口] 更新座位选择错误: {e}")
+            pass
 
     def _update_order_details(self, order_data: dict):
         """更新订单详情显示"""
@@ -2483,9 +2311,8 @@ class ModularCinemaMainWindow(QMainWindow):
             self.order_detail_text.setPlainText(details)
             
             # 🆕 移除倒计时更新
-                
         except Exception as e:
-            print(f"[主窗口] 更新订单详情错误: {e}")
+            pass
 
     def closeEvent(self, event):
         """窗口关闭事件"""
@@ -2494,13 +2321,9 @@ class ModularCinemaMainWindow(QMainWindow):
             self.account_widget.cleanup()
             self.tab_manager_widget.cleanup()
             # 座位区域和右栏区域是直接创建的QWidget，不需要特殊清理
-            
-            print("[主窗口] 资源清理完成")
-            
             event.accept()
             
         except Exception as e:
-            print(f"[主窗口] 关闭清理错误: {e}")
             event.accept()
 
     # ===== 第三步：核心业务方法（从源项目复制） =====
@@ -2512,7 +2335,6 @@ class ModularCinemaMainWindow(QMainWindow):
             if account:
                 userid = account.get('userid', 'N/A')
                 phone = account.get('phone', '')
-                print(f"[主窗口] 设置当前账号: {userid}")
 
                 # 更新UI显示
                 if phone:
@@ -2531,18 +2353,16 @@ class ModularCinemaMainWindow(QMainWindow):
                 self._refresh_account_dependent_data()
 
                 # 重要修复：账号切换时重新加载座位图
-                print(f"[主窗口] 账号切换，重新加载座位图...")
                 self._reload_seat_map_for_account_change()
 
         except Exception as e:
-            print(f"[主窗口] 设置账号错误: {e}")
+            pass
 
     def _reload_seat_map_for_account_change(self):
         """账号切换时重新加载座位图"""
         try:
             # 检查是否有完整的选择信息
             if not hasattr(self, 'tab_manager_widget'):
-                print(f"[主窗口] Tab管理器不存在，跳过座位图重新加载")
                 return
 
             tab_manager = self.tab_manager_widget
@@ -2556,21 +2376,14 @@ class ModularCinemaMainWindow(QMainWindow):
             # 检查选择是否完整
             invalid_selections = ["请选择", "请先选择", "正在加载", "暂无", "加载失败", "选择影院", "加载中..."]
             if any(text in invalid_selections for text in [cinema_text, movie_text, date_text, session_text]):
-                print(f"[主窗口] 选择信息不完整，清空座位图")
                 self._safe_update_seat_area("请完整选择影院、影片、日期和场次后查看座位图")
                 return
 
             # 如果选择完整，重新加载座位图
-            print(f"[主窗口] 账号切换，重新加载座位图:")
-            print(f"  - 影院: {cinema_text}")
-            print(f"  - 影片: {movie_text}")
-            print(f"  - 日期: {date_text}")
-            print(f"  - 场次: {session_text}")
             print(f"  - 新账号: {self.current_account.get('userid', 'N/A')}")
 
             # 重新触发场次选择，这会重新加载座位图
             if hasattr(tab_manager, 'current_session_data') and tab_manager.current_session_data:
-                print(f"[主窗口] 重新加载当前场次的座位图...")
                 # 先清空当前座位选择
                 self._clear_seat_selection()
                 # 触发座位图重新加载
@@ -2582,11 +2395,9 @@ class ModularCinemaMainWindow(QMainWindow):
                 }
                 self._load_seat_map(session_info)
             else:
-                print(f"[主窗口] 没有当前场次数据，清空座位图")
                 self._safe_update_seat_area("账号已切换，请重新选择场次")
 
         except Exception as e:
-            print(f"[主窗口] 重新加载座位图错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -2597,14 +2408,13 @@ class ModularCinemaMainWindow(QMainWindow):
             if hasattr(self, 'current_seat_panel') and self.current_seat_panel:
                 if hasattr(self.current_seat_panel, 'clear_selection'):
                     self.current_seat_panel.clear_selection()
-                    print(f"[主窗口] 已清空座位选择")
 
             # 更新提交按钮文字
             if hasattr(self, 'submit_button'):
                 self.submit_button.setText("提交订单")
 
         except Exception as e:
-            print(f"[主窗口] 清空座位选择错误: {e}")
+            pass
 
     def set_main_account(self, account):
         """设置主账号标记"""
@@ -2617,7 +2427,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 self._save_account_data(account)
                 
         except Exception as e:
-            print(f"[主窗口] 设置主账号错误: {e}")
+            pass
 
     def refresh_account_list(self):
         """刷新账号列表"""
@@ -2632,7 +2442,6 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[主窗口] 账号列表已刷新，共{len(accounts)}个账号")
             
         except Exception as e:
-            print(f"[主窗口] 刷新账号列表错误: {e}")
             from services.ui_utils import MessageManager
             MessageManager.show_error(self, "刷新失败", f"刷新账号列表失败: {str(e)}", auto_close=False)
 
@@ -2643,7 +2452,6 @@ class ModularCinemaMainWindow(QMainWindow):
             if not cinema_name or cinema_name in ["加载中...", "请选择影院"]:
                 return
             
-            print(f"[主窗口] 影院切换: {cinema_name}")
             
             # 获取影院信息
             cinema_info = self._get_cinema_info_by_name(cinema_name)
@@ -2660,13 +2468,11 @@ class ModularCinemaMainWindow(QMainWindow):
                     self._get_member_info(self.current_account, cinema_info['cinemaid'])
                     
         except Exception as e:
-            print(f"[主窗口] 影院切换错误: {e}")
+            pass
 
     def on_submit_order(self, selected_seats):
         """提交订单处理 - 完整流程整合"""
         try:
-            print(f"[主窗口] 开始提交订单流程")
-            
             # 导入消息管理器
             from services.ui_utils import MessageManager
             
@@ -2681,11 +2487,6 @@ class ModularCinemaMainWindow(QMainWindow):
             date_text = self.tab_manager_widget.date_combo.currentText()
             session_text = self.tab_manager_widget.session_combo.currentText()
             
-            print(f"[主窗口] 当前选择:")
-            print(f"  影院: {cinema_text}")
-            print(f"  影片: {movie_text}")
-            print(f"  日期: {date_text}")
-            print(f"  场次: {session_text}")
             print(f"  账号: {self.current_account.get('userid', 'N/A')}")
             print(f"  座位: {len(selected_seats)} 个")
             
@@ -2705,28 +2506,23 @@ class ModularCinemaMainWindow(QMainWindow):
                 return False
             
             # 真正的订单创建 - 调用API
-            print(f"[主窗口] 开始订单创建流程...")
 
             # 第一步：取消该账号的所有未付款订单
-            print(f"[主窗口] 步骤1: 取消未付款订单...")
             cinema_data = self._get_cinema_info_by_name(cinema_text)
             if cinema_data and self.current_account:
                 from services.order_api import cancel_all_unpaid_orders
                 cancel_result = cancel_all_unpaid_orders(self.current_account, cinema_data.get('cinemaid', ''))
                 cancelled_count = cancel_result.get('cancelledCount', 0)
-                print(f"[主窗口] 已取消 {cancelled_count} 个未付款订单")
             else:
-                print(f"[主窗口] 无法获取影院或账号信息，跳过取消未付款订单")
+                pass
 
             # 第二步：构建订单参数
-            print(f"[主窗口] 步骤2: 构建订单参数...")
             order_params = self._build_order_params(selected_seats)
             if not order_params:
                 MessageManager.show_error(self, "参数错误", "构建订单参数失败", auto_close=False)
                 return False
 
             # 第三步：调用订单创建API
-            print(f"[主窗口] 步骤3: 调用订单创建API...")
             from services.order_api import create_order
             result = create_order(order_params)
 
@@ -2781,7 +2577,6 @@ class ModularCinemaMainWindow(QMainWindow):
             self._show_order_detail(self.current_order)
 
             # 第四步：获取可用券列表
-            print(f"[主窗口] 步骤4: 获取可用券列表...")
             self._load_available_coupons(order_id, cinema_data.get('cinemaid', ''))
 
             # 发布订单创建事件
@@ -2789,11 +2584,9 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 🆕 移除支付倒计时功能
 
-            print(f"[主窗口] 订单创建成功: {order_id}")
             return True
                 
         except Exception as e:
-            print(f"[主窗口] 提交订单错误: {e}")
             import traceback
             traceback.print_exc()
             from services.ui_utils import MessageManager
@@ -2805,7 +2598,6 @@ class ModularCinemaMainWindow(QMainWindow):
         try:
             # 获取当前选择信息
             if not hasattr(self, 'tab_manager_widget'):
-                print(f"[主窗口] Tab管理器不存在")
                 return None
 
             tab_manager = self.tab_manager_widget
@@ -2813,14 +2605,12 @@ class ModularCinemaMainWindow(QMainWindow):
             # 获取场次数据
             session_data = getattr(tab_manager, 'current_session_data', None)
             if not session_data:
-                print(f"[主窗口] 场次数据不存在")
                 return None
 
             # 获取影院数据
             cinema_text = tab_manager.cinema_combo.currentText()
             cinema_data = self._get_cinema_info_by_name(cinema_text)
             if not cinema_data:
-                print(f"[主窗口] 影院数据不存在")
                 return None
 
             # 构建座位参数 - 修复：使用真实API格式的seatInfo
@@ -2863,7 +2653,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 }
                 seat_info_list.append(seat_info)
 
-                print(f"[主窗口] 座位信息: {seat_info}")
 
             # 构建订单参数 - 修复：使用真实API格式
             import json
@@ -2899,18 +2688,11 @@ class ModularCinemaMainWindow(QMainWindow):
                 'limitprocount': '0'
             }
 
-            print(f"[主窗口] 订单参数构建完成:")
-            print(f"  - 影院ID: {order_params['cinemaid']}")
-            print(f"  - 用户ID: {order_params['userid']}")
-            print(f"  - 场次编码: {order_params['showCode']}")
             print(f"  - 座位数量: {len(selected_seats)}")
-            print(f"  - 支付类型: {order_params['payType']}")
-            print(f"  - 场次时间: {order_params['showTime']}")
 
             return order_params
 
         except Exception as e:
-            print(f"[主窗口] 构建订单参数错误: {e}")
             import traceback
             traceback.print_exc()
             return None
@@ -2919,10 +2701,8 @@ class ModularCinemaMainWindow(QMainWindow):
         """获取订单可用券列表"""
         try:
             if not self.current_account or not order_id or not cinema_id:
-                print(f"[主窗口] 获取券列表参数不完整")
                 return
 
-            print(f"[主窗口] 获取订单 {order_id} 的可用券列表...")
 
             # 方法1：获取订单可用券（推荐，针对特定订单）
             from services.order_api import get_coupons_by_order
@@ -2940,14 +2720,11 @@ class ModularCinemaMainWindow(QMainWindow):
                 'cardno': self.current_account.get('cardno', '')
             }
 
-            print(f"[主窗口] 券列表API参数: {coupon_params}")
 
             # 调用API获取券列表
             coupon_result = get_coupons_by_order(coupon_params)
 
             if coupon_result:
-                print(f"[主窗口] 券列表API响应: {coupon_result}")
-
                 if coupon_result.get('resultCode') == '0':
                     result_data = coupon_result.get('resultData', {})
                     coupons = result_data.get('vouchers', []) if isinstance(result_data, dict) else []
@@ -2957,28 +2734,24 @@ class ModularCinemaMainWindow(QMainWindow):
                     self._show_coupon_list(coupons)
                 else:
                     error_desc = coupon_result.get('resultDesc', '未知错误')
-                    print(f"[主窗口] 获取券列表失败: {error_desc}")
                     # 不要递归调用，直接清空券列表
                     try:
                         if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
                             self.tab_manager_widget.coupon_list.clear()
                             self.tab_manager_widget.coupon_list.addItem("暂无可用券")
-                            print(f"[主窗口] 已显示无券提示")
                     except:
                         pass
             else:
-                print(f"[主窗口] 券列表API无响应")
+                pass
                 # 不要递归调用，直接清空券列表
                 try:
                     if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
                         self.tab_manager_widget.coupon_list.clear()
                         self.tab_manager_widget.coupon_list.addItem("暂无可用券")
-                        print(f"[主窗口] 已显示无券提示")
                 except:
                     pass
 
         except Exception as e:
-            print(f"[主窗口] 获取券列表错误: {e}")
             import traceback
             traceback.print_exc()
             # 不要递归调用，直接清空券列表
@@ -2986,7 +2759,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
                     self.tab_manager_widget.coupon_list.clear()
                     self.tab_manager_widget.coupon_list.addItem("券列表加载失败")
-                    print(f"[主窗口] 已显示错误提示")
             except:
                 pass
 
@@ -3002,7 +2774,6 @@ class ModularCinemaMainWindow(QMainWindow):
             if self.current_order:
                 seat_count = len(self.current_order.get('seats', []))
                 self.max_coupon_select = max(1, seat_count)  # 至少允许选择1张券
-                print(f"[主窗口] 设置券选择数量限制: {self.max_coupon_select} 张（座位数: {seat_count}）")
 
             # 查找现有的券列表组件
             coupon_list_widget = None
@@ -3010,23 +2781,19 @@ class ModularCinemaMainWindow(QMainWindow):
             # 方法1：直接查找 coupon_list 属性
             if hasattr(self, 'coupon_list'):
                 coupon_list_widget = self.coupon_list
-                print(f"[主窗口] 找到现有的券列表组件: coupon_list")
 
             # 方法2：查找 tab_manager_widget 中的券列表
             elif hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
                 coupon_list_widget = self.tab_manager_widget.coupon_list
-                print(f"[主窗口] 找到tab_manager中的券列表组件")
 
             # 方法3：遍历查找 QListWidget
             else:
-                print(f"[主窗口] 搜索QListWidget组件...")
                 from PyQt5.QtWidgets import QListWidget
                 for child in self.findChildren(QListWidget):
                     # 检查是否是券列表（通过父组件名称或位置判断）
                     parent = child.parent()
                     if parent and hasattr(parent, 'title') and '券' in parent.title():
                         coupon_list_widget = child
-                        print(f"[主窗口] 通过搜索找到券列表组件")
                         break
 
             # 修复：使用 is not None 而不是 bool() 检查
@@ -3046,16 +2813,13 @@ class ModularCinemaMainWindow(QMainWindow):
                         pass
                     # 连接新的事件处理器
                     coupon_list_widget.itemSelectionChanged.connect(self._on_coupon_selection_changed)
-                    print(f"[主窗口] 已连接券选择事件处理器")
 
                 # 清空现有券列表
                 coupon_list_widget.clear()
-                print(f"[主窗口] 已清空现有券列表")
 
                 if not coupons:
                     # 显示无券提示
                     coupon_list_widget.addItem("暂无可用券")
-                    print(f"[主窗口] 显示无券提示")
                     return
 
                 # 显示券列表
@@ -3087,26 +2851,21 @@ class ModularCinemaMainWindow(QMainWindow):
                     # 格式化显示文本
                     display_text = f"{coupon_type} | 有效期至 {expire_date} | 券号 {coupon_code}"
                     coupon_list_widget.addItem(display_text)
-                    print(f"[主窗口] 添加券项目: {display_text}")
-                    print(f"[主窗口] 券原始数据: {coupon}")
 
                 print(f"[主窗口] 券列表显示完成，共 {len(coupons)} 张券")
             else:
-                print(f"[主窗口] 未找到现有的券列表组件，跳过券列表显示")
+                pass
                 # 不要递归调用，避免无限循环
                 # 可以在这里记录日志或者显示提示信息
                 print(f"[主窗口] 券列表显示被跳过，共 {len(coupons)} 张券未显示")
 
         except Exception as e:
-            print(f"[主窗口] 显示券列表错误: {e}")
             import traceback
             traceback.print_exc()
 
     def _on_coupon_selection_changed(self):
         """券选择事件处理器 - 🆕 实现券选择和实时价格查询功能"""
         try:
-            print(f"[主窗口] 券选择发生变化")
-
             # 获取券列表组件
             coupon_list_widget = None
             if hasattr(self, 'coupon_list'):
@@ -3115,14 +2874,12 @@ class ModularCinemaMainWindow(QMainWindow):
                 coupon_list_widget = self.tab_manager_widget.coupon_list
 
             if not coupon_list_widget:
-                print(f"[主窗口] 未找到券列表组件")
                 return
 
             # 获取选中的券项目索引
             selected_items = coupon_list_widget.selectedItems()
             selected_indices = [coupon_list_widget.row(item) for item in selected_items]
 
-            print(f"[主窗口] 选中券索引: {selected_indices}")
 
             # 检查选择数量限制
             if len(selected_indices) > self.max_coupon_select:
@@ -3145,11 +2902,9 @@ class ModularCinemaMainWindow(QMainWindow):
                     if coupon_code:
                         selected_codes.append(coupon_code)
 
-            print(f"[主窗口] 选中券号: {selected_codes}")
 
             # 验证必要参数
             if not self.current_order or not self.current_account:
-                print(f"[主窗口] 缺少订单或账号信息，无法查询券价格")
                 return
 
             # 获取订单和账号信息
@@ -3164,33 +2919,26 @@ class ModularCinemaMainWindow(QMainWindow):
                 cinema_name = self.tab_manager_widget.cinema_combo.currentText()
                 if cinema_name and cinema_name not in ["加载中...", "请选择影院"]:
                     cinema_data = self._get_cinema_info_by_name(cinema_name)
-                    print(f"[主窗口] 从Tab管理器获取影院信息: {cinema_name}")
 
             # 方法2: 从Tab管理器的current_cinema_data属性获取
             if not cinema_data and hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'current_cinema_data'):
                 cinema_data = self.tab_manager_widget.current_cinema_data
-                print(f"[主窗口] 从current_cinema_data获取影院信息")
 
             if not cinema_data:
-                print(f"[主窗口] 缺少影院信息，无法查询券价格")
-                print(f"[主窗口] 调试信息:")
                 if hasattr(self, 'tab_manager_widget'):
-                    print(f"  - tab_manager_widget存在: True")
                     if hasattr(self.tab_manager_widget, 'cinema_combo'):
                         current_text = self.tab_manager_widget.cinema_combo.currentText()
-                        print(f"  - 当前选中影院: {current_text}")
                     else:
-                        print(f"  - cinema_combo不存在")
+                        pass
                     if hasattr(self.tab_manager_widget, 'current_cinema_data'):
-                        print(f"  - current_cinema_data存在: {self.tab_manager_widget.current_cinema_data}")
+                        pass
                     else:
-                        print(f"  - current_cinema_data不存在")
+                        pass
                 else:
-                    print(f"  - tab_manager_widget不存在")
+                    pass
                 return
 
             cinema_id = cinema_data.get('cinemaid', '')
-            print(f"[主窗口] 获取到影院ID: {cinema_id}")
 
             # 🆕 实时请求券抵扣信息
             if selected_codes and selected_codes[0]:  # 确保券号不为空
@@ -3212,23 +2960,21 @@ class ModularCinemaMainWindow(QMainWindow):
                         'source': '2'
                     }
 
-                    print(f"[券价格查询] 请求参数: {prepay_params}")
 
                     # 调用券价格查询API
                     coupon_info = get_coupon_prepay_info(prepay_params)
-                    print(f"[券价格查询] 返回结果: {coupon_info}")
 
                     if coupon_info.get('resultCode') == '0':
                         # 🆕 保存券价格信息
                         self.current_coupon_info = coupon_info
                         self.selected_coupons = selected_codes
-                        print(f"[券选择] 已选择券: {selected_codes}")
                         print(f"[券选择] 券数: {len(selected_codes)}/{self.max_coupon_select}")
 
                         # 🆕 刷新订单详情显示，包含券抵扣信息
                         self._update_order_detail_with_coupon_info()
 
                     else:
+                        pass
                         # 查询失败，清空选择
                         self.current_coupon_info = None
                         self.selected_coupons = []
@@ -3239,10 +2985,8 @@ class ModularCinemaMainWindow(QMainWindow):
                         for item in selected_items:
                             item.setSelected(False)
 
-                        print(f"[券选择] 券验证失败: {error_desc}")
 
                 except Exception as e:
-                    print(f"[券价格查询] 异常: {e}")
                     import traceback
                     traceback.print_exc()
 
@@ -3254,16 +2998,15 @@ class ModularCinemaMainWindow(QMainWindow):
                     for item in selected_items:
                         item.setSelected(False)
             else:
+                pass
                 # 券号为空，清空券信息
                 self.current_coupon_info = None
                 self.selected_coupons = []
-                print(f"[券选择] 券号为空，已清空选择")
 
                 # 🆕 刷新订单详情显示，移除券抵扣信息
                 self._update_order_detail_with_coupon_info()
 
         except Exception as e:
-            print(f"[主窗口] 券选择事件处理错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -3273,7 +3016,6 @@ class ModularCinemaMainWindow(QMainWindow):
             if not self.current_order:
                 return
 
-            print(f"[主窗口] 更新订单详情，包含券抵扣信息")
 
             # 获取基础订单信息
             order_detail = self.current_order
@@ -3361,9 +3103,9 @@ class ModularCinemaMainWindow(QMainWindow):
                     if is_member and mem_payment_fen != 0:
                         details += " (会员价)"
 
-                print(f"[主窗口] 券抵扣信息: 优惠¥{discount_price_yuan:.2f}, 实付¥{pay_amount_yuan:.2f}")
 
             else:
+                pass
                 # 无券抵扣，显示原价
                 # 检查会员价格
                 is_member = self.member_info and self.member_info.get('is_member')
@@ -3383,12 +3125,10 @@ class ModularCinemaMainWindow(QMainWindow):
             # 设置文本内容
             if hasattr(self, 'order_detail_text'):
                 self.order_detail_text.setPlainText(details)
-                print(f"[主窗口] 订单详情已更新显示（含券信息）")
             else:
-                print(f"[主窗口] 未找到订单详情显示组件")
+                pass
 
         except Exception as e:
-            print(f"[主窗口] 更新订单详情（含券信息）错误: {e}")
             import traceback
             traceback.print_exc()
 
@@ -3426,13 +3166,10 @@ class ModularCinemaMainWindow(QMainWindow):
 
             if hasattr(self, 'right_layout'):
                 target_layout = self.right_layout
-                print(f"[主窗口] 使用right_layout")
             elif hasattr(self, 'main_layout'):
                 target_layout = self.main_layout
-                print(f"[主窗口] 使用main_layout")
             elif hasattr(self, 'layout'):
                 target_layout = self.layout()
-                print(f"[主窗口] 使用主窗口layout")
 
             if target_layout:
                 # 添加券列表标题
@@ -3444,9 +3181,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 target_layout.addWidget(self.coupon_scroll_area)
                 self.coupon_list_area = self.coupon_scroll_area
 
-                print(f"[主窗口] 券列表区域创建成功")
             else:
-                print(f"[主窗口] 无法找到合适的布局，券列表将显示在独立窗口")
+                pass
                 # 创建独立的券列表窗口
                 self.coupon_list_area = self.coupon_scroll_area
                 self.coupon_scroll_area.setWindowTitle("可用券列表")
@@ -3454,7 +3190,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 self.coupon_scroll_area.show()
 
         except Exception as e:
-            print(f"[主窗口] 创建券列表区域错误: {e}")
+            pass
 
     def _clear_coupon_list(self):
         """清空券列表"""
@@ -3467,7 +3203,7 @@ class ModularCinemaMainWindow(QMainWindow):
                         child.widget().deleteLater()
 
         except Exception as e:
-            print(f"[主窗口] 清空券列表错误: {e}")
+            pass
 
     def _add_coupon_item(self, coupon_type: str, coupon_name: str, expire_date: str, coupon_code: str):
         """添加券项目"""
@@ -3513,7 +3249,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 self.coupon_list_layout.addWidget(coupon_item)
 
         except Exception as e:
-            print(f"[主窗口] 添加券项目错误: {e}")
+            pass
 
 
 def main():

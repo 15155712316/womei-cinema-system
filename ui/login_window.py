@@ -49,15 +49,12 @@ class LoginWindow(QWidget):
         self.auto_login_prevented = False  # 防止自动登录标志
 
         # 输出机器码信息，方便用户确认
-        print(f"[机器码生成] 当前设备机器码: {self.machine_code}")
-        print(f"[登录窗口] 机器码已显示在界面上，可点击复制按钮复制")
 
         self.init_ui()
         self.load_login_history()  # 加载登录历史
 
         # 直接启用登录功能
         self.auto_login_prevented = True
-        print("[登录窗口] 登录功能已启用")
 
     def _safe_login(self):
         """安全登录方法 - 防止意外触发"""
@@ -65,14 +62,11 @@ class LoginWindow(QWidget):
 
         # 额外的安全检查
         if not self.auto_login_prevented:
-            print("[登录窗口] 安全检查：登录功能尚未启用，忽略回车键")
             return
 
         if not self.login_button.isEnabled():
-            print("[登录窗口] 安全检查：登录按钮未启用，忽略回车键")
             return
 
-        print("[登录窗口] 安全检查通过，执行登录")
         self.login()
 
     def init_ui(self):
@@ -282,10 +276,9 @@ class LoginWindow(QWidget):
                     last_phone = history.get('last_phone', '')
                     if last_phone and len(last_phone) == 11:
                         self.phone_input.setText(last_phone)
-                        print(f"[登录历史] 已自动填入上次登录手机号: {last_phone}")
         except Exception as e:
-            print(f"[登录历史] 加载登录历史失败: {e}")
-    
+            pass
+
     def save_login_history(self, phone: str):
         """保存登录历史"""
         try:
@@ -304,10 +297,9 @@ class LoginWindow(QWidget):
             with open(self.login_history_file, 'w', encoding='utf-8') as f:
                 json.dump(history, f, ensure_ascii=False, indent=2)
             
-            print(f"[登录历史] 已保存登录历史: {phone} at {current_time}")
         except Exception as e:
-            print(f"[登录历史] 保存登录历史失败: {e}")
-    
+            pass
+
     def center_window(self):
         """窗口居中显示 - 确保在主屏幕"""
         try:
@@ -328,10 +320,8 @@ class LoginWindow(QWidget):
 
             self.move(x, y)
             print(f"[登录窗口] 窗口已居中到主屏幕: ({x}, {y})")
-            print(f"[登录窗口] 主屏幕范围: {screen_rect}")
 
         except Exception as e:
-            print(f"[登录窗口] 居中窗口失败: {e}")
             # 备用方案：移动到安全位置
             self.move(100, 100)
     
@@ -349,9 +339,6 @@ class LoginWindow(QWidget):
         copy_button.setText("✅ 已复制!")
         success_style = original_style.replace("#6c757d", "#28a745")
         copy_button.setStyleSheet(success_style)
-        
-        print(f"[复制机器码] 机器码已复制到剪贴板: {self.machine_code}")
-        
         # 2.5秒后恢复原样
         QTimer.singleShot(2500, lambda: [
             copy_button.setText(original_text),
@@ -362,7 +349,6 @@ class LoginWindow(QWidget):
         """执行登录"""
         # 防止自动登录检查
         if not self.auto_login_prevented:
-            print("[登录窗口] 阻止自动登录，登录功能尚未启用")
             return
 
         phone = self.phone_input.text().strip()
@@ -376,9 +362,6 @@ class LoginWindow(QWidget):
             MessageManager.show_warning(self, "输入错误", "请输入正确的11位手机号")
             self.phone_input.setFocus()
             return
-
-        print(f"[登录窗口] 用户手动触发登录: {phone}")
-
         # 显示登录进度
         self.set_login_state(True)
 
@@ -456,7 +439,6 @@ def main():
     login_window = LoginWindow()
     
     def on_login_success(user_info):
-        print(f"登录成功: {user_info}")
         app.quit()
     
     login_window.login_success.connect(on_login_success)

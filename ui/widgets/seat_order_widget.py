@@ -182,11 +182,10 @@ class SeatOrderWidget(QWidget):
             # 更新用户信息显示
             self.user_info.setText(f"当前账号: {userid} (余额:{balance})")
             
-            print(f"[座位订单组件] 账号切换: {userid}")
             
         except Exception as e:
-            print(f"[座位订单组件] 账号切换错误: {e}")
-    
+            pass
+
     def _on_cinema_selected(self, cinema_name: str):
         """影院选择处理"""
         try:
@@ -199,11 +198,10 @@ class SeatOrderWidget(QWidget):
                 f"座位图将在选择完成后显示"
             )
             
-            print(f"[座位订单组件] 影院选择: {cinema_name}")
             
         except Exception as e:
-            print(f"[座位订单组件] 影院选择错误: {e}")
-    
+            pass
+
     def _on_seat_input_changed(self, text: str):
         """座位输入变化处理"""
         try:
@@ -219,8 +217,8 @@ class SeatOrderWidget(QWidget):
             self.submit_btn.setEnabled(len(seats) > 0 and self.current_account is not None)
             
         except Exception as e:
-            print(f"[座位订单组件] 座位输入错误: {e}")
-    
+            pass
+
     def _on_submit_order(self):
         """提交订单处理"""
         try:
@@ -283,7 +281,6 @@ class SeatOrderWidget(QWidget):
                 
                 QMessageBox.information(self, "提交成功", f"订单创建成功！\n订单号：{order_data['order_id']}")
                 
-                print(f"[座位订单组件] 订单创建成功: {order_data['order_id']}")
             
         except Exception as e:
             QMessageBox.critical(self, "提交错误", f"提交订单失败: {str(e)}")
@@ -346,7 +343,6 @@ class SeatOrderWidget(QWidget):
                     f"剩余余额：¥{self.current_account['balance']:.2f}"
                 )
                 
-                print(f"[座位订单组件] 支付成功: {self.current_order['order_id']}")
             
         except Exception as e:
             QMessageBox.critical(self, "支付错误", f"支付失败: {str(e)}")
@@ -383,7 +379,6 @@ class SeatOrderWidget(QWidget):
                 
                 QMessageBox.information(self, "取消成功", f"订单已取消\n订单号：{order_id}")
                 
-                print(f"[座位订单组件] 订单取消: {order_id}")
             
         except Exception as e:
             QMessageBox.critical(self, "取消错误", f"取消订单失败: {str(e)}")
@@ -408,8 +403,8 @@ class SeatOrderWidget(QWidget):
             self.order_detail.setPlainText(detail_text)
             
         except Exception as e:
-            print(f"[座位订单组件] 更新订单详情错误: {e}")
-    
+            pass
+
     def set_movie_session(self, movie: str, session: str):
         """设置影片和场次信息"""
         try:
@@ -426,8 +421,8 @@ class SeatOrderWidget(QWidget):
                 )
             
         except Exception as e:
-            print(f"[座位订单组件] 设置影片场次错误: {e}")
-    
+            pass
+
     def clear_selection(self):
         """清除选择"""
         try:
@@ -444,8 +439,8 @@ class SeatOrderWidget(QWidget):
             self.order_detail.clear()
             
         except Exception as e:
-            print(f"[座位订单组件] 清除选择错误: {e}")
-    
+            pass
+
     def get_current_order(self) -> Optional[Dict]:
         """获取当前订单"""
         return self.current_order

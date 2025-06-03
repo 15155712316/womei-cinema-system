@@ -13,7 +13,6 @@ def get_member_info(account, cinemaid):
     """
     try:
         if not cinemaid:
-            print(f"[会员服务] 缺少影院ID参数")
             return None
             
         # 构建会员信息查询参数
@@ -30,7 +29,6 @@ def get_member_info(account, cinemaid):
             'source': '2'
         }
         
-        print(f"[会员服务] 正在获取会员信息，影院ID: {cinemaid}")
         print(f"[会员服务] 用户ID: {account.get('userid')}")
         
         # 调用会员卡列表接口
@@ -50,11 +48,9 @@ def get_member_info(account, cinemaid):
                 'member_level': result_data.get('member_level', '')
             }
             
-            print(f"[会员服务] 会员信息获取成功：{'会员' if member_info['is_member'] else '非会员'}")
             if member_info['is_member']:
-                print(f"[会员服务] 会员余额: {member_info['balance']}")
-                print(f"[会员服务] 会员积分: {member_info['score']}")
-            
+                pass
+
             return member_info
         else:
             print(f"[会员服务] 会员信息API调用失败: {result.get('resultDesc', '未知错误')}")
@@ -68,7 +64,6 @@ def get_member_info(account, cinemaid):
             }
             
     except Exception as e:
-        print(f"[会员服务] 获取会员信息异常: {e}")
         # 返回基础信息
         return {
             'userid': account.get('userid', ''),

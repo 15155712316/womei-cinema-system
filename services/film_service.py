@@ -28,7 +28,6 @@ def get_films(base_url, cinemaid, openid, userid,  token, cversion='3.9.12', os=
     data = json.loads(response.content.decode('utf-8-sig'))
     # 🆕 启用调试信息 - 查看实际API响应结构
     result_data = data['resultData'] if 'resultData' in data else {}
-    print(f"[film_service] API完整响应: {data}")
     print(f"[film_service] resultData类型: {type(result_data)}")
     print(f"[film_service] resultData keys: {list(result_data.keys()) if isinstance(result_data, dict) else '非字典类型'}")
     
@@ -64,13 +63,12 @@ def load_cinemas():
                 compatible_cinemas.append(compatible_cinema)
             return compatible_cinemas
     except Exception as e:
-        print(f"[影院加载] 从新影院管理器加载失败: {e}")
-    
+        pass
+
     # 如果新的管理器没有数据，尝试从旧的 cinemas.json 加载并迁移
     old_path = os.path.join(os.path.dirname(__file__), 'cinemas.json')
     if os.path.exists(old_path):
         try:
-            print(f"[影院加载] 发现旧的影院文件，正在迁移数据...")
             with open(old_path, 'r', encoding='utf-8') as f:
                 old_cinemas = json.load(f)
             
@@ -100,16 +98,13 @@ def load_cinemas():
                 # 迁移成功后，重命名旧文件作为备份
                 backup_path = old_path + '.backup'
                 os.rename(old_path, backup_path)
-                print(f"[影院加载] 旧文件已备份为: {backup_path}")
                 
                 # 返回迁移后的数据
                 return load_cinemas()  # 递归调用，从新管理器加载
             else:
-                print(f"[影院加载] 迁移失败，继续使用旧文件")
                 return old_cinemas
                 
         except Exception as e:
-            print(f"[影院加载] 迁移旧数据失败: {e}")
             try:
                 with open(old_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
@@ -117,7 +112,6 @@ def load_cinemas():
                 return []
     
     # 如果都没有，返回空列表
-    print(f"[影院加载] 未找到影院数据，返回空列表")
     return []
 
 def normalize_film_data(raw_data):
@@ -130,7 +124,6 @@ def normalize_film_data(raw_data):
     }
     """
     # 兼容不同字段名
-    print(raw_data)
     films_raw = raw_data.get('films') 
     shows_raw = raw_data.get('shows', {})
 
@@ -141,8 +134,6 @@ def normalize_film_data(raw_data):
         key = film.get('fc') or film.get('film_key')
         if name and key:
             films.append({'name': name, 'key': key})
-    print(films)
-    print(shows_raw)
     # shows结构直接用
     return {
         'films': films,

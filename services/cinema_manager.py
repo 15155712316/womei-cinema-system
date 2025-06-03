@@ -19,7 +19,6 @@ class CinemaManager:
         data_dir = os.path.dirname(self.cinema_file_path)
         if not os.path.exists(data_dir):
             os.makedirs(data_dir)
-            print(f"[影院管理] 创建数据目录: {data_dir}")
     
     def load_cinema_list(self):
         """
@@ -28,7 +27,6 @@ class CinemaManager:
             影院信息列表
         """
         if not os.path.exists(self.cinema_file_path):
-            print(f"[影院管理] 影院信息文件不存在，返回空列表")
             return []
         
         try:
@@ -37,7 +35,6 @@ class CinemaManager:
             print(f"[影院管理] 加载影院信息成功，共 {len(cinemas)} 个影院")
             return cinemas
         except Exception as e:
-            print(f"[影院管理] 加载影院信息失败: {e}")
             return []
     
     def save_cinema_list(self, cinemas):
@@ -54,7 +51,6 @@ class CinemaManager:
             print(f"[影院管理] 保存影院信息成功，共 {len(cinemas)} 个影院")
             return True
         except Exception as e:
-            print(f"[影院管理] 保存影院信息失败: {e}")
             return False
     
     def add_cinema_by_id(self, cinemaid):

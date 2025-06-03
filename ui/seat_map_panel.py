@@ -204,7 +204,6 @@ class SeatMapPanel(tk.Frame):
         """
         selected = [self.seat_data[r][c] for (r, c) in self.selected_seats]
         priceinfo = self._priceinfo
-        print(f"[DEBUG] update_info_label: priceinfo = {priceinfo}")
         print(f"[DEBUG] update_info_label: selected seats = {len(selected)}")
         account = self.account_getter() if hasattr(self, 'account_getter') else {}
         if account and account.get('cardno'):
@@ -227,7 +226,6 @@ class SeatMapPanel(tk.Frame):
         total = int(price) * len(selected)
         price_part = f"  单价{int(price)}*{len(selected)}={total}元" if seat_strs else ""
         btn_text = f"提交订单  {seat_info}{price_part}" if seat_info else "提交订单"
-        print(f"[DEBUG] final button text: {btn_text}")
         self.submit_btn.config(text=btn_text)
 
     def _on_submit_order_click(self):
@@ -252,7 +250,6 @@ class SeatMapPanel(tk.Frame):
         参数：
             priceinfo: 价格信息字典
         """
-        print(f"[DEBUG] SeatMapPanel.set_priceinfo called with: {priceinfo}")
         self._priceinfo = priceinfo or {}
         self.update_info_label()
 
