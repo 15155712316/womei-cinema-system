@@ -1341,6 +1341,10 @@ class TabManagerWidget(QWidget):
     def _connect_signals(self):
         """连接信号槽"""
         try:
+            # Tab切换信号 - 🆕 添加Tab切换监听
+            if hasattr(self, 'tab_widget'):
+                self.tab_widget.currentChanged.connect(self._on_tab_changed)
+
             # 出票Tab信号 - 检查组件是否存在再连接
             if hasattr(self, 'cinema_combo'):
                 self.cinema_combo.currentTextChanged.connect(self._on_cinema_changed)
@@ -1352,19 +1356,58 @@ class TabManagerWidget(QWidget):
                 self.session_combo.currentTextChanged.connect(self._on_session_changed)
             if hasattr(self, 'submit_order_btn'):
                 self.submit_order_btn.clicked.connect(self._on_submit_order)
-            
+
             # 订单Tab信号
             if hasattr(self, 'order_refresh_btn'):
                 self.order_refresh_btn.clicked.connect(self._on_refresh_orders)
             if hasattr(self, 'order_table'):
                 self.order_table.customContextMenuRequested.connect(self._show_order_context_menu)
                 self.order_table.itemDoubleClicked.connect(self._on_order_double_click)
-            
+
             print("[Tab管理器] 信号连接完成")
-            
+
         except Exception as e:
             print(f"[Tab管理器] 信号连接错误: {e}")
-    
+
+    def _on_tab_changed(self, index: int):
+        """Tab切换处理 - 🆕 实现订单Tab自动刷新"""
+        try:
+            if not hasattr(self, 'tab_widget'):
+                return
+
+            # 获取当前Tab的文本
+            tab_text = self.tab_widget.tabText(index)
+            print(f"[Tab管理器] 🔄 Tab切换到: {tab_text} (索引: {index})")
+
+            # 🎯 当切换到订单Tab时，自动触发刷新
+            if tab_text == "订单":
+                print(f"[Tab管理器] 🎯 检测到切换到订单Tab，准备自动刷新...")
+
+                # 延迟100ms执行刷新，确保Tab切换完成
+                QTimer.singleShot(100, self._auto_refresh_orders)
+
+        except Exception as e:
+            print(f"[Tab管理器] Tab切换处理错误: {e}")
+
+    def _auto_refresh_orders(self):
+        """自动刷新订单数据"""
+        try:
+            print(f"[Tab管理器] 🔄 开始自动刷新订单数据...")
+
+            # 检查订单刷新按钮是否存在
+            if hasattr(self, 'order_refresh_btn') and self.order_refresh_btn:
+                print(f"[Tab管理器] ✅ 找到订单刷新按钮，模拟点击...")
+
+                # 模拟点击刷新按钮
+                self.order_refresh_btn.click()
+
+                print(f"[Tab管理器] 🎉 订单自动刷新完成")
+            else:
+                print(f"[Tab管理器] ❌ 未找到订单刷新按钮")
+
+        except Exception as e:
+            print(f"[Tab管理器] 自动刷新订单错误: {e}")
+
     def _connect_global_events(self):
         """连接全局事件"""
         # 监听账号切换事件
