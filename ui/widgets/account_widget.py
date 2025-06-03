@@ -655,16 +655,40 @@ class AccountWidget(QWidget):
         self.current_account = None
     
     def select_account_by_id(self, userid: str) -> bool:
-        """根据用户ID选择账号"""
+        """🔧 根据用户ID选择账号 - 修复事件触发"""
         try:
+            print(f"[账号组件] 🎯 尝试选择账号: {userid}")
+
             for i in range(self.account_table.rowCount()):
                 item = self.account_table.item(i, 0)
                 if item and item.text() == userid:
+                    print(f"[账号组件] ✅ 找到账号，选择第{i}行")
+
+                    # 选择表格行
                     self.account_table.selectRow(i)
-                    return True
+
+                    # 🔧 获取账号数据并设置为当前账号
+                    account_data = item.data(Qt.UserRole)
+                    if account_data:
+                        self.current_account = account_data
+
+                        # 🔧 发出账号选择信号
+                        self.account_selected.emit(account_data)
+                        event_bus.account_changed.emit(account_data)
+
+                        print(f"[账号组件] ✅ 账号选择完成: {userid}")
+                        return True
+                    else:
+                        print(f"[账号组件] ⚠️ 账号数据为空: {userid}")
+                        return False
+
+            print(f"[账号组件] ❌ 未找到账号: {userid}")
             return False
+
         except Exception as e:
             print(f"[账号组件] 选择账号错误: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
 

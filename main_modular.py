@@ -359,14 +359,19 @@ class ModularCinemaMainWindow(QMainWindow):
         return widget
 
     def _on_copy_path(self):
-        """复制路径按钮点击事件"""
+        """🔧 复制路径按钮点击事件 - 修复为绝对路径"""
         try:
             # 获取当前显示的二维码图片路径
             if hasattr(self, 'current_qr_path') and self.current_qr_path:
+                import os
                 from PyQt5.QtWidgets import QApplication
+
+                # 🔧 转换为绝对路径
+                absolute_path = os.path.abspath(self.current_qr_path)
+
                 clipboard = QApplication.clipboard()
-                clipboard.setText(self.current_qr_path)
-                print(f"[主窗口] ✅ 已复制路径到剪贴板: {self.current_qr_path}")
+                clipboard.setText(absolute_path)
+                print(f"[主窗口] ✅ 已复制绝对路径到剪贴板: {absolute_path}")
             else:
                 print(f"[主窗口] ⚠️ 没有可复制的图片路径")
         except Exception as e:
@@ -1859,9 +1864,29 @@ class ModularCinemaMainWindow(QMainWindow):
         except Exception as e:
             print(f"[主窗口] 全局账号切换处理错误: {e}")
 
-    def _on_global_cinema_selected(self, cinema_name: str):
-        """全局影院选择处理"""
-        print(f"[主窗口] 收到全局影院选择事件: {cinema_name}")
+    def _on_global_cinema_selected(self, cinema_data: dict):
+        """🔧 全局影院选择处理 - 修复参数类型并添加账号自动选择"""
+        try:
+            if not cinema_data:
+                print(f"[主窗口] 收到空的影院选择事件")
+                return
+
+            cinema_name = cinema_data.get('cinemaShortName', '未知影院')
+            cinema_id = cinema_data.get('cinemaid', '')
+
+            print(f"[主窗口] 收到全局影院选择事件: {cinema_name} (ID: {cinema_id})")
+
+            # 🔧 触发该影院的主账号自动选择
+            if cinema_id:
+                print(f"[主窗口] 🎯 开始为影院 {cinema_name} 自动选择主账号")
+                self._auto_select_cinema_account(cinema_data)
+            else:
+                print(f"[主窗口] ⚠️ 影院数据缺少cinemaid，跳过账号自动选择")
+
+        except Exception as e:
+            print(f"[主窗口] 全局影院选择处理错误: {e}")
+            import traceback
+            traceback.print_exc()
 
     def _on_global_order_created(self, order_data: dict):
         """全局订单创建处理"""

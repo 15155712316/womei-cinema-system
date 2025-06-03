@@ -269,7 +269,7 @@ class ClassicTableWidget(QTableWidget):
         self._setup_style()
     
     def _setup_style(self):
-        """设置表格样式"""
+        """🔧 设置表格样式 - 移除悬停效果"""
         self.setStyleSheet("""
             QTableWidget {
                 border: 1px solid #cccccc;
@@ -285,9 +285,6 @@ class ClassicTableWidget(QTableWidget):
             QTableWidget::item:selected {
                 background-color: #0078d4;
                 color: white;
-            }
-            QTableWidget::item:hover {
-                background-color: #e6f3ff;
             }
             QHeaderView::section {
                 background-color: #f0f0f0;

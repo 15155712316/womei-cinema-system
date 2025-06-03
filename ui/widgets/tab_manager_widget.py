@@ -460,7 +460,7 @@ class TabManagerWidget(QWidget):
                             break
                 except:
                     pass
-                
+
                 info_text = (f"当前账号：{account['userid']}\n"
                            f"影院：{cinema_name}\n"
                            f"余额：{account.get('balance', 0)}  积分：{account.get('score', 0)}")
@@ -469,6 +469,35 @@ class TabManagerWidget(QWidget):
             else:
                 self.bind_account_info.setText("请先选择账号和影院")
                 self.bind_account_info.setStyleSheet("QLabel { color: red; background-color: #fff; padding: 10px; border: 1px solid #ddd; }")
+
+    def update_exchange_account_info(self):
+        """🔧 更新兑换券界面的账号信息显示"""
+        account = getattr(self, 'current_account', None)
+        if hasattr(self, 'exchange_account_info'):
+            if account:
+                # 获取影院名称
+                cinema_name = "未知影院"
+                try:
+                    from services.cinema_manager import cinema_manager
+                    cinemas = cinema_manager.load_cinema_list()
+                    for cinema in cinemas:
+                        if cinema.get('cinemaid') == account.get('cinemaid'):
+                            cinema_name = cinema.get('cinemaShortName', '未知影院')
+                            break
+                except:
+                    pass
+
+                info_text = (f"当前账号：{account['userid']}\n"
+                           f"影院：{cinema_name}\n"
+                           f"余额：{account.get('balance', 0)}  积分：{account.get('score', 0)}")
+                self.exchange_account_info.setText(info_text)
+                self.exchange_account_info.setStyleSheet("QLabel { color: blue; background-color: #fff; padding: 10px; border: 1px solid #ddd; }")
+            else:
+                self.exchange_account_info.setText("请先选择账号和影院")
+                self.exchange_account_info.setStyleSheet("QLabel { color: red; background-color: #fff; padding: 10px; border: 1px solid #ddd; }")
+        else:
+            # 如果兑换券界面没有账号信息显示组件，则跳过更新
+            print(f"[Tab管理器] 兑换券界面无账号信息显示组件，跳过更新")
 
     def _build_exchange_coupon_tab(self):
         """构建兑换券Tab页面 - 基于第二部分文档完整实现"""
