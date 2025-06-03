@@ -71,41 +71,103 @@ def get_unpaid_order_detail(params: dict) -> dict:
 
 def get_coupons_by_order(params: dict) -> dict:
     """
-    获取指定订单的可用优惠券列表 - 使用动态base_url
+    获取指定订单的可用优惠券列表 - 🔧 修复空值处理错误
     :param params: dict，需包含 orderno, cinemaid, userid, openid, token 等
-    :return: dict，接口返回的json
+    :return: dict，接口返回的json，确保不返回None
     """
+    # 🔧 修复：检查params参数
+    if params is None:
+        print("[优惠券API] 参数为None")
+        return {"resultCode": "-1", "resultDesc": "参数为空", "resultData": None}
+
+    if not isinstance(params, dict):
+        print(f"[优惠券API] 参数类型错误: {type(params)}")
+        return {"resultCode": "-1", "resultDesc": "参数类型错误", "resultData": None}
+
     cinemaid = params.get('cinemaid')
     if not cinemaid:
+        print("[优惠券API] 缺少影院ID参数")
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
-    
+
     # 特殊的headers for 券接口
     special_headers = {
         'referer': 'https://servicewechat.com/wx03aeb42bd6a3580e/1/page-frame.html'
     }
-    
+
     # 打印请求信息
     import urllib.parse
     print(f"[优惠券API请求] 影院ID: {cinemaid}")
     print(f"[优惠券API请求] params: {params}")
-    
-    return api_get('MiniTicket/index.php/MiniCoupon/getCouponByOrder', cinemaid, params=params, headers=special_headers)
+
+    try:
+        # 调用API
+        result = api_get('MiniTicket/index.php/MiniCoupon/getCouponByOrder', cinemaid, params=params, headers=special_headers)
+
+        # 🔧 修复：确保返回值不为None
+        if result is None:
+            print("[优惠券API] API返回None，可能是网络异常")
+            return {"resultCode": "-1", "resultDesc": "网络异常，API无响应", "resultData": None}
+
+        # 🔧 修复：确保返回值是字典类型
+        if not isinstance(result, dict):
+            print(f"[优惠券API] API返回类型错误: {type(result)}")
+            return {"resultCode": "-1", "resultDesc": "API响应格式错误", "resultData": None}
+
+        print(f"[优惠券API] 响应成功: {result.get('resultCode', 'N/A')}")
+        return result
+
+    except Exception as e:
+        print(f"[优惠券API] 请求异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"resultCode": "-1", "resultDesc": f"请求异常: {e}", "resultData": None}
 
 def get_coupon_list(params: dict) -> dict:
     """
-    获取账号券列表接口（MiniCoupon/getCouponList） - 使用GET请求
+    获取账号券列表接口（MiniCoupon/getCouponList） - 🔧 修复空值处理错误
     :param params: dict，需包含 voucherType, pageNo, groupid, cinemaid, cardno, userid, openid, CVersion, OS, token, source
-    :return: dict，接口返回的json
+    :return: dict，接口返回的json，确保不返回None
     """
+    # 🔧 修复：检查params参数
+    if params is None:
+        print("[券列表API] 参数为None")
+        return {"resultCode": "-1", "resultDesc": "参数为空", "resultData": None}
+
+    if not isinstance(params, dict):
+        print(f"[券列表API] 参数类型错误: {type(params)}")
+        return {"resultCode": "-1", "resultDesc": "参数类型错误", "resultData": None}
+
     cinemaid = params.get('cinemaid')
     if not cinemaid:
+        print("[券列表API] 缺少影院ID参数")
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
-    
+
     print(f"[券列表API] 获取账号券列表")
     print(f"[券列表API] 影院ID: {cinemaid}")
     print(f"[券列表API] 用户ID: {params.get('userid')}")
-    
-    return api_get('MiniTicket/index.php/MiniCoupon/getCouponList', cinemaid, params=params)
+
+    try:
+        # 调用API
+        result = api_get('MiniTicket/index.php/MiniCoupon/getCouponList', cinemaid, params=params)
+
+        # 🔧 修复：确保返回值不为None
+        if result is None:
+            print("[券列表API] API返回None，可能是网络异常")
+            return {"resultCode": "-1", "resultDesc": "网络异常，API无响应", "resultData": None}
+
+        # 🔧 修复：确保返回值是字典类型
+        if not isinstance(result, dict):
+            print(f"[券列表API] API返回类型错误: {type(result)}")
+            return {"resultCode": "-1", "resultDesc": "API响应格式错误", "resultData": None}
+
+        print(f"[券列表API] 响应成功: {result.get('resultCode', 'N/A')}")
+        return result
+
+    except Exception as e:
+        print(f"[券列表API] 请求异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"resultCode": "-1", "resultDesc": f"请求异常: {e}", "resultData": None}
 
 def bind_coupon(params: dict) -> dict:
     """
@@ -395,15 +457,46 @@ def cancel_all_unpaid_orders(account: dict, cinemaid: str) -> dict:
 
 def get_coupon_prepay_info(params: dict) -> dict:
     """
-    获取选券后的价格信息接口（ordercouponPrepay） - 使用动态base_url
+    获取选券后的价格信息接口（ordercouponPrepay） - 🔧 修复空值处理错误
     :param params: dict，需包含 orderno, couponcode, groupid, cinemaid, cardno, userid, openid, CVersion, OS, token, source
-    :return: dict，接口返回的json
+    :return: dict，接口返回的json，确保不返回None
     """
+    # 🔧 修复：检查params参数
+    if params is None:
+        print("[券价格API] 参数为None")
+        return {"resultCode": "-1", "resultDesc": "参数为空", "resultData": None}
+
+    if not isinstance(params, dict):
+        print(f"[券价格API] 参数类型错误: {type(params)}")
+        return {"resultCode": "-1", "resultDesc": "参数类型错误", "resultData": None}
+
     cinemaid = params.get('cinemaid')
     if not cinemaid:
+        print("[券价格API] 缺少影院ID参数")
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
-    
-    return api_get('MiniTicket/index.php/MiniOrder/ordercouponPrepay', cinemaid, params=params)
+
+    try:
+        # 调用API
+        result = api_get('MiniTicket/index.php/MiniOrder/ordercouponPrepay', cinemaid, params=params)
+
+        # 🔧 修复：确保返回值不为None
+        if result is None:
+            print("[券价格API] API返回None，可能是网络异常")
+            return {"resultCode": "-1", "resultDesc": "网络异常，API无响应", "resultData": None}
+
+        # 🔧 修复：确保返回值是字典类型
+        if not isinstance(result, dict):
+            print(f"[券价格API] API返回类型错误: {type(result)}")
+            return {"resultCode": "-1", "resultDesc": "API响应格式错误", "resultData": None}
+
+        print(f"[券价格API] 响应成功: {result.get('resultCode', 'N/A')}")
+        return result
+
+    except Exception as e:
+        print(f"[券价格API] 请求异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"resultCode": "-1", "resultDesc": f"请求异常: {e}", "resultData": None}
 
 def pay_order(params):
     """

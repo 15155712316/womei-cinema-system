@@ -185,7 +185,7 @@ def get_plan_seat_info(
     url = f'https://{base_url}/MiniTicket/index.php/MiniFilm/getPlanSeatInfo'
     response = requests.get(url, headers=headers, params=params, verify=False)
     try:
-        print(response.content.decode('utf-8-sig'))
+        # print(response.content.decode('utf-8-sig'))
         return json.loads(response.content.decode('utf-8-sig'))
     except Exception:
         return {'error': '接口返回内容不是合法JSON', 'text': response.text}

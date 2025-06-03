@@ -1026,18 +1026,41 @@ class ModularCinemaMainWindow(QMainWindow):
     # ===== 辅助方法 =====
     
     def _refresh_account_dependent_data(self):
-        """刷新依赖账号的数据"""
+        """刷新依赖账号的数据 - 🔧 修复空值处理错误"""
         try:
-            # 刷新券列表
-            if self.current_account and self.current_order:
-                coupon_result = get_coupons_by_order({
-                    'account': self.current_account,
-                    'order': self.current_order
-                })
-                self.update_coupons(coupon_result)
-                
+            # 🔧 修复：检查账号和订单数据
+            if not self.current_account or not isinstance(self.current_account, dict):
+                print("[主窗口] 刷新依赖数据失败：账号数据无效")
+                return
+
+            if not self.current_order or not isinstance(self.current_order, dict):
+                print("[主窗口] 刷新依赖数据失败：订单数据无效")
+                return
+
+            # 获取必要参数
+            order_id = self.current_order.get('orderno') or self.current_order.get('order_id', '')
+            cinema_id = ''
+
+            # 尝试从多个来源获取影院ID
+            if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'current_cinema_data'):
+                cinema_data = self.tab_manager_widget.current_cinema_data
+                if isinstance(cinema_data, dict):
+                    cinema_id = cinema_data.get('cinemaid', '')
+
+            if not cinema_id and hasattr(self, 'current_cinema_id'):
+                cinema_id = self.current_cinema_id
+
+            if order_id and cinema_id:
+                print(f"[主窗口] 刷新券列表，订单: {order_id}, 影院: {cinema_id}")
+                # 调用修复后的券列表加载函数
+                self._load_available_coupons(order_id, cinema_id)
+            else:
+                print(f"[主窗口] 刷新券列表失败：缺少参数 - 订单ID: {order_id}, 影院ID: {cinema_id}")
+
         except Exception as e:
-            pass
+            import traceback
+            traceback.print_exc()
+            print(f"[主窗口] 刷新依赖数据异常: {e}")
     
     def _save_account_data(self, account):
         """保存账号数据"""
@@ -1262,7 +1285,8 @@ class ModularCinemaMainWindow(QMainWindow):
     def _on_session_selected(self, session_info: dict):
         """场次选择处理 - 加载座位图"""
         try:
-            print(f"[主窗口] 收到场次选择信号: {session_info.get('session_text', 'N/A')}")
+            # print(f"[主窗口] 收到场次选择信号: {session_info.get('session_text', 'N/A')}")
+            # print("[主窗口333] 收到场次选择信号")
             
             # 验证必要信息
             session_data = session_info.get('session_data')
@@ -1656,7 +1680,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _on_seat_load_requested(self, seat_load_data: dict):
         """处理座位图加载请求信号 - 来自Tab管理器的选座按钮"""
         try:
-            print(f"[主窗口] 收到座位图加载请求: {seat_load_data.get('trigger_type', 'unknown')}")
+            # print(f"[主窗口] 收到座位图加载请求: {seat_load_data.get('trigger_type', 'unknown')}")
 
             # 获取场次数据
             session_data = seat_load_data.get('session_data', {})
@@ -2698,11 +2722,12 @@ class ModularCinemaMainWindow(QMainWindow):
             return None
 
     def _load_available_coupons(self, order_id: str, cinema_id: str):
-        """获取订单可用券列表"""
+        """获取订单可用券列表 - 🔧 修复空值处理错误"""
         try:
             if not self.current_account or not order_id or not cinema_id:
+                print("[主窗口] 券列表加载失败：缺少必要参数")
+                self._show_coupon_error_message("参数不完整，无法加载券列表")
                 return
-
 
             # 方法1：获取订单可用券（推荐，针对特定订单）
             from services.order_api import get_coupons_by_order
@@ -2720,60 +2745,115 @@ class ModularCinemaMainWindow(QMainWindow):
                 'cardno': self.current_account.get('cardno', '')
             }
 
+            print(f"[主窗口] 开始获取券列表，订单号: {order_id}")
 
             # 调用API获取券列表
             coupon_result = get_coupons_by_order(coupon_params)
 
-            if coupon_result:
-                if coupon_result.get('resultCode') == '0':
-                    result_data = coupon_result.get('resultData', {})
-                    coupons = result_data.get('vouchers', []) if isinstance(result_data, dict) else []
-                    print(f"[主窗口] 获取到 {len(coupons)} 张可用券")
+            # 🔧 修复：添加完整的空值检查
+            if coupon_result is None:
+                print("[主窗口] 券列表API返回None，可能是网络异常或服务器无响应")
+                self._show_coupon_error_message("网络异常，无法获取券列表")
+                return
 
-                    # 显示券列表
-                    self._show_coupon_list(coupons)
-                else:
-                    error_desc = coupon_result.get('resultDesc', '未知错误')
-                    # 不要递归调用，直接清空券列表
-                    try:
-                        if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
-                            self.tab_manager_widget.coupon_list.clear()
-                            self.tab_manager_widget.coupon_list.addItem("暂无可用券")
-                    except:
-                        pass
+            # 🔧 修复：检查coupon_result是否为字典类型
+            if not isinstance(coupon_result, dict):
+                print(f"[主窗口] 券列表API返回格式错误，类型: {type(coupon_result)}")
+                self._show_coupon_error_message("数据格式错误，无法解析券列表")
+                return
+
+            # 检查API响应状态
+            result_code = coupon_result.get('resultCode')
+            if result_code == '0':
+                # 成功获取券列表
+                result_data = coupon_result.get('resultData')
+
+                # 🔧 修复：检查result_data是否为None
+                if result_data is None:
+                    print("[主窗口] 券列表数据为空")
+                    self._show_coupon_list([])  # 显示空券列表
+                    return
+
+                # 🔧 修复：确保result_data是字典类型
+                if not isinstance(result_data, dict):
+                    print(f"[主窗口] 券列表数据格式错误，类型: {type(result_data)}")
+                    self._show_coupon_error_message("券数据格式错误")
+                    return
+
+                # 获取券列表
+                coupons = result_data.get('vouchers', [])
+
+                # 🔧 修复：确保coupons是列表类型
+                if not isinstance(coupons, list):
+                    print(f"[主窗口] 券列表不是数组格式，类型: {type(coupons)}")
+                    coupons = []
+
+                print(f"[主窗口] 获取到 {len(coupons)} 张可用券")
+
+                # 显示券列表
+                self._show_coupon_list(coupons)
+
             else:
-                pass
-                # 不要递归调用，直接清空券列表
-                try:
-                    if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
-                        self.tab_manager_widget.coupon_list.clear()
-                        self.tab_manager_widget.coupon_list.addItem("暂无可用券")
-                except:
-                    pass
+                # API返回错误
+                error_desc = coupon_result.get('resultDesc', '未知错误')
+                print(f"[主窗口] 券列表API返回错误: {error_desc}")
+                self._show_coupon_error_message(f"获取券列表失败: {error_desc}")
 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            # 不要递归调用，直接清空券列表
-            try:
-                if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
-                    self.tab_manager_widget.coupon_list.clear()
-                    self.tab_manager_widget.coupon_list.addItem("券列表加载失败")
-            except:
-                pass
+            print(f"[主窗口] 券列表加载异常: {e}")
+            self._show_coupon_error_message("券列表加载异常，请重试")
+
+    def _show_coupon_error_message(self, error_message: str):
+        """显示券列表错误信息 - 🔧 新增辅助函数"""
+        try:
+            # 查找券列表组件
+            coupon_list_widget = None
+
+            if hasattr(self, 'coupon_list'):
+                coupon_list_widget = self.coupon_list
+            elif hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'coupon_list'):
+                coupon_list_widget = self.tab_manager_widget.coupon_list
+
+            if coupon_list_widget is not None:
+                coupon_list_widget.clear()
+                coupon_list_widget.addItem(f"❌ {error_message}")
+                print(f"[主窗口] 券列表错误信息已显示: {error_message}")
+            else:
+                print(f"[主窗口] 无法显示券列表错误信息: {error_message}")
+
+        except Exception as e:
+            print(f"[主窗口] 显示券列表错误信息失败: {e}")
 
     def _show_coupon_list(self, coupons: list):
-        """显示券列表 - 🆕 添加券选择事件处理和实时价格查询"""
+        """显示券列表 - 🔧 修复空值处理错误"""
         try:
+            # 🔧 修复：确保coupons参数不为None
+            if coupons is None:
+                print("[主窗口] 券列表参数为None，使用空列表")
+                coupons = []
+
+            # 🔧 修复：确保coupons是列表类型
+            if not isinstance(coupons, list):
+                print(f"[主窗口] 券列表参数类型错误: {type(coupons)}，使用空列表")
+                coupons = []
+
             print(f"[主窗口] 显示券列表: {len(coupons)} 张券")
 
             # 🆕 保存券数据到实例变量
             self.coupons_data = coupons
 
             # 🆕 根据当前订单的座位数设置券选择数量限制
-            if self.current_order:
-                seat_count = len(self.current_order.get('seats', []))
+            if self.current_order and isinstance(self.current_order, dict):
+                seats = self.current_order.get('seats', [])
+                if isinstance(seats, list):
+                    seat_count = len(seats)
+                else:
+                    seat_count = 1
                 self.max_coupon_select = max(1, seat_count)  # 至少允许选择1张券
+            else:
+                self.max_coupon_select = 1
 
             # 查找现有的券列表组件
             coupon_list_widget = None
@@ -2824,6 +2904,11 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 # 显示券列表
                 for i, coupon in enumerate(coupons):
+                    # 🔧 修复：确保coupon是字典类型
+                    if not isinstance(coupon, dict):
+                        print(f"[主窗口] 跳过无效券数据: {coupon}")
+                        continue
+
                     # 解析券信息 - 使用真实API的字段名称
                     # 券名称：尝试多个字段
                     coupon_name = coupon.get('couponname') or coupon.get('voucherName') or coupon.get('name', f'券{i+1}')
@@ -2838,12 +2923,12 @@ class ModularCinemaMainWindow(QMainWindow):
                     coupon_type = coupon.get('voucherType') or coupon.get('coupontype') or '优惠券'
 
                     # 如果券类型为空或者是数字，尝试从券名称推断
-                    if not coupon_type or coupon_type.isdigit():
-                        if '延时' in coupon_name:
+                    if not coupon_type or (isinstance(coupon_type, str) and coupon_type.isdigit()):
+                        if '延时' in str(coupon_name):
                             coupon_type = '延时券'
-                        elif '折' in coupon_name:
+                        elif '折' in str(coupon_name):
                             coupon_type = '折扣券'
-                        elif '送' in coupon_name:
+                        elif '送' in str(coupon_name):
                             coupon_type = '赠送券'
                         else:
                             coupon_type = '优惠券'
@@ -2854,7 +2939,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 print(f"[主窗口] 券列表显示完成，共 {len(coupons)} 张券")
             else:
-                pass
                 # 不要递归调用，避免无限循环
                 # 可以在这里记录日志或者显示提示信息
                 print(f"[主窗口] 券列表显示被跳过，共 {len(coupons)} 张券未显示")
@@ -2862,9 +2946,12 @@ class ModularCinemaMainWindow(QMainWindow):
         except Exception as e:
             import traceback
             traceback.print_exc()
+            print(f"[主窗口] 显示券列表异常: {e}")
+            # 尝试显示错误信息
+            self._show_coupon_error_message("券列表显示异常")
 
     def _on_coupon_selection_changed(self):
-        """券选择事件处理器 - 🆕 实现券选择和实时价格查询功能"""
+        """券选择事件处理器 - 🔧 修复空值处理错误"""
         try:
             # 获取券列表组件
             coupon_list_widget = None
@@ -2874,15 +2961,38 @@ class ModularCinemaMainWindow(QMainWindow):
                 coupon_list_widget = self.tab_manager_widget.coupon_list
 
             if not coupon_list_widget:
+                print("[主窗口] 券选择事件：找不到券列表组件")
+                return
+
+            # 🔧 修复：检查券数据是否存在
+            if not hasattr(self, 'coupons_data') or self.coupons_data is None:
+                print("[主窗口] 券选择事件：券数据不存在")
+                return
+
+            # 🔧 修复：确保券数据是列表类型
+            if not isinstance(self.coupons_data, list):
+                print(f"[主窗口] 券选择事件：券数据类型错误: {type(self.coupons_data)}")
                 return
 
             # 获取选中的券项目索引
             selected_items = coupon_list_widget.selectedItems()
-            selected_indices = [coupon_list_widget.row(item) for item in selected_items]
+            if selected_items is None:
+                selected_items = []
 
+            selected_indices = []
+            for item in selected_items:
+                if item is not None:
+                    row = coupon_list_widget.row(item)
+                    if row >= 0:
+                        selected_indices.append(row)
+
+            # 🔧 修复：检查max_coupon_select属性
+            if not hasattr(self, 'max_coupon_select') or self.max_coupon_select is None:
+                self.max_coupon_select = 1
 
             # 检查选择数量限制
             if len(selected_indices) > self.max_coupon_select:
+                from services.ui_utils import MessageManager
                 MessageManager.show_warning(
                     self, "选择限制",
                     f"最多只能选择 {self.max_coupon_select} 张券"
@@ -2898,6 +3008,12 @@ class ModularCinemaMainWindow(QMainWindow):
             for index in selected_indices:
                 if 0 <= index < len(self.coupons_data):
                     coupon = self.coupons_data[index]
+
+                    # 🔧 修复：确保coupon是字典类型
+                    if not isinstance(coupon, dict):
+                        print(f"[主窗口] 券选择事件：跳过无效券数据: {coupon}")
+                        continue
+
                     coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or coupon.get('code', '')
                     if coupon_code:
                         selected_codes.append(coupon_code)

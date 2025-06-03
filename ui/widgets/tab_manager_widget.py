@@ -615,7 +615,16 @@ class TabManagerWidget(QWidget):
                 if coupon_result and coupon_result.get('resultCode') == '0':
                     # 成功获取券列表
                     result_data = coupon_result.get('resultData', {})
-                    vouchers = result_data.get('vouchers', [])
+
+                    # 🔧 修复：检查result_data是否为None
+                    if result_data is None:
+                        print("[券列表API] resultData为None，使用空列表")
+                        vouchers = []
+                    elif not isinstance(result_data, dict):
+                        print(f"[券列表API] resultData类型错误: {type(result_data)}，使用空列表")
+                        vouchers = []
+                    else:
+                        vouchers = result_data.get('vouchers', [])
                     
                     print(f"[券列表解析] 获取到 {len(vouchers)} 张券")
                     
@@ -2069,7 +2078,7 @@ class TabManagerWidget(QWidget):
             
             # 🆕 保存当前场次数据供订单创建使用
             self.current_session_data = selected_session
-            print(f"[Tab管理器] 保存当前场次数据: {selected_session}")
+            # print(f"[Tab管理器] 保存当前场次数据: {selected_session}")
             
             # 获取当前选择的完整信息
             cinema_text = self.cinema_combo.currentText() if hasattr(self, 'cinema_combo') else ""
@@ -2229,6 +2238,13 @@ class TabManagerWidget(QWidget):
                 # 🔧 修复：详细分析API返回的数据结构
                 result_data = result.get('resultData', {})
 
+                # 🔧 修复：检查result_data是否为None
+                if result_data is None:
+                    print("[订单刷新] resultData为None，使用空列表")
+                    orders = []
+                    self.update_order_table(orders)
+                    return
+
                 print(f"[订单刷新] API返回数据结构分析:")
                 print(f"  - resultData类型: {type(result_data)}")
                 print(f"  - resultData内容: {result_data}")
@@ -2240,17 +2256,17 @@ class TabManagerWidget(QWidget):
                 orders = None
 
                 # 路径1: resultData.orders
-                if 'orders' in result_data:
+                if isinstance(result_data, dict) and 'orders' in result_data:
                     orders = result_data['orders']
                     print(f"[订单刷新] 使用路径 resultData.orders，获取到 {len(orders)} 个订单")
 
                 # 路径2: resultData.orderList
-                elif 'orderList' in result_data:
+                elif isinstance(result_data, dict) and 'orderList' in result_data:
                     orders = result_data['orderList']
                     print(f"[订单刷新] 使用路径 resultData.orderList，获取到 {len(orders)} 个订单")
 
                 # 路径3: resultData.data.orders
-                elif 'data' in result_data and isinstance(result_data['data'], dict):
+                elif isinstance(result_data, dict) and 'data' in result_data and isinstance(result_data['data'], dict):
                     data = result_data['data']
                     if 'orders' in data:
                         orders = data['orders']
@@ -2495,6 +2511,15 @@ class TabManagerWidget(QWidget):
 
             # 🎯 第二步：从订单详情中提取取票码
             detail_data = detail_result.get('resultData', {})
+
+            # 🔧 修复：检查detail_data是否为None
+            if detail_data is None:
+                print("[订单二维码] ❌ 订单详情数据为None")
+                return
+
+            if not isinstance(detail_data, dict):
+                print(f"[订单二维码] ❌ 订单详情数据类型错误: {type(detail_data)}")
+                return
 
             # 🔧 修改：使用qrCode字段作为取票码
             qr_code = detail_data.get('qrCode', '')
