@@ -4,10 +4,7 @@
 UI工具类 - 提供统一的消息管理和UI辅助功能
 """
 
-import tkinter as tk
-from tkinter import messagebox
-from typing import Optional, Any
-from PyQt5.QtWidgets import QMessageBox, QApplication
+from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QFont
 
@@ -182,94 +179,58 @@ class UIConstants:
         return UIConstants.SUCCESS_POPUP_EVENTS.get(event_name, False)
 
 class UIHelper:
-    """UI辅助工具"""
-    
+    """UI辅助工具 - PyQt5版本"""
+
     @staticmethod
-    def center_window(window: tk.Toplevel, width: int = 400, height: int = 300) -> None:
+    def center_window(window, width: int = 400, height: int = 300) -> None:
         """
-        将窗口居中显示
-        
+        将PyQt5窗口居中显示
+
         Args:
-            window: 要居中的窗口
+            window: 要居中的PyQt5窗口
             width: 窗口宽度
             height: 窗口高度
         """
         try:
-            window.update_idletasks()
-            
+            from PyQt5.QtWidgets import QDesktopWidget
+
+            # 设置窗口大小
+            window.resize(width, height)
+
             # 获取屏幕尺寸
-            screen_width = window.winfo_screenwidth()
-            screen_height = window.winfo_screenheight()
-            
+            screen = QDesktopWidget().screenGeometry()
+
             # 计算居中位置
-            x = (screen_width - width) // 2
-            y = (screen_height - height) // 2
-            
-            # 设置窗口位置和大小
-            window.geometry(f"{width}x{height}+{x}+{y}")
+            x = (screen.width() - width) // 2
+            y = (screen.height() - height) // 2
+
+            # 设置窗口位置
+            window.move(x, y)
         except Exception as e:
             print(f"[UIHelper] 窗口居中失败: {e}")
-    
+
     @staticmethod
-    def create_label_frame(parent: tk.Widget, text: str, **kwargs) -> tk.LabelFrame:
+    def apply_button_style(button, style='primary'):
         """
-        创建标准样式的LabelFrame
-        
+        为PyQt5按钮应用样式
+
         Args:
-            parent: 父组件
-            text: 标题文本
-            **kwargs: 其他参数
-            
-        Returns:
-            tk.LabelFrame: 创建的LabelFrame
-        """
-        default_style = {
-            'font': ('微软雅黑', 10),
-            'foreground': UIConstants.COLORS['TEXT'],
-            'relief': 'groove',
-            'borderwidth': 1
-        }
-        default_style.update(kwargs)
-        
-        return tk.LabelFrame(parent, text=text, **default_style)
-    
-    @staticmethod
-    def create_button(parent: tk.Widget, text: str, command=None, style='primary', **kwargs) -> tk.Button:
-        """
-        创建标准样式的按钮
-        
-        Args:
-            parent: 父组件
-            text: 按钮文本
-            command: 点击回调
+            button: PyQt5按钮对象
             style: 样式类型 ('primary', 'success', 'warning', 'error')
-            **kwargs: 其他参数
-            
-        Returns:
-            tk.Button: 创建的按钮
         """
         style_config = {
-            'primary': {'bg': UIConstants.COLORS['PRIMARY'], 'fg': 'white'},
-            'success': {'bg': UIConstants.COLORS['SUCCESS'], 'fg': 'white'},
-            'warning': {'bg': UIConstants.COLORS['WARNING'], 'fg': 'white'},
-            'error': {'bg': UIConstants.COLORS['ERROR'], 'fg': 'white'},
+            'primary': f"background-color: {UIConstants.COLORS['PRIMARY']}; color: white; border: none; padding: 8px 16px; border-radius: 4px;",
+            'success': f"background-color: {UIConstants.COLORS['SUCCESS']}; color: white; border: none; padding: 8px 16px; border-radius: 4px;",
+            'warning': f"background-color: {UIConstants.COLORS['WARNING']}; color: white; border: none; padding: 8px 16px; border-radius: 4px;",
+            'error': f"background-color: {UIConstants.COLORS['ERROR']}; color: white; border: none; padding: 8px 16px; border-radius: 4px;",
         }
-        
-        default_style = {
-            'font': ('微软雅黑', 10),
-            'relief': 'flat',
-            'borderwidth': 0,
-            'cursor': 'hand2',
-            'activebackground': UIConstants.COLORS['PRIMARY'],
-            'activeforeground': 'white'
-        }
-        
+
         if style in style_config:
-            default_style.update(style_config[style])
-        
-        default_style.update(kwargs)
-        
-        return tk.Button(parent, text=text, command=command, **default_style)
+            button.setStyleSheet(style_config[style])
+
+        # 设置字体
+        font = QFont("Microsoft YaHei", 10)
+        button.setFont(font)
 
 def safe_call(func, *args, **kwargs):
     """

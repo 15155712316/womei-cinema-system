@@ -1148,7 +1148,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 ])
     
     def _show_order_detail(self, order_detail):
-        """显示订单详情 - 改善UI：使用更好的格式和布局"""
+        """显示订单详情 - 修复空行问题，使用紧凑格式"""
         try:
             if not order_detail:
                 return
@@ -1158,16 +1158,16 @@ class ModularCinemaMainWindow(QMainWindow):
             if phone:
                 self.phone_display.setText(f"手机号: {phone}")
 
-            # 构建格式化的订单详情 - 参考您提供的格式
-            details = ""
+            # 构建格式化的订单详情 - 使用列表收集信息，避免多余空行
+            info_lines = []
 
             # 订单号
             order_id = order_detail.get('orderno', order_detail.get('order_id', 'N/A'))
-            details += f"订单号: {order_id}\n\n"
+            info_lines.append(f"订单号: {order_id}")
 
             # 影片信息
             movie = order_detail.get('movie', order_detail.get('film_name', 'N/A'))
-            details += f"影片: {movie}\n\n"
+            info_lines.append(f"影片: {movie}")
 
             # 时间信息
             show_time = order_detail.get('showTime', '')
@@ -1176,26 +1176,26 @@ class ModularCinemaMainWindow(QMainWindow):
                 session = order_detail.get('session', '')
                 if date and session:
                     show_time = f"{date} {session}"
-            details += f"时间: {show_time}\n\n"
+            info_lines.append(f"时间: {show_time}")
 
             # 影厅信息
             cinema = order_detail.get('cinema', order_detail.get('cinema_name', 'N/A'))
             hall = order_detail.get('hall_name', '')
             if hall:
-                details += f"影厅: {hall}\n\n"
+                info_lines.append(f"影厅: {hall}")
             else:
-                details += f"影院: {cinema}\n\n"
+                info_lines.append(f"影院: {cinema}")
 
             # 座位信息
             seats = order_detail.get('seats', [])
             if isinstance(seats, list) and seats:
                 if len(seats) == 1:
-                    details += f"座位: {seats[0]}\n\n"
+                    info_lines.append(f"座位: {seats[0]}")
                 else:
                     seat_str = " ".join(seats)
-                    details += f"座位: {seat_str}\n\n"
+                    info_lines.append(f"座位: {seat_str}")
             else:
-                details += f"座位: {seats}\n\n"
+                info_lines.append(f"座位: {seats}")
 
             # 票价信息
             amount = order_detail.get('amount', 0)
@@ -1203,16 +1203,19 @@ class ModularCinemaMainWindow(QMainWindow):
 
             if seat_count > 1:
                 unit_price = amount / seat_count if seat_count > 0 else amount
-                details += f"票价: {seat_count}张×¥{unit_price:.2f}\n\n"
+                info_lines.append(f"票价: {seat_count}张×¥{unit_price:.2f}")
             else:
-                details += f"票价: ¥{amount:.2f}\n\n"
+                info_lines.append(f"票价: ¥{amount:.2f}")
 
             # 状态信息
             status = order_detail.get('status', '未知')
-            details += f"状态: {status}\n\n"
+            info_lines.append(f"状态: {status}")
 
             # 实付金额
-            details += f"实付金额: ¥{amount:.2f}"
+            info_lines.append(f"实付金额: ¥{amount:.2f}")
+
+            # 🔧 修复：使用单个换行符连接，确保紧凑显示
+            details = "\n".join(info_lines)
 
             # 设置文本内容
             self.order_detail_text.setPlainText(details)
@@ -1222,7 +1225,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 self.start_countdown(900)  # 15分钟倒计时
             else:
                 self.stop_countdown()
-
 
         except Exception as e:
             import traceback
@@ -2315,24 +2317,29 @@ class ModularCinemaMainWindow(QMainWindow):
             pass
 
     def _update_order_details(self, order_data: dict):
-        """更新订单详情显示"""
+        """更新订单详情显示 - 修复空行问题，使用紧凑格式"""
         try:
             # 更新手机号显示
             phone = order_data.get('phone', '')
             if phone:
                 self.phone_display.setText(f"手机号: {phone}")
-            
-            # 更新订单详情
-            details = f"订单信息:\n"
-            details += f"影院: {order_data.get('cinema', '未选择')}\n"
-            details += f"影片: {order_data.get('movie', '未选择')}\n"
-            details += f"场次: {order_data.get('session', '未选择')}\n"
-            details += f"座位: {order_data.get('seats', '未选择')}\n"
-            details += f"金额: ¥{order_data.get('amount', 0):.2f}\n"
-            details += f"状态: {order_data.get('status', '待支付')}"
-            
+
+            # 构建格式化的订单详情 - 使用列表收集信息，避免多余空行
+            info_lines = []
+
+            info_lines.append("订单信息:")
+            info_lines.append(f"影院: {order_data.get('cinema', '未选择')}")
+            info_lines.append(f"影片: {order_data.get('movie', '未选择')}")
+            info_lines.append(f"场次: {order_data.get('session', '未选择')}")
+            info_lines.append(f"座位: {order_data.get('seats', '未选择')}")
+            info_lines.append(f"金额: ¥{order_data.get('amount', 0):.2f}")
+            info_lines.append(f"状态: {order_data.get('status', '待支付')}")
+
+            # 🔧 修复：使用单个换行符连接，确保紧凑显示
+            details = "\n".join(info_lines)
+
             self.order_detail_text.setPlainText(details)
-            
+
             # 🆕 移除倒计时更新
         except Exception as e:
             pass
@@ -3126,25 +3133,24 @@ class ModularCinemaMainWindow(QMainWindow):
             traceback.print_exc()
 
     def _update_order_detail_with_coupon_info(self):
-        """🆕 更新订单详情显示，包含券抵扣信息"""
+        """🆕 更新订单详情显示，包含券抵扣信息 - 修复空行问题"""
         try:
             if not self.current_order:
                 return
 
-
             # 获取基础订单信息
             order_detail = self.current_order
 
-            # 构建格式化的订单详情
-            details = ""
+            # 构建格式化的订单详情 - 使用列表收集信息，避免多余空行
+            info_lines = []
 
             # 订单号
             order_id = order_detail.get('orderno', order_detail.get('order_id', 'N/A'))
-            details += f"订单号: {order_id}\n\n"
+            info_lines.append(f"订单号: {order_id}")
 
             # 影片信息
             movie = order_detail.get('movie', order_detail.get('film_name', 'N/A'))
-            details += f"影片: {movie}\n\n"
+            info_lines.append(f"影片: {movie}")
 
             # 时间信息
             show_time = order_detail.get('showTime', '')
@@ -3153,26 +3159,26 @@ class ModularCinemaMainWindow(QMainWindow):
                 session = order_detail.get('session', '')
                 if date and session:
                     show_time = f"{date} {session}"
-            details += f"时间: {show_time}\n\n"
+            info_lines.append(f"时间: {show_time}")
 
             # 影厅信息
             cinema = order_detail.get('cinema', order_detail.get('cinema_name', 'N/A'))
             hall = order_detail.get('hall_name', '')
             if hall:
-                details += f"影厅: {hall}\n\n"
+                info_lines.append(f"影厅: {hall}")
             else:
-                details += f"影院: {cinema}\n\n"
+                info_lines.append(f"影院: {cinema}")
 
             # 座位信息
             seats = order_detail.get('seats', [])
             if isinstance(seats, list) and seats:
                 if len(seats) == 1:
-                    details += f"座位: {seats[0]}\n\n"
+                    info_lines.append(f"座位: {seats[0]}")
                 else:
                     seat_str = " ".join(seats)
-                    details += f"座位: {seat_str}\n\n"
+                    info_lines.append(f"座位: {seat_str}")
             else:
-                details += f"座位: {seats}\n\n"
+                info_lines.append(f"座位: {seats}")
 
             # 🆕 票价和券抵扣信息
             original_amount = order_detail.get('amount', 0)
@@ -3181,9 +3187,9 @@ class ModularCinemaMainWindow(QMainWindow):
             # 显示原价
             if seat_count > 1:
                 unit_price = original_amount / seat_count if seat_count > 0 else original_amount
-                details += f"原价: {seat_count}张×¥{unit_price:.2f} = ¥{original_amount:.2f}\n\n"
+                info_lines.append(f"原价: {seat_count}张×¥{unit_price:.2f} = ¥{original_amount:.2f}")
             else:
-                details += f"原价: ¥{original_amount:.2f}\n\n"
+                info_lines.append(f"原价: ¥{original_amount:.2f}")
 
             # 🆕 券抵扣信息
             if self.current_coupon_info and self.selected_coupons:
@@ -3207,41 +3213,41 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 # 显示券信息
                 coupon_count = len(self.selected_coupons)
-                details += f"使用券: {coupon_count}张\n"
-                details += f"券抵扣: -¥{discount_price_yuan:.2f}\n\n"
+                info_lines.append(f"使用券: {coupon_count}张")
+                info_lines.append(f"券抵扣: -¥{discount_price_yuan:.2f}")
 
                 # 显示实付金额
                 if pay_amount_yuan == 0:
-                    details += f"实付金额: ¥0.00 (纯券支付)"
+                    info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
                 else:
-                    details += f"实付金额: ¥{pay_amount_yuan:.2f}"
+                    final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
                     if is_member and mem_payment_fen != 0:
-                        details += " (会员价)"
-
+                        final_amount += " (会员价)"
+                    info_lines.append(final_amount)
 
             else:
-                pass
                 # 无券抵扣，显示原价
                 # 检查会员价格
                 is_member = self.member_info and self.member_info.get('is_member')
                 if is_member:
                     mem_total_price = order_detail.get('mem_totalprice', 0)
                     if mem_total_price > 0:
-                        details += f"实付金额: ¥{mem_total_price/100.0:.2f} (会员价)"
+                        info_lines.append(f"实付金额: ¥{mem_total_price/100.0:.2f} (会员价)")
                     else:
-                        details += f"实付金额: ¥{original_amount:.2f}"
+                        info_lines.append(f"实付金额: ¥{original_amount:.2f}")
                 else:
-                    details += f"实付金额: ¥{original_amount:.2f}"
+                    info_lines.append(f"实付金额: ¥{original_amount:.2f}")
 
             # 状态信息
             status = order_detail.get('status', '待支付')
-            details += f"\n\n状态: {status}"
+            info_lines.append(f"状态: {status}")
+
+            # 🔧 修复：使用单个换行符连接，确保紧凑显示
+            details = "\n".join(info_lines)
 
             # 设置文本内容
             if hasattr(self, 'order_detail_text'):
                 self.order_detail_text.setPlainText(details)
-            else:
-                pass
 
         except Exception as e:
             import traceback
