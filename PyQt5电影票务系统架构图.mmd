@@ -1,0 +1,67 @@
+graph TB
+    subgraph "用户界面层 (UI Layer)"
+        UI1[主窗口<br/>ModularCinemaMainWindow]
+        UI2[账号管理组件<br/>AccountWidget]
+        UI3[Tab管理组件<br/>TabManagerWidget]
+        UI4[座位订单组件<br/>SeatOrderWidget]
+        UI5[登录窗口<br/>LoginWindow]
+    end
+    
+    subgraph "业务逻辑层 (Business Layer)"
+        BL1[认证服务<br/>AuthService]
+        BL2[影院管理<br/>CinemaManager]
+        BL3[会员服务<br/>MemberService]
+        BL4[订单详情管理<br/>OrderDetailManager]
+        BL5[消息管理<br/>MessageManager]
+    end
+    
+    subgraph "API接口层 (API Layer)"
+        API1[订单API<br/>order_api]
+        API2[支付API<br/>pay_order]
+        API3[影院API<br/>cinema_api]
+        API4[会员API<br/>member_api]
+        API5[账号API<br/>account_api]
+        API6[基础API<br/>api_base]
+    end
+    
+    subgraph "数据层 (Data Layer)"
+        DATA1[账号数据<br/>account_data]
+        DATA2[影院数据<br/>cinema_data]
+        DATA3[订单数据<br/>order_data]
+        DATA4[会员数据<br/>member_data]
+    end
+    
+    subgraph "工具层 (Utility Layer)"
+        UTIL1[信号总线<br/>event_bus]
+        UTIL2[UI工具<br/>ui_utils]
+        UTIL3[经典组件<br/>classic_components]
+    end
+    
+    UI1 --> UI2
+    UI1 --> UI3
+    UI1 --> UI4
+    UI1 --> UI5
+    
+    UI1 --> BL1
+    UI1 --> BL2
+    UI1 --> BL3
+    UI1 --> BL4
+    UI1 --> BL5
+    
+    BL1 --> API1
+    BL2 --> API3
+    BL3 --> API4
+    BL4 --> API1
+    BL5 --> API6
+    
+    API1 --> DATA3
+    API2 --> DATA3
+    API3 --> DATA2
+    API4 --> DATA4
+    API5 --> DATA1
+    
+    UI1 --> UTIL1
+    UI2 --> UTIL3
+    UI3 --> UTIL3
+    UI4 --> UTIL3
+    BL5 --> UTIL2

@@ -1,0 +1,1596 @@
+{
+  "file_info": {
+    "path": "main_modular.py",
+    "total_lines": 4425,
+    "total_classes": 1,
+    "total_methods": 106
+  },
+  "imports": {
+    "total": 162,
+    "by_category": {
+      "system": 43,
+      "external": 4,
+      "ui_framework": 49,
+      "ui_components": 18,
+      "utilities": 3,
+      "business_services": 44,
+      "business_modules": 1
+    }
+  },
+  "classes": [
+    {
+      "name": "ModularCinemaMainWindow",
+      "line_start": 59,
+      "line_end": 4405,
+      "bases": [
+        "QMainWindow"
+      ],
+      "methods": [
+        {
+          "name": "__init__",
+          "line_start": 65,
+          "line_end": 127,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": null
+        },
+        {
+          "name": "_init_enhanced_payment_system",
+          "line_start": 129,
+          "line_end": 149,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "initialization",
+          "calls_apis": [
+            "APIBase"
+          ],
+          "handles_events": false,
+          "docstring": "🆕 初始化增强支付系统"
+        },
+        {
+          "name": "_init_ui",
+          "line_start": 151,
+          "line_end": 193,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "initialization",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "初始化用户界面"
+        },
+        {
+          "name": "_create_seat_area",
+          "line_start": 197,
+          "line_end": 238,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "ui_creation",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "创建独立的座位选择区域"
+        },
+        {
+          "name": "_create_right_area",
+          "line_start": 240,
+          "line_end": 390,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "ui_creation",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "创建右栏区域：取票码区 + 订单详情区"
+        },
+        {
+          "name": "_on_copy_path",
+          "line_start": 392,
+          "line_end": 406,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "🔧 复制路径按钮点击事件 - 修复为绝对路径"
+        },
+        {
+          "name": "_on_copy_image",
+          "line_start": 408,
+          "line_end": 437,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "复制图片按钮点击事件"
+        },
+        {
+          "name": "_copy_display_image",
+          "line_start": 439,
+          "line_end": 448,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "备用方案：复制界面显示的图片"
+        },
+        {
+          "name": "_connect_signals",
+          "line_start": 450,
+          "line_end": 471,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "signal_connection",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "连接信号槽"
+        },
+        {
+          "name": "_connect_global_events",
+          "line_start": 473,
+          "line_end": 481,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "signal_connection",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "连接全局事件"
+        },
+        {
+          "name": "_start_auth_check",
+          "line_start": 483,
+          "line_end": 495,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "启动用户认证检查"
+        },
+        {
+          "name": "_on_user_login_success",
+          "line_start": 498,
+          "line_end": 525,
+          "args": [
+            "self",
+            "user_info"
+          ],
+          "decorators": [
+            "pyqtSlot"
+          ],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "用户登录成功处理"
+        },
+        {
+          "name": "_show_main_window_after_login",
+          "line_start": 527,
+          "line_end": 553,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "登录成功后显示主窗口"
+        },
+        {
+          "name": "_trigger_default_cinema_selection",
+          "line_start": 555,
+          "line_end": 587,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "智能默认选择：影院 → 账号 - 避免等待账号选择"
+        },
+        {
+          "name": "_auto_select_cinema_account",
+          "line_start": 589,
+          "line_end": 636,
+          "args": [
+            "self",
+            "cinema_info"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "自动选择影院关联的主账号"
+        },
+        {
+          "name": "_update_tab_cinema_selection",
+          "line_start": 638,
+          "line_end": 653,
+          "args": [
+            "self",
+            "cinema_name"
+          ],
+          "decorators": [],
+          "category": "data_persistence",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "更新Tab管理器的影院选择"
+        },
+        {
+          "name": "center_window",
+          "line_start": 655,
+          "line_end": 665,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "将窗口居中显示"
+        },
+        {
+          "name": "_restart_login",
+          "line_start": 667,
+          "line_end": 680,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "重新启动登录流程"
+        },
+        {
+          "name": "_create_new_login_window",
+          "line_start": 682,
+          "line_end": 691,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "ui_creation",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "创建新的登录窗口"
+        },
+        {
+          "name": "_on_account_selected",
+          "line_start": 695,
+          "line_end": 702,
+          "args": [
+            "self",
+            "account_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "账号选择处理 - 对接到核心业务方法"
+        },
+        {
+          "name": "_on_account_login_requested",
+          "line_start": 704,
+          "line_end": 706,
+          "args": [
+            "self",
+            "login_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "账号登录请求处理"
+        },
+        {
+          "name": "_on_cinema_selected",
+          "line_start": 708,
+          "line_end": 733,
+          "args": [
+            "self",
+            "cinema_name"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "影院选择处理 - 对接到核心业务方法"
+        },
+        {
+          "name": "_on_order_submitted",
+          "line_start": 735,
+          "line_end": 785,
+          "args": [
+            "self",
+            "order_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "处理订单提交信号 - 来自Tab管理器"
+        },
+        {
+          "name": "on_bind_coupons",
+          "line_start": 787,
+          "line_end": 842,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "绑定券处理"
+        },
+        {
+          "name": "refresh_order_list",
+          "line_start": 844,
+          "line_end": 861,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [
+            "get_order_list"
+          ],
+          "handles_events": false,
+          "docstring": "刷新订单列表"
+        },
+        {
+          "name": "on_one_click_pay",
+          "line_start": 863,
+          "line_end": 1040,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [
+            "pay_order",
+            "get_order_detail"
+          ],
+          "handles_events": false,
+          "docstring": "🆕 一键支付处理 - 完整的券支付逻辑"
+        },
+        {
+          "name": "show_order_detail",
+          "line_start": 1042,
+          "line_end": 1044,
+          "args": [
+            "self",
+            "detail"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示订单详情"
+        },
+        {
+          "name": "_cancel_unpaid_orders",
+          "line_start": 1046,
+          "line_end": 1060,
+          "args": [
+            "self",
+            "account",
+            "cinemaid"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "取消未支付订单"
+        },
+        {
+          "name": "_get_member_info",
+          "line_start": 1062,
+          "line_end": 1131,
+          "args": [
+            "self",
+            "account",
+            "cinemaid"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [
+            "api_get"
+          ],
+          "handles_events": false,
+          "docstring": "获取会员信息 - 修复：严格按照API返回数据结构判断"
+        },
+        {
+          "name": "_create_order",
+          "line_start": 1133,
+          "line_end": 1136,
+          "args": [
+            "self",
+            "account",
+            "cinemaid",
+            "selected_seats"
+          ],
+          "decorators": [],
+          "category": "ui_creation",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "创建订单（保留原方法供其他地方调用）"
+        },
+        {
+          "name": "cinema_account_login_api",
+          "line_start": 1138,
+          "line_end": 1151,
+          "args": [
+            "self",
+            "phone",
+            "openid",
+            "token",
+            "cinemaid"
+          ],
+          "decorators": [],
+          "category": "api_call",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "影院账号登录API"
+        },
+        {
+          "name": "_refresh_account_dependent_data",
+          "line_start": 1155,
+          "line_end": 1190,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "刷新依赖账号的数据 - 🔧 修复空值处理错误"
+        },
+        {
+          "name": "_save_account_data",
+          "line_start": 1192,
+          "line_end": 1198,
+          "args": [
+            "self",
+            "account"
+          ],
+          "decorators": [],
+          "category": "data_persistence",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "保存账号数据"
+        },
+        {
+          "name": "_get_cinema_info_by_name",
+          "line_start": 1200,
+          "line_end": 1237,
+          "args": [
+            "self",
+            "cinema_name"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "根据名称获取影院信息 - 增强版本"
+        },
+        {
+          "name": "_load_movies_for_cinema",
+          "line_start": 1239,
+          "line_end": 1276,
+          "args": [
+            "self",
+            "cinema_info"
+          ],
+          "decorators": [],
+          "category": "data_loading",
+          "calls_apis": [
+            "get_films"
+          ],
+          "handles_events": false,
+          "docstring": "为指定影院加载电影列表"
+        },
+        {
+          "name": "_show_order_detail",
+          "line_start": 1278,
+          "line_end": 1292,
+          "args": [
+            "self",
+            "order_detail"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 显示订单详情 - 使用统一的订单详情管理器"
+        },
+        {
+          "name": "_show_qr_code",
+          "line_start": 1294,
+          "line_end": 1311,
+          "args": [
+            "self",
+            "qr_code"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示取票码"
+        },
+        {
+          "name": "_update_order_table",
+          "line_start": 1313,
+          "line_end": 1339,
+          "args": [
+            "self",
+            "orders"
+          ],
+          "decorators": [],
+          "category": "data_persistence",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "更新订单表格"
+        },
+        {
+          "name": "_on_session_selected",
+          "line_start": 1347,
+          "line_end": 1369,
+          "args": [
+            "self",
+            "session_info"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "场次选择处理 - 加载座位图"
+        },
+        {
+          "name": "_safe_update_seat_area",
+          "line_start": 1371,
+          "line_end": 1400,
+          "args": [
+            "self",
+            "message"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "安全地更新座位区域显示"
+        },
+        {
+          "name": "_safe_update_seat_area_with_style",
+          "line_start": 1402,
+          "line_end": 1422,
+          "args": [
+            "self",
+            "message",
+            "style"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "安全地更新座位区域显示，并应用自定义样式"
+        },
+        {
+          "name": "_clear_seat_area",
+          "line_start": 1424,
+          "line_end": 1434,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "清理座位区域的所有组件"
+        },
+        {
+          "name": "_load_seat_map",
+          "line_start": 1436,
+          "line_end": 1504,
+          "args": [
+            "self",
+            "session_info"
+          ],
+          "decorators": [],
+          "category": "data_loading",
+          "calls_apis": [
+            "get_plan_seat_info"
+          ],
+          "handles_events": false,
+          "docstring": "加载座位图数据"
+        },
+        {
+          "name": "_display_seat_map",
+          "line_start": 1506,
+          "line_end": 1587,
+          "args": [
+            "self",
+            "seat_data",
+            "session_info"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示座位图"
+        },
+        {
+          "name": "_parse_seats_array",
+          "line_start": 1589,
+          "line_end": 1692,
+          "args": [
+            "self",
+            "seats_array",
+            "hall_info"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "解析seats数组为座位矩阵"
+        },
+        {
+          "name": "_on_seat_map_selection_changed",
+          "line_start": 1694,
+          "line_end": 1714,
+          "args": [
+            "self",
+            "selected_seats"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "座位图选择变化处理"
+        },
+        {
+          "name": "_on_seat_panel_submit_order",
+          "line_start": 1716,
+          "line_end": 1726,
+          "args": [
+            "self",
+            "selected_seats"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "座位面板提交订单处理"
+        },
+        {
+          "name": "_on_coupon_bound",
+          "line_start": 1728,
+          "line_end": 1735,
+          "args": [
+            "self",
+            "bind_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "券绑定处理 - 对接到核心业务方法"
+        },
+        {
+          "name": "_on_coupon_exchanged",
+          "line_start": 1737,
+          "line_end": 1740,
+          "args": [
+            "self",
+            "exchange_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "券兑换处理"
+        },
+        {
+          "name": "_on_seat_load_requested",
+          "line_start": 1742,
+          "line_end": 1777,
+          "args": [
+            "self",
+            "seat_load_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "处理座位图加载请求信号 - 来自Tab管理器的选座按钮"
+        },
+        {
+          "name": "_get_current_cinema_data",
+          "line_start": 1779,
+          "line_end": 1790,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "获取当前选中的影院数据"
+        },
+        {
+          "name": "_on_seat_input_changed",
+          "line_start": 1792,
+          "line_end": 1803,
+          "args": [
+            "self",
+            "text"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "座位输入变化处理 - 只记录日志，不替换座位图"
+        },
+        {
+          "name": "_on_pay_button_clicked",
+          "line_start": 1805,
+          "line_end": 1812,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "支付按钮点击处理 - 对接到核心业务方法"
+        },
+        {
+          "name": "_on_seat_selected",
+          "line_start": 1814,
+          "line_end": 1815,
+          "args": [
+            "self",
+            "seats"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "座位选择处理 - 只记录日志，不替换座位图"
+        },
+        {
+          "name": "_on_main_login_success",
+          "line_start": 1818,
+          "line_end": 1825,
+          "args": [
+            "self",
+            "user_info"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "主窗口登录成功处理 - 触发账号列表刷新"
+        },
+        {
+          "name": "_on_global_login_success",
+          "line_start": 1829,
+          "line_end": 1830,
+          "args": [
+            "self",
+            "user_info"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "全局登录成功处理"
+        },
+        {
+          "name": "_on_global_account_changed",
+          "line_start": 1832,
+          "line_end": 1845,
+          "args": [
+            "self",
+            "account_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "全局账号切换处理"
+        },
+        {
+          "name": "_on_global_cinema_selected",
+          "line_start": 1847,
+          "line_end": 1866,
+          "args": [
+            "self",
+            "cinema_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "🔧 全局影院选择处理 - 修复参数类型并添加账号自动选择"
+        },
+        {
+          "name": "_on_global_order_created",
+          "line_start": 1868,
+          "line_end": 1880,
+          "args": [
+            "self",
+            "order_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "全局订单创建处理"
+        },
+        {
+          "name": "_on_global_order_paid",
+          "line_start": 1882,
+          "line_end": 1915,
+          "args": [
+            "self",
+            "order_id"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "全局订单支付处理 - 修复：不覆盖已显示的取票码二维码"
+        },
+        {
+          "name": "_get_ticket_code_after_payment",
+          "line_start": 1917,
+          "line_end": 1942,
+          "args": [
+            "self",
+            "order_id",
+            "cinema_id",
+            "detail_data"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "支付成功后获取取票码并显示（与双击订单流程一致）"
+        },
+        {
+          "name": "_generate_payment_success_qrcode",
+          "line_start": 1944,
+          "line_end": 1996,
+          "args": [
+            "self",
+            "order_id",
+            "ticket_code",
+            "detail_data",
+            "cinema_id"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "支付成功后生成并显示取票码二维码"
+        },
+        {
+          "name": "_show_payment_success_without_qrcode",
+          "line_start": 1998,
+          "line_end": 2015,
+          "args": [
+            "self",
+            "order_id"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示支付成功但无取票码的信息"
+        },
+        {
+          "name": "_on_show_qrcode",
+          "line_start": 2017,
+          "line_end": 2089,
+          "args": [
+            "self",
+            "qr_data"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [],
+          "handles_events": true,
+          "docstring": "显示二维码处理"
+        },
+        {
+          "name": "_display_qrcode_image",
+          "line_start": 2091,
+          "line_end": 2132,
+          "args": [
+            "self",
+            "qr_bytes",
+            "order_no",
+            "data_format"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示二维码图片"
+        },
+        {
+          "name": "_display_ticket_code_info",
+          "line_start": 2134,
+          "line_end": 2185,
+          "args": [
+            "self",
+            "ticket_data"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示取票码详细信息"
+        },
+        {
+          "name": "_display_combined_ticket_info",
+          "line_start": 2187,
+          "line_end": 2274,
+          "args": [
+            "self",
+            "combined_data"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示组合信息（文本+二维码图片）"
+        },
+        {
+          "name": "_display_generated_qrcode",
+          "line_start": 2276,
+          "line_end": 2350,
+          "args": [
+            "self",
+            "qr_data"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示生成的取票码二维码 - 修复：确保支付成功后与双击订单查看显示一致"
+        },
+        {
+          "name": "_display_qrcode_text",
+          "line_start": 2352,
+          "line_end": 2373,
+          "args": [
+            "self",
+            "text"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示二维码文本信息"
+        },
+        {
+          "name": "_update_seat_selection",
+          "line_start": 2375,
+          "line_end": 2399,
+          "args": [
+            "self",
+            "seats"
+          ],
+          "decorators": [],
+          "category": "data_persistence",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "更新座位选择显示"
+        },
+        {
+          "name": "_update_order_details",
+          "line_start": 2401,
+          "line_end": 2412,
+          "args": [
+            "self",
+            "order_data"
+          ],
+          "decorators": [],
+          "category": "data_persistence",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 更新订单详情显示 - 使用统一的订单详情管理器"
+        },
+        {
+          "name": "closeEvent",
+          "line_start": 2416,
+          "line_end": 2426,
+          "args": [
+            "self",
+            "event"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "窗口关闭事件"
+        },
+        {
+          "name": "get_member_info_enhanced",
+          "line_start": 2430,
+          "line_end": 2478,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [
+            "api_get"
+          ],
+          "handles_events": false,
+          "docstring": "🆕 增强的会员信息获取 - API实时获取替代本地JSON"
+        },
+        {
+          "name": "_get_member_info_fallback",
+          "line_start": 2480,
+          "line_end": 2503,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "会员信息获取降级处理"
+        },
+        {
+          "name": "get_password_policy_from_order",
+          "line_start": 2505,
+          "line_end": 2568,
+          "args": [
+            "self",
+            "order_no"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [
+            "api_get"
+          ],
+          "handles_events": false,
+          "docstring": "🆕 从订单详情获取密码策略 - 增强错误处理"
+        },
+        {
+          "name": "_get_cinema_password_policy",
+          "line_start": 2570,
+          "line_end": 2608,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 根据影院特征判断密码策略"
+        },
+        {
+          "name": "_get_smart_default_password_policy",
+          "line_start": 2610,
+          "line_end": 2649,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 智能默认密码策略 - 基于用户设置状态"
+        },
+        {
+          "name": "_get_enhanced_password_display",
+          "line_start": 2651,
+          "line_end": 2687,
+          "args": [
+            "self",
+            "enable_mempassword"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 获取增强的密码策略显示 - 支持智能降级"
+        },
+        {
+          "name": "_get_account_payment_password",
+          "line_start": 2689,
+          "line_end": 2719,
+          "args": [
+            "self",
+            "account"
+          ],
+          "decorators": [],
+          "category": "data_retrieval",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 获取账号的支付密码 - 增强调试"
+        },
+        {
+          "name": "_prompt_set_payment_password",
+          "line_start": 2721,
+          "line_end": 2762,
+          "args": [
+            "self",
+            "account"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 提示用户设置支付密码"
+        },
+        {
+          "name": "_save_payment_password_to_account_file",
+          "line_start": 2764,
+          "line_end": 2805,
+          "args": [
+            "self",
+            "account"
+          ],
+          "decorators": [],
+          "category": "data_persistence",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 保存支付密码到账号文件"
+        },
+        {
+          "name": "validate_coupon_prepay_enhanced",
+          "line_start": 2807,
+          "line_end": 2849,
+          "args": [
+            "self",
+            "order_no",
+            "coupon_codes"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [
+            "api_get"
+          ],
+          "handles_events": false,
+          "docstring": "🆕 增强的券预支付验证"
+        },
+        {
+          "name": "process_member_card_payment_enhanced",
+          "line_start": 2851,
+          "line_end": 2946,
+          "args": [
+            "self",
+            "order_data"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [
+            "api_post"
+          ],
+          "handles_events": false,
+          "docstring": "🆕 增强的会员卡支付处理 - 支持动态密码策略"
+        },
+        {
+          "name": "process_mixed_payment_enhanced",
+          "line_start": 2948,
+          "line_end": 3039,
+          "args": [
+            "self",
+            "order_data",
+            "selected_coupons"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [
+            "api_post"
+          ],
+          "handles_events": false,
+          "docstring": "🆕 增强的混合支付处理 - 券+会员卡"
+        },
+        {
+          "name": "_validate_coupon_prepay",
+          "line_start": 3041,
+          "line_end": 3081,
+          "args": [
+            "self",
+            "order_no",
+            "coupon_codes"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [
+            "get_coupon_prepay_info"
+          ],
+          "handles_events": false,
+          "docstring": "🆕 验证券预支付"
+        },
+        {
+          "name": "process_payment_with_password_management",
+          "line_start": 3083,
+          "line_end": 3141,
+          "args": [
+            "self",
+            "order_data",
+            "selected_coupons"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 统一的支付处理 - 自动密码管理"
+        },
+        {
+          "name": "_process_coupon_payment",
+          "line_start": 3143,
+          "line_end": 3153,
+          "args": [
+            "self",
+            "order_data",
+            "selected_coupons"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 处理纯券支付"
+        },
+        {
+          "name": "set_current_account",
+          "line_start": 3157,
+          "line_end": 3185,
+          "args": [
+            "self",
+            "account"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "设置当前账号 - 修复：账号切换时重新加载座位图"
+        },
+        {
+          "name": "_reload_seat_map_for_account_change",
+          "line_start": 3187,
+          "line_end": 3228,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "账号切换时重新加载座位图"
+        },
+        {
+          "name": "_clear_seat_selection",
+          "line_start": 3230,
+          "line_end": 3243,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "清空座位选择"
+        },
+        {
+          "name": "set_main_account",
+          "line_start": 3245,
+          "line_end": 3256,
+          "args": [
+            "self",
+            "account"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "设置主账号标记"
+        },
+        {
+          "name": "refresh_account_list",
+          "line_start": 3258,
+          "line_end": 3272,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [
+            "get_account_list"
+          ],
+          "handles_events": false,
+          "docstring": "刷新账号列表"
+        },
+        {
+          "name": "on_cinema_changed",
+          "line_start": 3274,
+          "line_end": 3297,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "影院切换事件处理"
+        },
+        {
+          "name": "on_submit_order",
+          "line_start": 3299,
+          "line_end": 3507,
+          "args": [
+            "self",
+            "selected_seats"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [
+            "create_order",
+            "get_unpaid_order_detail"
+          ],
+          "handles_events": false,
+          "docstring": "提交订单处理 - 完整流程整合"
+        },
+        {
+          "name": "_build_order_params",
+          "line_start": 3509,
+          "line_end": 3625,
+          "args": [
+            "self",
+            "selected_seats"
+          ],
+          "decorators": [],
+          "category": "business_logic",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "构建订单创建参数"
+        },
+        {
+          "name": "_load_available_coupons",
+          "line_start": 3627,
+          "line_end": 3709,
+          "args": [
+            "self",
+            "order_id",
+            "cinema_id"
+          ],
+          "decorators": [],
+          "category": "data_loading",
+          "calls_apis": [
+            "get_coupons_by_order"
+          ],
+          "handles_events": false,
+          "docstring": "获取订单可用券列表 - 🔧 修复空值处理错误"
+        },
+        {
+          "name": "_show_coupon_error_message",
+          "line_start": 3711,
+          "line_end": 3730,
+          "args": [
+            "self",
+            "error_message"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示券列表错误信息 - 🔧 新增辅助函数"
+        },
+        {
+          "name": "_show_coupon_list",
+          "line_start": 3732,
+          "line_end": 3854,
+          "args": [
+            "self",
+            "coupons"
+          ],
+          "decorators": [],
+          "category": "ui_display",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "显示券列表 - 🔧 修复空值处理错误"
+        },
+        {
+          "name": "_on_coupon_selection_changed",
+          "line_start": 3856,
+          "line_end": 4030,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "event_handler",
+          "calls_apis": [
+            "get_coupon_prepay_info"
+          ],
+          "handles_events": true,
+          "docstring": "券选择事件处理器 - 🔧 修复空值处理错误"
+        },
+        {
+          "name": "_update_order_detail_with_coupon_info",
+          "line_start": 4032,
+          "line_end": 4182,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "data_persistence",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 更新订单详情显示，包含券抵扣信息 - 修复空行问题"
+        },
+        {
+          "name": "_create_coupon_list_area",
+          "line_start": 4184,
+          "line_end": 4242,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "ui_creation",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "创建券列表显示区域"
+        },
+        {
+          "name": "_clear_coupon_list",
+          "line_start": 4244,
+          "line_end": 4255,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "清空券列表"
+        },
+        {
+          "name": "_add_coupon_item",
+          "line_start": 4257,
+          "line_end": 4301,
+          "args": [
+            "self",
+            "coupon_type",
+            "coupon_name",
+            "expire_date",
+            "coupon_code"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "添加券项目"
+        },
+        {
+          "name": "detect_member_password_policy",
+          "line_start": 4303,
+          "line_end": 4335,
+          "args": [
+            "self",
+            "order_detail"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 检测会员卡密码策略"
+        },
+        {
+          "name": "get_member_password_input",
+          "line_start": 4337,
+          "line_end": 4363,
+          "args": [
+            "self"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 获取会员卡密码输入"
+        },
+        {
+          "name": "validate_member_password_policy",
+          "line_start": 4365,
+          "line_end": 4405,
+          "args": [
+            "self",
+            "order_id"
+          ],
+          "decorators": [],
+          "category": "utility",
+          "calls_apis": [],
+          "handles_events": false,
+          "docstring": "🆕 验证会员卡密码策略 - 使用修复后的智能降级逻辑"
+        }
+      ],
+      "signals": [],
+      "properties": []
+    }
+  ],
+  "methods": {
+    "total": 106,
+    "by_category": {
+      "utility": 26,
+      "initialization": 2,
+      "ui_creation": 5,
+      "event_handler": 24,
+      "signal_connection": 2,
+      "ui_display": 12,
+      "data_persistence": 7,
+      "business_logic": 15,
+      "data_retrieval": 9,
+      "api_call": 1,
+      "data_loading": 3
+    }
+  },
+  "ui_components": {
+    "total": 15,
+    "by_type": {
+      "widget": 3,
+      "layout": 2,
+      "input": 2,
+      "label": 5,
+      "button": 3
+    }
+  },
+  "business_logic": {
+    "total": 93,
+    "by_type": {
+      "payment": 15,
+      "seat_selection": 14,
+      "authentication": 9,
+      "cinema_management": 10,
+      "general": 7,
+      "order_management": 15,
+      "coupon_management": 10,
+      "member_management": 6,
+      "ticket_management": 7
+    }
+  },
+  "api_calls": {
+    "total": 68,
+    "by_type": {
+      "general_api": 21,
+      "auth_api": 1,
+      "order_api": 10,
+      "payment_api": 12,
+      "member_api": 11,
+      "cinema_api": 12,
+      "coupon_api": 1
+    }
+  }
+}

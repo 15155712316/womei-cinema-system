@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyQt5电影票务系统图表</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+        .chart-container {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fafafa;
+        }
+        .mermaid {
+            text-align: center;
+        }
+        .description {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #e8f4fd;
+            border-left: 4px solid #3498db;
+            border-radius: 4px;
+        }
+        .print-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+            font-size: 14px;
+        }
+        .print-btn:hover {
+            background-color: #2980b9;
+        }
+        @media print {
+            .print-btn { display: none; }
+            .container { box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 PyQt5电影票务管理系统图表</h1>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <button class="print-btn" onclick="window.print()">🖨️ 打印图表</button>
+            <button class="print-btn" onclick="downloadMermaid()">💾 下载Mermaid源码</button>
+        </div>
+
+        <h2>📊 业务流程图</h2>
+        <div class="description">
+            <strong>说明：</strong>展示了从用户启动系统到完成购票的完整业务流程，包括登录验证、影院选择、座位选择、订单创建和支付处理等关键环节。
+        </div>
+        <div class="chart-container">
+            <div class="mermaid" id="flowchart">
+graph TD
+    A[系统启动] --> B[显示登录窗口]
+    B --> C{用户登录验证}
+    C -->|成功| D[显示主窗口]
+    C -->|失败| B
+    
+    D --> E[自动选择默认影院]
+    E --> F[自动选择关联账号]
+    F --> G[用户操作界面]
+    
+    G --> H[选择影片]
+    H --> I[选择日期和场次]
+    I --> J[加载座位图]
+    J --> K[用户选择座位]
+    K --> L[提交订单]
+    
+    L --> M{订单创建}
+    M -->|成功| N[显示订单详情]
+    M -->|失败| O[显示错误信息]
+    O --> G
+    
+    N --> P[选择优惠券可选]
+    P --> Q[一键支付]
+    
+    Q --> R{支付处理}
+    R -->|需要密码| S[输入会员卡密码]
+    S --> T[调用支付API]
+    R -->|无需密码| T
+    
+    T --> U{支付结果}
+    U -->|成功| V[获取取票码]
+    U -->|失败| W[显示支付失败]
+    W --> N
+    
+    V --> X[显示二维码]
+    X --> Y[购票完成]
+    
+    subgraph "主要模块"
+        Z1[账号管理模块]
+        Z2[Tab管理模块]
+        Z3[座位订单模块]
+        Z4[支付系统]
+        Z5[会员系统]
+    end
+    
+    subgraph "API服务"
+        A1[认证API]
+        A2[影院API]
+        A3[订单API]
+        A4[支付API]
+        A5[会员API]
+    end
+            </div>
+        </div>
+
+        <h2>🏗️ 系统架构图</h2>
+        <div class="description">
+            <strong>说明：</strong>展示了系统的分层架构设计，包括用户界面层、业务逻辑层、API接口层、数据层和工具层，以及各层之间的依赖关系。
+        </div>
+        <div class="chart-container">
+            <div class="mermaid" id="architecture">
+graph TB
+    subgraph "用户界面层 (UI Layer)"
+        UI1[主窗口<br/>ModularCinemaMainWindow]
+        UI2[账号管理组件<br/>AccountWidget]
+        UI3[Tab管理组件<br/>TabManagerWidget]
+        UI4[座位订单组件<br/>SeatOrderWidget]
+        UI5[登录窗口<br/>LoginWindow]
+    end
+    
+    subgraph "业务逻辑层 (Business Layer)"
+        BL1[认证服务<br/>AuthService]
+        BL2[影院管理<br/>CinemaManager]
+        BL3[会员服务<br/>MemberService]
+        BL4[订单详情管理<br/>OrderDetailManager]
+        BL5[消息管理<br/>MessageManager]
+    end
+    
+    subgraph "API接口层 (API Layer)"
+        API1[订单API<br/>order_api]
+        API2[支付API<br/>pay_order]
+        API3[影院API<br/>cinema_api]
+        API4[会员API<br/>member_api]
+        API5[账号API<br/>account_api]
+        API6[基础API<br/>api_base]
+    end
+    
+    subgraph "数据层 (Data Layer)"
+        DATA1[账号数据<br/>account_data]
+        DATA2[影院数据<br/>cinema_data]
+        DATA3[订单数据<br/>order_data]
+        DATA4[会员数据<br/>member_data]
+    end
+    
+    subgraph "工具层 (Utility Layer)"
+        UTIL1[信号总线<br/>event_bus]
+        UTIL2[UI工具<br/>ui_utils]
+        UTIL3[经典组件<br/>classic_components]
+    end
+    
+    UI1 --> UI2
+    UI1 --> UI3
+    UI1 --> UI4
+    UI1 --> UI5
+    
+    UI1 --> BL1
+    UI1 --> BL2
+    UI1 --> BL3
+    UI1 --> BL4
+    UI1 --> BL5
+    
+    BL1 --> API1
+    BL2 --> API3
+    BL3 --> API4
+    BL4 --> API1
+    BL5 --> API6
+    
+    API1 --> DATA3
+    API2 --> DATA3
+    API3 --> DATA2
+    API4 --> DATA4
+    API5 --> DATA1
+    
+    UI1 --> UTIL1
+    UI2 --> UTIL3
+    UI3 --> UTIL3
+    UI4 --> UTIL3
+    BL5 --> UTIL2
+            </div>
+        </div>
+
+        <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 5px;">
+            <h3>📋 使用说明</h3>
+            <ul>
+                <li><strong>查看图表：</strong>直接在浏览器中打开此HTML文件即可查看图表</li>
+                <li><strong>打印保存：</strong>点击"打印图表"按钮可以打印或保存为PDF</li>
+                <li><strong>编辑图表：</strong>可以修改HTML中的Mermaid代码来调整图表</li>
+                <li><strong>在线编辑：</strong>访问 <a href="https://mermaid.live" target="_blank">mermaid.live</a> 在线编辑器</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 初始化Mermaid
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true
+            }
+        });
+
+        // 下载Mermaid源码
+        function downloadMermaid() {
+            const flowchartCode = document.getElementById('flowchart').textContent;
+            const architectureCode = document.getElementById('architecture').textContent;
+            
+            const content = `# PyQt5电影票务系统图表源码
+
+## 业务流程图
+\`\`\`mermaid
+${flowchartCode}
+\`\`\`
+
+## 系统架构图
+\`\`\`mermaid
+${architectureCode}
+\`\`\`
+`;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'PyQt5电影票务系统图表源码.md';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
