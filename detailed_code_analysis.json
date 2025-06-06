@@ -1,0 +1,1109 @@
+{
+  "api_patterns": [
+    {
+      "count": 6,
+      "pattern_type": "API调用",
+      "examples": [
+        {
+          "pattern": "(api_(get|post|put|delete)\\s*\\([^)]+\\))",
+          "call": "api_get('/MiniTicket/index.php/MiniMember/getMemberInfo', cinemaid, params)",
+          "start": 37365,
+          "end": 37440
+        },
+        {
+          "pattern": "(api_(get|post|put|delete)\\s*\\([^)]+\\))",
+          "call": "api_get('/MiniTicket/index.php/MiniMember/getMemberInfo', cinema_id, params)",
+          "start": 90243,
+          "end": 90319
+        },
+        {
+          "pattern": "(api_(get|post|put|delete)\\s*\\([^)]+\\))",
+          "call": "api_get('/MiniTicket/index.php/MiniOrder/getUnpaidOrderDetail', cinema_id, params)",
+          "start": 93509,
+          "end": 93591
+        }
+      ],
+      "refactoring_suggestion": "提取为通用API调用方法，统一错误处理和参数验证"
+    }
+  ],
+  "ui_patterns": [
+    {
+      "count": 21,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qtSignal(dict)",
+          "start": 1676,
+          "end": 1690
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QHBoxLayout(central_widget)",
+          "start": 4513,
+          "end": 4540
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QVBoxLayout(widget)",
+          "start": 6072,
+          "end": 6091
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 17,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QWidget()",
+          "start": 4410,
+          "end": 4419
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QVBoxLayout()",
+          "start": 5085,
+          "end": 5098
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QWidget()",
+          "start": 5468,
+          "end": 5477
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 5,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QPushButton(\"复制路径\")",
+          "start": 7989,
+          "end": 8008
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QPushButton(\"复制图片\")",
+          "start": 8631,
+          "end": 8650
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qrcode_text(\"二维码数据格式错误\")",
+          "start": 76034,
+          "end": 76058
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 3,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QByteArray(self.current_qr_bytes)",
+          "start": 13211,
+          "end": 13244
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QVBoxLayout(self.coupon_list_widget)",
+          "start": 159872,
+          "end": 159908
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "QApplication(sys.argv)",
+          "start": 167208,
+          "end": 167230
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 5,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "quested(self, login_data: dict)",
+          "start": 22979,
+          "end": 23010
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "quested(self, seat_load_data: dict)",
+          "start": 63413,
+          "end": 63448
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qrcode(self, order_id: str)",
+          "start": 72378,
+          "end": 72405
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 3,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qr_code(self, qr_code)",
+          "start": 45818,
+          "end": 45840
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qrcode(ticket_code, detail_data)",
+          "start": 70565,
+          "end": 70597
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qrcode(self, qr_data)",
+          "start": 73003,
+          "end": 73024
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 2,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qrcode_image(qr_bytes, order_id, cinema_id)",
+          "start": 70758,
+          "end": 70801
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qrcode_image(qr_bytes, order_no, data_format)",
+          "start": 75459,
+          "end": 75504
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 2,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qrcode_text(f\"🎫 取票码: {ticket_code}\\n📋 订单号: {order_no}\\n⚠️ 二维码显示失败\")",
+          "start": 86318,
+          "end": 86385
+        },
+        {
+          "pattern": "(Q\\w+\\([^)]*\\))",
+          "call": "qrcode_text(f\"🎫 取票码: {ticket_code}\\n📋 订单号: {order_no}\\n⚠️ 二维码处理失败\")",
+          "start": 86516,
+          "end": 86583
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 9,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.setLayout\\([^)]+\\))",
+          "call": "center_container.setLayout(center_layout)",
+          "start": 5486,
+          "end": 5527
+        },
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "seat_placeholder.setStyleSheet(style)",
+          "start": 50193,
+          "end": 50230
+        },
+        {
+          "pattern": "(\\w+\\.addWidget\\([^)]+\\))",
+          "call": "main_layout.addWidget(center_container)",
+          "start": 5590,
+          "end": 5629
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 2,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "copy_path_btn.setStyleSheet(\"\"\"\n            QPushButton {\n                background-color: #2196f3;\n                color: white;\n                border: none;\n                border-radius: 4px;\n                font: 12px \"Microsoft YaHei\";\n            }\n            QPushButton:hover {\n                background-color: #1976d2;\n            }\n            QPushButton:pressed {\n                background-color: #0d47a1;\n            }\n        \"\"\")",
+          "start": 8070,
+          "end": 8519
+        },
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "copy_image_btn.setStyleSheet(\"\"\"\n            QPushButton {\n                background-color: #4caf50;\n                color: white;\n                border: none;\n                border-radius: 4px;\n                font: 12px \"Microsoft YaHei\";\n            }\n            QPushButton:hover {\n                background-color: #388e3c;\n            }\n            QPushButton:pressed {\n                background-color: #2e7d32;\n            }\n        \"\"\")",
+          "start": 8713,
+          "end": 9163
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 3,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "qr_display.setStyleSheet(\"\"\"\n                    QLabel {\n                        color: #2e7d32;\n                        font: bold 12px \"Microsoft YaHei\";\n                        background-color: #e8f5e8;\n                        border: 2px solid #4caf50;\n                        padding: 20px;\n                        border-radius: 5px;\n                    }\n                \"\"\")",
+          "start": 45988,
+          "end": 46372
+        },
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "qr_display.setStyleSheet(\"\"\"\n                    QLabel {\n                        color: #2e7d32;\n                        font: bold 12px \"Microsoft YaHei\";\n                        background-color: #e8f5e8;\n                        border: 2px solid #4caf50;\n                        padding: 20px;\n                        border-radius: 5px;\n                    }\n                \"\"\")",
+          "start": 68753,
+          "end": 69137
+        },
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "qr_display.setStyleSheet(\"\"\"\n                    QLabel {\n                        color: #2e7d32;\n                        font: bold 12px \"Microsoft YaHei\";\n                        background-color: #e8f5e8;\n                        border: 2px solid #4caf50;\n                        padding: 20px;\n                        border-radius: 5px;\n                    }\n                \"\"\")",
+          "start": 87023,
+          "end": 87407
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 2,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "qr_display.setStyleSheet(\"\"\"\n                        QLabel {\n                            background-color: #ffffff;\n                            border: 2px solid #4caf50;\n                            padding: 10px;\n                            border-radius: 5px;\n                        }\n                    \"\"\")",
+          "start": 77183,
+          "end": 77496
+        },
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "qr_display.setStyleSheet(\"\"\"\n                        QLabel {\n                            background-color: #ffffff;\n                            border: 2px solid #2196f3;\n                            padding: 10px;\n                            border-radius: 8px;\n                        }\n                    \"\"\")",
+          "start": 81720,
+          "end": 82033
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 3,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "coupon_title.setStyleSheet(\"font: bold 12px 'Microsoft YaHei'; color: #333333; margin-top: 10px;\")",
+          "start": 160865,
+          "end": 160963
+        },
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "type_label.setStyleSheet(\"font: 10px 'Microsoft YaHei'; color: #666666;\")",
+          "start": 162503,
+          "end": 162576
+        },
+        {
+          "pattern": "(\\w+\\.setStyleSheet\\([^)]+\\))",
+          "call": "info_label.setStyleSheet(\"font: 10px 'Microsoft YaHei'; color: #333333;\")",
+          "start": 162732,
+          "end": 162805
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 35,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.connect\\([^)]+\\))",
+          "call": "clicked.connect(self._on_copy_path)",
+          "start": 8547,
+          "end": 8582
+        },
+        {
+          "pattern": "(\\w+\\.connect\\([^)]+\\))",
+          "call": "clicked.connect(self._on_copy_image)",
+          "start": 9192,
+          "end": 9228
+        },
+        {
+          "pattern": "(\\w+\\.connect\\([^)]+\\))",
+          "call": "account_selected.connect(self._on_account_selected)",
+          "start": 14339,
+          "end": 14390
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 2,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.addWidget\\([^)]+\\))",
+          "call": "center_layout.addWidget(self.tab_manager_widget, 38)",
+          "start": 5197,
+          "end": 5249
+        },
+        {
+          "pattern": "(\\w+\\.addWidget\\([^)]+\\))",
+          "call": "center_layout.addWidget(self.seat_widget, 62)",
+          "start": 5364,
+          "end": 5409
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 2,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.addWidget\\([^)]+\\))",
+          "call": "layout.addWidget(qr_group, 45)",
+          "start": 10053,
+          "end": 10083
+        },
+        {
+          "pattern": "(\\w+\\.addWidget\\([^)]+\\))",
+          "call": "layout.addWidget(order_group, 55)",
+          "start": 12215,
+          "end": 12248
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    }
+  ],
+  "error_handling_patterns": [
+    {
+      "count": 5,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(QMessageBox\\.(warning|critical|information)\\([^)]+\\))",
+          "call": "QMessageBox.critical(self, \"启动错误\", f\"启动认证检查失败: {str(e)",
+          "start": 16192,
+          "end": 16246
+        },
+        {
+          "pattern": "(QMessageBox\\.(warning|critical|information)\\([^)]+\\))",
+          "call": "QMessageBox.critical(self, \"登录处理错误\", f\"处理登录结果失败: {str(e)",
+          "start": 17089,
+          "end": 17145
+        },
+        {
+          "pattern": "(QMessageBox\\.(warning|critical|information)\\([^)]+\\))",
+          "call": "QMessageBox.critical(self, \"显示主窗口错误\", f\"显示主窗口失败: {str(e)",
+          "start": 17870,
+          "end": 17926
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 3,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(QMessageBox\\.(warning|critical|information)\\([^)]+\\))",
+          "call": "QMessageBox.critical(self, \"登录失败\", \"用户信息不完整：缺少手机号\")",
+          "start": 16481,
+          "end": 16532
+        },
+        {
+          "pattern": "(QMessageBox\\.(warning|critical|information)\\([^)]+\\))",
+          "call": "QMessageBox.information(self, \"登录请求\", \"影院账号登录功能已简化，请直接从账号列表中选择账号\")",
+          "start": 23043,
+          "end": 23109
+        },
+        {
+          "pattern": "(QMessageBox\\.(warning|critical|information)\\([^)]+\\))",
+          "call": "QMessageBox.information(self, \"设置成功\", \"支付密码设置成功！\")",
+          "start": 102329,
+          "end": 102379
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 2,
+      "pattern_type": "UI组件",
+      "examples": [
+        {
+          "pattern": "(QMessageBox\\.(warning|critical|information)\\([^)]+\\))",
+          "call": "QMessageBox.information(self, \"支付成功\", result.get('message', '支付成功！')",
+          "start": 117108,
+          "end": 117176
+        },
+        {
+          "pattern": "(QMessageBox\\.(warning|critical|information)\\([^)]+\\))",
+          "call": "QMessageBox.warning(self, \"支付失败\", result.get('error', '支付失败')",
+          "start": 117756,
+          "end": 117817
+        }
+      ],
+      "refactoring_suggestion": "创建UI组件工厂类，统一组件创建和样式设置"
+    },
+    {
+      "count": 2,
+      "pattern_type": "错误处理",
+      "examples": [
+        {
+          "pattern": "(print\\([\"\\'].*?error.*?[\"\\'][^)]*\\))",
+          "call": "print(\"[主窗口] 券列表加载失败：缺少必要参数\")\n                self._show_coupon_error_message(\"参数不完整，无法加载券列表\")",
+          "start": 137878,
+          "end": 137972
+        },
+        {
+          "pattern": "(print\\([\"\\'].*?error.*?[\"\\'][^)]*\\))",
+          "call": "print(\"[主窗口] 券列表API返回None，可能是网络异常或服务器无响应\")\n                self._show_coupon_error_message(\"网络异常，无法获取券列表\")",
+          "start": 138840,
+          "end": 138946
+        }
+      ],
+      "refactoring_suggestion": "创建统一的错误处理装饰器或基类方法"
+    }
+  ],
+  "data_processing_patterns": [
+    {
+      "count": 2,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(json\\.(loads|dumps)\\([^)]+\\))",
+          "call": "json.dumps({\n                    'cardno': member_info.get('cardno', '')",
+          "start": 108029,
+          "end": 108101
+        },
+        {
+          "pattern": "(json\\.(loads|dumps)\\([^)]+\\))",
+          "call": "json.dumps({\n                    'cardno': member_info.get('cardno', '')",
+          "start": 112384,
+          "end": 112456
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 286,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "user_info.get(\"phone\", \"\")",
+          "start": 16412,
+          "end": 16438
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "first_cinema.get('cinemaShortName', '')",
+          "start": 18388,
+          "end": 18427
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "first_cinema.get('cinemaid', '')",
+          "start": 18452,
+          "end": 18484
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 5,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "first_account.get('userid', first_account.get('phone', '')",
+          "start": 20108,
+          "end": 20166
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "first_account.get('userid', first_account.get('phone', '')",
+          "start": 20315,
+          "end": 20373
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "order_detail.get('orderno', order_detail.get('order_id', 'N/A')",
+          "start": 153930,
+          "end": 153993
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 69,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "order_data.get('account')",
+          "start": 24377,
+          "end": 24402
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "result.get('resultCode')",
+          "start": 27420,
+          "end": 27444
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "order_detail.get('orderno')",
+          "start": 29471,
+          "end": 29498
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 43,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "password_policy_result.get('requires_password', False)",
+          "start": 30286,
+          "end": 30340
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "member_info.get('has_member_card', False)",
+          "start": 31997,
+          "end": 32038
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "member_info.get('has_member_card', False)",
+          "start": 32457,
+          "end": 32498
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 14,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "updated_order_detail.get('resultData', {})",
+          "start": 34920,
+          "end": 34962
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat_result.get('resultData', {})",
+          "start": 53251,
+          "end": 53284
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat.get('original_data', {})",
+          "start": 61234,
+          "end": 61263
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 7,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "normalized_data.get('films', [])",
+          "start": 44395,
+          "end": 44427
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat_data.get('seats', [])",
+          "start": 54568,
+          "end": 54594
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "order_data.get('seats', [])",
+          "start": 108746,
+          "end": 108773
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 3,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat.get('cn', physical_col + 1)",
+          "start": 60098,
+          "end": 60130
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat.get('rn', physical_row + 1)",
+          "start": 60230,
+          "end": 60262
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat.get('cn', physical_col + 1)",
+          "start": 60351,
+          "end": 60383
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 6,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat.get('rn', seat.get('row', 1)",
+          "start": 126799,
+          "end": 126832
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat.get('cn', seat.get('col', 1)",
+          "start": 126861,
+          "end": 126894
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "seat.get('rn', seat.get('row', 1)",
+          "start": 134112,
+          "end": 134145
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 2,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "session_data.get('first_price', session_data.get('b', 33.9)",
+          "start": 127015,
+          "end": 127074
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "session_data.get('first_price', session_data.get('b', 33.9)",
+          "start": 134466,
+          "end": 134525
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 2,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "coupon.get('name', f'券{i+1}')",
+          "start": 144834,
+          "end": 144863
+        },
+        {
+          "pattern": "(\\w+\\.get\\([^)]+\\))",
+          "call": "coupon.get('code', f'券号{i+1}')",
+          "start": 145145,
+          "end": 145175
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 2,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(\\[.*?for.*?in.*?\\])",
+          "call": "[line.strip() for line in coupon_text.split('\\n') if line.strip()]",
+          "start": 26864,
+          "end": 26930
+        },
+        {
+          "pattern": "(\\[.*?for.*?in.*?\\])",
+          "call": "[seat.strip() for seat in text.split(',') if seat.strip()]",
+          "start": 65585,
+          "end": 65643
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 2,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(\\[.*?for.*?in.*?\\])",
+          "call": "[seat.get('num', '') for seat in selected_seats]",
+          "start": 62460,
+          "end": 62508
+        },
+        {
+          "pattern": "(\\[.*?for.*?in.*?\\])",
+          "call": "[c.get('couponcode', '') for c in selected_coupons]",
+          "start": 110443,
+          "end": 110494
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 200,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"[增强支付] ❌ 初始化失败: {e}\"",
+          "start": 4297,
+          "end": 4319
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"启动认证检查失败: {str(e)}\"",
+          "start": 16227,
+          "end": 16248
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"处理登录结果失败: {str(e)}\"",
+          "start": 17126,
+          "end": 17147
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 11,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"[主窗口] 收到订单提交信号: {order_data.get('trigger_type', 'unknown')}\"",
+          "start": 24168,
+          "end": 24230
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"[主窗口] 收到座位图加载请求: {seat_load_data.get('trigger_type', 'unknown')}\"",
+          "start": 63525,
+          "end": 63592
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"[主窗口] 📊 - 数据格式: {qr_data.get('data_format', 'UNKNOWN')}\"",
+          "start": 75028,
+          "end": 75086
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 15,
+      "pattern_type": "错误处理",
+      "examples": [
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"密码策略检测失败: {password_policy_result.get('error')}\"",
+          "start": 30178,
+          "end": 30228
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"[主窗口] 座位数据字段: {list(seat_data.keys()) if seat_data else '空数据'}\"",
+          "start": 54002,
+          "end": 54067
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"✅ 座位图加载成功\\\\n\\\\n影厅: {hall_info['name']}\\\\n场次: {session_text}\\\\n座位: {hall_info['",
+          "start": 56448,
+          "end": 56528
+        }
+      ],
+      "refactoring_suggestion": "创建统一的错误处理装饰器或基类方法"
+    },
+    {
+      "count": 2,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"[主窗口] 取消订单失败: {result.get('resultDesc', '未知错误') if result else '网络错误'}\"",
+          "start": 36440,
+          "end": 36513
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"API获取 - {'需要' if enable_mempassword == '1' else '不需要'}会员卡密码\"",
+          "start": 94311,
+          "end": 94373
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 32,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"[主窗口] 收到场次选择信号: {session_info.get('session_text', 'N/A')}\"",
+          "start": 47830,
+          "end": 47890
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"  - 影院名称: {cinema_data.get('cinemaShortName', 'N/A')}\"",
+          "start": 51503,
+          "end": 51559
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"  - 影院ID: {cinema_data.get('cinemaid', 'N/A')}\"",
+          "start": 51579,
+          "end": 51628
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 2,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"缺少必要参数: {', '.join(missing_params)}\"",
+          "start": 52763,
+          "end": 52801
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"已选择座位: {', '.join(seats)}\\n\\n\"",
+          "start": 87679,
+          "end": 87711
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 2,
+      "pattern_type": "数据处理",
+      "examples": [
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"订单 {qr_data.get('order_no', '')} 取票码\\n(数据为空)\"",
+          "start": 75754,
+          "end": 75801
+        },
+        {
+          "pattern": "(f[\"\\'].*?\\{.*?\\}.*?[\"\\'])",
+          "call": "f\"{session_data.get('show_date', '')} {session_data.get('",
+          "start": 136735,
+          "end": 136792
+        }
+      ],
+      "refactoring_suggestion": "提取为数据处理工具类的静态方法"
+    },
+    {
+      "count": 6,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(if\\s+\\w+\\s+is\\s+(None|not\\s+None))",
+          "call": "if member_password is None",
+          "start": 30951,
+          "end": 30977
+        },
+        {
+          "pattern": "(if\\s+\\w+\\s+is\\s+(None|not\\s+None))",
+          "call": "if coupon_result is None",
+          "start": 138798,
+          "end": 138822
+        },
+        {
+          "pattern": "(if\\s+\\w+\\s+is\\s+(None|not\\s+None))",
+          "call": "if result_data is None",
+          "start": 139492,
+          "end": 139514
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    },
+    {
+      "count": 5,
+      "pattern_type": "其他",
+      "examples": [
+        {
+          "pattern": "(if\\s+\\w+\\s+is\\s+(None|not\\s+None))",
+          "call": "if result_data is not None",
+          "start": 37812,
+          "end": 37838
+        },
+        {
+          "pattern": "(if\\s+\\w+\\s+is\\s+(None|not\\s+None))",
+          "call": "if enable_mempassword is not None",
+          "start": 93807,
+          "end": 93840
+        },
+        {
+          "pattern": "(if\\s+\\w+\\s+is\\s+(None|not\\s+None))",
+          "call": "if coupon_list_widget is not None",
+          "start": 141204,
+          "end": 141237
+        }
+      ],
+      "refactoring_suggestion": "考虑提取为公共函数或常量"
+    }
+  ],
+  "import_analysis": {
+    "total_imports": 21,
+    "unused_imports": {
+      "sys\nimport os\nfrom typing import Dict": 1,
+      "Optional": 1,
+      "Any\nfrom PyQt5.QtWidgets import": 1,
+      "ui.widgets.classic_components.apply_classic_theme_to_widget\nfrom ui": 1,
+      "ui.widgets.tab_manager_widget.TabManagerWidget\nfrom ui": 1,
+      "services.auth_service.AuthService\nfrom services": 1,
+      "services.cinema_manager.CinemaManager\nfrom services": 1,
+      "services.member_service.MemberService\nfrom services": 1,
+      "ui.login_window.LoginWindow\n\n\nclass ModularCinemaMainWindow": 1
+    },
+    "usage_stats": {
+      "sys\nimport os\nfrom typing import Dict": 1,
+      "List": 9,
+      "Optional": 1,
+      "Any\nfrom PyQt5.QtWidgets import": 1,
+      "PyQt5.QtCore.Qt": 21,
+      "PyQt5.QtCore.pyqtSignal": 2,
+      "PyQt5.QtCore.pyqtSlot": 2,
+      "PyQt5.QtCore.QTimer": 7,
+      "utils.signals.event_bus": 13,
+      "ui.widgets.classic_components.apply_classic_theme_to_widget\nfrom ui": 1,
+      "ui.widgets.tab_manager_widget.TabManagerWidget\nfrom ui": 1,
+      "services.auth_service.AuthService\nfrom services": 1,
+      "services.cinema_manager.CinemaManager\nfrom services": 1,
+      "services.member_service.MemberService\nfrom services": 1,
+      "json": 9,
+      "os": 6,
+      "time": 4,
+      "traceback": 67,
+      "PyQt5.QtWidgets.QInputDialog": 7,
+      "PyQt5.QtWidgets.QLineEdit": 7,
+      "ui.login_window.LoginWindow\n\n\nclass ModularCinemaMainWindow": 1
+    }
+  },
+  "method_complexity": [
+    {
+      "name": "__init__",
+      "lines": 3591,
+      "if_count": 307,
+      "for_count": 35,
+      "try_count": 103,
+      "complexity_score": 4584,
+      "refactoring_suggestion": "方法过长，建议拆分为多个小方法"
+    }
+  ],
+  "refactoring_opportunities": [
+    {
+      "type": "API统一化",
+      "priority": "high",
+      "description": "发现 6 个相似的API调用模式",
+      "suggestion": "提取为通用API调用方法，统一错误处理和参数验证",
+      "estimated_reduction": "30 行代码"
+    },
+    {
+      "type": "UI组件化",
+      "priority": "medium",
+      "description": "发现 21 个相似的其他模式",
+      "suggestion": "考虑提取为公共函数或常量",
+      "estimated_reduction": "63 行代码"
+    },
+    {
+      "type": "UI组件化",
+      "priority": "medium",
+      "description": "发现 17 个相似的UI组件模式",
+      "suggestion": "创建UI组件工厂类，统一组件创建和样式设置",
+      "estimated_reduction": "51 行代码"
+    },
+    {
+      "type": "UI组件化",
+      "priority": "medium",
+      "description": "发现 5 个相似的UI组件模式",
+      "suggestion": "创建UI组件工厂类，统一组件创建和样式设置",
+      "estimated_reduction": "15 行代码"
+    },
+    {
+      "type": "UI组件化",
+      "priority": "medium",
+      "description": "发现 5 个相似的其他模式",
+      "suggestion": "考虑提取为公共函数或常量",
+      "estimated_reduction": "15 行代码"
+    },
+    {
+      "type": "UI组件化",
+      "priority": "medium",
+      "description": "发现 9 个相似的UI组件模式",
+      "suggestion": "创建UI组件工厂类，统一组件创建和样式设置",
+      "estimated_reduction": "27 行代码"
+    },
+    {
+      "type": "UI组件化",
+      "priority": "medium",
+      "description": "发现 35 个相似的其他模式",
+      "suggestion": "考虑提取为公共函数或常量",
+      "estimated_reduction": "105 行代码"
+    },
+    {
+      "type": "错误处理统一化",
+      "priority": "medium",
+      "description": "发现 5 个相似的UI组件模式",
+      "suggestion": "创建UI组件工厂类，统一组件创建和样式设置",
+      "estimated_reduction": "20 行代码"
+    },
+    {
+      "type": "错误处理统一化",
+      "priority": "medium",
+      "description": "发现 3 个相似的UI组件模式",
+      "suggestion": "创建UI组件工厂类，统一组件创建和样式设置",
+      "estimated_reduction": "12 行代码"
+    },
+    {
+      "type": "方法简化",
+      "priority": "high",
+      "description": "方法 __init__ 复杂度过高 (4584)",
+      "suggestion": "方法过长，建议拆分为多个小方法",
+      "estimated_reduction": "1197 行代码"
+    }
+  ]
+}

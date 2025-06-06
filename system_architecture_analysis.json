@@ -1,0 +1,1470 @@
+{
+  "project_overview": {
+    "analysis_date": "2025-06-06",
+    "project_name": "PyQt5电影票务管理系统",
+    "main_program_size": 187.4,
+    "total_directories": 7,
+    "analysis_scope": "Full system architecture analysis"
+  },
+  "main_program_analysis": {
+    "file_size_kb": 187.4,
+    "total_lines": 4425,
+    "code_lines": 3105,
+    "comment_lines": 549,
+    "classes": [
+      {
+        "name": "ModularCinemaMainWindow",
+        "methods": [
+          "__init__",
+          "_init_enhanced_payment_system",
+          "_init_ui",
+          "_on_copy_path",
+          "_on_copy_image",
+          "_copy_display_image",
+          "_connect_signals",
+          "_connect_global_events",
+          "_start_auth_check",
+          "_on_user_login_success"
+        ],
+        "method_count": 85
+      }
+    ],
+    "methods": [
+      "_update_order_details",
+      "set_current_account",
+      "_load_available_coupons",
+      "_save_account_data",
+      "_show_order_detail",
+      "center_window",
+      "_on_seat_panel_submit_order",
+      "closeEvent",
+      "_cancel_unpaid_orders",
+      "main",
+      "_on_global_order_created",
+      "_on_coupon_exchanged",
+      "_display_ticket_code_info",
+      "_on_global_login_success",
+      "on_one_click_pay",
+      "_on_pay_button_clicked",
+      "_refresh_account_dependent_data",
+      "_create_coupon_list_area",
+      "_get_current_cinema_data",
+      "show_order_detail",
+      "on_bind_coupons",
+      "_safe_update_seat_area",
+      "_clear_seat_selection",
+      "_on_show_qrcode",
+      "_on_coupon_selection_changed",
+      "refresh_account_list",
+      "_trigger_default_cinema_selection",
+      "_update_order_detail_with_coupon_info",
+      "_connect_signals",
+      "_on_copy_image",
+      "_get_member_info",
+      "_show_payment_success_without_qrcode",
+      "set_main_account",
+      "_update_order_table",
+      "_get_ticket_code_after_payment",
+      "_load_seat_map",
+      "_show_coupon_list",
+      "_safe_update_seat_area_with_style",
+      "_display_qrcode_text",
+      "_init_enhanced_payment_system",
+      "_update_seat_selection",
+      "_display_combined_ticket_info",
+      "_on_seat_input_changed",
+      "_on_copy_path",
+      "_generate_payment_success_qrcode",
+      "_update_tab_cinema_selection",
+      "_on_global_account_changed",
+      "_clear_seat_area",
+      "_display_seat_map",
+      "refresh_order_list",
+      "_on_seat_selected",
+      "_restart_login",
+      "_on_order_submitted",
+      "_reload_seat_map_for_account_change",
+      "_add_coupon_item",
+      "_auto_select_cinema_account",
+      "_on_cinema_selected",
+      "_show_qr_code",
+      "safe_price_convert",
+      "_on_account_login_requested",
+      "_connect_global_events",
+      "_on_global_order_paid",
+      "_load_movies_for_cinema",
+      "_on_main_login_success",
+      "_init_ui",
+      "on_submit_order",
+      "_show_main_window_after_login",
+      "_on_seat_map_selection_changed",
+      "_copy_display_image",
+      "_show_coupon_error_message",
+      "_create_order",
+      "_get_cinema_info_by_name",
+      "on_cinema_changed",
+      "_start_auth_check",
+      "cinema_account_login_api",
+      "_create_new_login_window",
+      "_on_seat_load_requested",
+      "_display_generated_qrcode",
+      "_on_session_selected",
+      "_on_global_cinema_selected",
+      "_on_account_selected",
+      "_on_user_login_success",
+      "_on_coupon_bound",
+      "__init__",
+      "_clear_coupon_list"
+    ],
+    "imports": {
+      "standard_library": [
+        "os",
+        "sys",
+        "json"
+      ],
+      "third_party": [
+        "QListWidget",
+        "ui.interfaces.plugin_interface",
+        "PyQt5.QtGui",
+        "QAbstractItemView",
+        "modules.order_display",
+        "get_coupon_prepay_info",
+        "AccountWidget",
+        "QByteArray",
+        "services.auth_service",
+        "(",
+        "utils.signals",
+        "QDesktopWidget",
+        "ClassicLabel",
+        "PyQt5.QtWidgets",
+        "event_bus",
+        "create_order",
+        "QVBoxLayout",
+        "services.ui_utils",
+        "MessageManager",
+        "get_films",
+        "QPixmap",
+        "ui.widgets.classic_components",
+        "LoginWindow",
+        "services.member_service",
+        "cancel_all_unpaid_orders",
+        "ui.widgets.seat_order_widget",
+        "utils.qrcode_generator",
+        "get_account_list",
+        "TabManagerWidget",
+        "SeatMapPanelPyQt5",
+        "api_post",
+        "QScrollArea",
+        "cinema_manager",
+        "AuthService",
+        "PyQt5.QtCore",
+        "api_get",
+        "get_unpaid_order_detail",
+        "apply_classic_theme_to_widget",
+        "generate_ticket_qrcode",
+        "services.film_service",
+        "Dict",
+        "traceback",
+        "Qt",
+        "get_plan_seat_info",
+        "QMessageBox",
+        "MemberService",
+        "QApplication",
+        "CinemaManager",
+        "ClassicGroupBox",
+        "ui.widgets.tab_manager_widget",
+        "services.api_base",
+        "OrderDetailManager",
+        "ui.components.seat_map_panel_pyqt5",
+        "QLabel",
+        "QInputDialog",
+        "SeatOrderWidget",
+        "get_coupons_by_order",
+        "typing",
+        "ui.login_window",
+        "services.order_api",
+        "ui.widgets.account_widget",
+        "services.cinema_manager",
+        "services.account_api",
+        "APIBase"
+      ],
+      "local_modules": []
+    },
+    "api_calls": [],
+    "ui_components": [
+      "self.copy_image_btn = QPushButton(",
+      "QDesktopWidget(",
+      "self.seat_area_layout = QVBoxLayout(",
+      ".setLayout(",
+      "QWidget(",
+      "QByteArray(",
+      "self.coupon_list_layout = QVBoxLayout(",
+      "self.copy_path_btn = QPushButton(",
+      ".addWidget(",
+      "self.coupon_list_widget = QWidget(",
+      "QPixmap(",
+      "QVBoxLayout(",
+      "QPushButton(",
+      "Qt5(",
+      "self.coupon_scroll_area = QScrollArea(",
+      "QHBoxLayout(",
+      "QLabel(",
+      "QApplication(",
+      "QScrollArea("
+    ],
+    "business_logic": {
+      "authentication": 68,
+      "cinema": 30,
+      "booking": 61,
+      "payment": 25,
+      "qrcode": 2
+    }
+  },
+  "directory_analysis": {
+    "services": {
+      "file_count": 11,
+      "python_files": [
+        {
+          "name": "account_api.py",
+          "path": "services\\account_api.py",
+          "size_kb": 3.9
+        },
+        {
+          "name": "admin_api.py",
+          "path": "services\\admin_api.py",
+          "size_kb": 6.1
+        },
+        {
+          "name": "api_base.py",
+          "path": "services\\api_base.py",
+          "size_kb": 6.6
+        },
+        {
+          "name": "auth_service.py",
+          "path": "services\\auth_service.py",
+          "size_kb": 17.3
+        },
+        {
+          "name": "cinema_id_helper.py",
+          "path": "services\\cinema_id_helper.py",
+          "size_kb": 2.9
+        },
+        {
+          "name": "cinema_info_api.py",
+          "path": "services\\cinema_info_api.py",
+          "size_kb": 9.9
+        },
+        {
+          "name": "cinema_manager.py",
+          "path": "services\\cinema_manager.py",
+          "size_kb": 6.3
+        },
+        {
+          "name": "film_service.py",
+          "path": "services\\film_service.py",
+          "size_kb": 8.7
+        },
+        {
+          "name": "member_service.py",
+          "path": "services\\member_service.py",
+          "size_kb": 3.2
+        },
+        {
+          "name": "order_api.py",
+          "path": "services\\order_api.py",
+          "size_kb": 28.3
+        },
+        {
+          "name": "ui_utils.py",
+          "path": "services\\ui_utils.py",
+          "size_kb": 9.2
+        }
+      ],
+      "total_size_kb": 102.5,
+      "main_modules": [
+        {
+          "file": "account_api.py",
+          "classes": [],
+          "functions": [
+            "login_and_check_card",
+            "extract_params_and_request",
+            "extract_params_from_url",
+            "get_account_list",
+            "save_account",
+            "delete_account"
+          ]
+        },
+        {
+          "file": "admin_api.py",
+          "classes": [
+            "AdminAPIService"
+          ],
+          "functions": [
+            "__init__",
+            "update_user_machine_code",
+            "get_user_list",
+            "update_user_status",
+            "update_user_points"
+          ]
+        },
+        {
+          "file": "api_base.py",
+          "classes": [
+            "APIBase"
+          ],
+          "functions": [
+            "__init__",
+            "get_base_url_for_cinema",
+            "build_url",
+            "make_request",
+            "api_request",
+            "api_get",
+            "api_post"
+          ]
+        },
+        {
+          "file": "auth_service.py",
+          "classes": [
+            "AuthService"
+          ],
+          "functions": [
+            "__init__",
+            "get_machine_code",
+            "validate_phone",
+            "validate_phone_number",
+            "login",
+            "check_auth",
+            "use_points",
+            "get_user_info",
+            "logout",
+            "_call_api"
+          ]
+        },
+        {
+          "file": "cinema_id_helper.py",
+          "classes": [],
+          "functions": [
+            "validate_cinema_id_format",
+            "get_common_cinema_ids",
+            "suggest_similar_ids",
+            "format_cinema_id_for_display"
+          ]
+        },
+        {
+          "file": "cinema_info_api.py",
+          "classes": [],
+          "functions": [
+            "get_cinema_info",
+            "_try_get_cinema_info",
+            "validate_cinema",
+            "format_cinema_data"
+          ]
+        },
+        {
+          "file": "cinema_manager.py",
+          "classes": [
+            "CinemaManager"
+          ],
+          "functions": [
+            "__init__",
+            "_ensure_data_dir",
+            "load_cinema_list",
+            "save_cinema_list",
+            "add_cinema_by_id",
+            "delete_cinema_by_id",
+            "update_cinema",
+            "get_cinema_by_id",
+            "refresh_cinema_info"
+          ]
+        },
+        {
+          "file": "film_service.py",
+          "classes": [],
+          "functions": [
+            "get_films",
+            "load_cinemas",
+            "normalize_film_data",
+            "get_plan_seat_info"
+          ]
+        },
+        {
+          "file": "member_service.py",
+          "classes": [
+            "MemberService"
+          ],
+          "functions": [
+            "get_member_info",
+            "member_service",
+            "__init__",
+            "get_member_info"
+          ]
+        },
+        {
+          "file": "order_api.py",
+          "classes": [],
+          "functions": [
+            "save_qrcode_image",
+            "create_order",
+            "get_unpaid_order_detail",
+            "get_coupons_by_order",
+            "get_coupon_list",
+            "bind_coupon",
+            "coupon_pay_order",
+            "get_order_detail",
+            "get_order_qrcode_api",
+            "get_order_list"
+          ]
+        },
+        {
+          "file": "ui_utils.py",
+          "classes": [
+            "MessageManager",
+            "CouponManager",
+            "UIConstants",
+            "UIHelper"
+          ],
+          "functions": [
+            "_create_message_box",
+            "show_success",
+            "show_error",
+            "show_warning",
+            "show_info",
+            "should_show_coupons",
+            "clear_coupons_if_needed",
+            "should_show_success_popup",
+            "center_window",
+            "apply_button_style"
+          ]
+        }
+      ],
+      "key_functions": []
+    },
+    "ui": {
+      "file_count": 12,
+      "python_files": [
+        {
+          "name": "login_window.py",
+          "path": "ui\\login_window.py",
+          "size_kb": 17.8
+        },
+        {
+          "name": "account_list_panel_pyqt5.py",
+          "path": "ui\\components\\account_list_panel_pyqt5.py",
+          "size_kb": 12.6
+        },
+        {
+          "name": "auto_browser.py",
+          "path": "ui\\components\\auto_browser.py",
+          "size_kb": 18.4
+        },
+        {
+          "name": "cinema_select_panel_pyqt5.py",
+          "path": "ui\\components\\cinema_select_panel_pyqt5.py",
+          "size_kb": 21.4
+        },
+        {
+          "name": "curl_parser.py",
+          "path": "ui\\components\\curl_parser.py",
+          "size_kb": 9.0
+        },
+        {
+          "name": "seat_map_panel_pyqt5.py",
+          "path": "ui\\components\\seat_map_panel_pyqt5.py",
+          "size_kb": 23.5
+        },
+        {
+          "name": "auto_parameter_extractor.py",
+          "path": "ui\\dialogs\\auto_parameter_extractor.py",
+          "size_kb": 48.2
+        },
+        {
+          "name": "plugin_interface.py",
+          "path": "ui\\interfaces\\plugin_interface.py",
+          "size_kb": 5.5
+        },
+        {
+          "name": "account_widget.py",
+          "path": "ui\\widgets\\account_widget.py",
+          "size_kb": 32.1
+        },
+        {
+          "name": "classic_components.py",
+          "path": "ui\\widgets\\classic_components.py",
+          "size_kb": 17.3
+        },
+        {
+          "name": "seat_order_widget.py",
+          "path": "ui\\widgets\\seat_order_widget.py",
+          "size_kb": 16.4
+        },
+        {
+          "name": "tab_manager_widget.py",
+          "path": "ui\\widgets\\tab_manager_widget.py",
+          "size_kb": 136.6
+        }
+      ],
+      "total_size_kb": 358.8,
+      "main_modules": [
+        {
+          "file": "login_window.py",
+          "classes": [
+            "LoginThread",
+            "LoginWindow"
+          ],
+          "functions": [
+            "__init__",
+            "run",
+            "__init__",
+            "_safe_login",
+            "init_ui",
+            "load_login_history",
+            "save_login_history",
+            "center_window",
+            "copy_machine_code",
+            "login"
+          ]
+        },
+        {
+          "file": "account_list_panel_pyqt5.py",
+          "classes": [
+            "AccountListPanelPyQt5"
+          ],
+          "functions": [
+            "__init__",
+            "_init_ui",
+            "_setup_button_style",
+            "_darken_color",
+            "_load_accounts",
+            "_refresh_tree",
+            "_on_item_clicked",
+            "_show_context_menu",
+            "_set_as_main_account",
+            "_delete_account"
+          ]
+        },
+        {
+          "file": "auto_browser.py",
+          "classes": [
+            "NetworkInterceptor",
+            "NetworkInterceptor",
+            "ParameterExtractor",
+            "AutoBrowserWidget"
+          ],
+          "functions": [
+            "__init__",
+            "interceptRequest",
+            "__init__",
+            "is_cinema_api",
+            "extract_cinema_id",
+            "extract_auth_params",
+            "extract_base_url",
+            "extract_all_params",
+            "__init__",
+            "setup_ui"
+          ]
+        },
+        {
+          "file": "cinema_select_panel_pyqt5.py",
+          "classes": [
+            "CinemaSelectPanelPyQt5"
+          ],
+          "functions": [
+            "__init__",
+            "_init_ui",
+            "_setup_combo_style",
+            "_setup_button_style",
+            "_load_cinemas",
+            "set_main_window",
+            "set_seat_panel",
+            "get_current_account",
+            "get_selected_cinemaid",
+            "refresh_cinema_dropdown"
+          ]
+        },
+        {
+          "file": "curl_parser.py",
+          "classes": [
+            "CurlParser"
+          ],
+          "functions": [
+            "parse_curl_command",
+            "extract_url",
+            "extract_url_params",
+            "extract_header_params",
+            "validate_and_clean_params",
+            "analyze_curl_example",
+            "test_curl_parser"
+          ]
+        },
+        {
+          "file": "seat_map_panel_pyqt5.py",
+          "classes": [
+            "SeatMapPanelPyQt5"
+          ],
+          "functions": [
+            "__init__",
+            "_init_ui",
+            "_setup_submit_button_style",
+            "_draw_seats",
+            "_update_seat_button_style",
+            "toggle_seat",
+            "update_seat_data",
+            "update_seats",
+            "get_selected_seats",
+            "get_selected_seat_objects"
+          ]
+        },
+        {
+          "file": "auto_parameter_extractor.py",
+          "classes": [
+            "ParameterExtractorHelper",
+            "AutoParameterExtractor"
+          ],
+          "functions": [
+            "extract_from_text",
+            "validate_params",
+            "__init__",
+            "setup_ui",
+            "create_instruction_area",
+            "setup_curl_tab",
+            "setup_manual_tab",
+            "on_tab_changed",
+            "on_parameter_extracted",
+            "on_status_changed"
+          ]
+        },
+        {
+          "file": "plugin_interface.py",
+          "classes": [
+            "IPluginInterface",
+            "IWidgetInterface",
+            "IServiceInterface",
+            "EventBus",
+            "PluginManager"
+          ],
+          "functions": [
+            "get_name",
+            "get_version",
+            "load",
+            "unload",
+            "get_config",
+            "set_config",
+            "initialize",
+            "cleanup",
+            "get_widget",
+            "start_service"
+          ]
+        },
+        {
+          "file": "account_widget.py",
+          "classes": [
+            "AccountWidget"
+          ],
+          "functions": [
+            "__init__",
+            "initialize",
+            "cleanup",
+            "get_widget",
+            "_setup_ui",
+            "_build_login_area",
+            "_build_account_list",
+            "_connect_signals",
+            "_connect_global_events",
+            "_on_login_clicked"
+          ]
+        },
+        {
+          "file": "classic_components.py",
+          "classes": [
+            "ClassicGroupBox",
+            "ClassicButton",
+            "ClassicLineEdit",
+            "ClassicComboBox",
+            "ClassicTableWidget"
+          ],
+          "functions": [
+            "__init__",
+            "_setup_style",
+            "__init__",
+            "_setup_style",
+            "__init__",
+            "_setup_style",
+            "__init__",
+            "_setup_style",
+            "__init__",
+            "_setup_style"
+          ]
+        },
+        {
+          "file": "seat_order_widget.py",
+          "classes": [
+            "SeatOrderWidget"
+          ],
+          "functions": [
+            "__init__",
+            "initialize",
+            "cleanup",
+            "get_widget",
+            "_setup_ui",
+            "_build_seat_area",
+            "_build_order_detail_area",
+            "_connect_signals",
+            "_connect_global_events",
+            "_on_account_changed"
+          ]
+        },
+        {
+          "file": "tab_manager_widget.py",
+          "classes": [
+            "TabManagerWidget"
+          ],
+          "functions": [
+            "__init__",
+            "initialize",
+            "cleanup",
+            "get_widget",
+            "_setup_ui",
+            "_create_tab_pages",
+            "_build_ticket_tab",
+            "_build_cinema_select",
+            "_build_coupon_list",
+            "_build_bind_coupon_tab"
+          ]
+        }
+      ],
+      "key_functions": []
+    },
+    "utils": {
+      "file_count": 3,
+      "python_files": [
+        {
+          "name": "qrcode_generator.py",
+          "path": "utils\\qrcode_generator.py",
+          "size_kb": 16.9
+        },
+        {
+          "name": "signals.py",
+          "path": "utils\\signals.py",
+          "size_kb": 9.1
+        },
+        {
+          "name": "simple_qrcode_generator.py",
+          "path": "utils\\simple_qrcode_generator.py",
+          "size_kb": 6.0
+        }
+      ],
+      "total_size_kb": 32.0,
+      "main_modules": [
+        {
+          "file": "qrcode_generator.py",
+          "classes": [],
+          "functions": [
+            "ensure_qrcode_import",
+            "get_cinema_name_by_id",
+            "create_fallback_qrcode",
+            "generate_ticket_qrcode",
+            "create_qrcode_with_info",
+            "save_qrcode_image",
+            "test_qrcode_generation"
+          ]
+        },
+        {
+          "file": "signals.py",
+          "classes": [
+            "EventBus",
+            "EventManager"
+          ],
+          "functions": [
+            "__init__",
+            "subscribe",
+            "unsubscribe",
+            "emit_custom",
+            "_record_event",
+            "get_event_history",
+            "clear_history",
+            "get_subscribers_count",
+            "event_handler",
+            "decorator"
+          ]
+        },
+        {
+          "file": "simple_qrcode_generator.py",
+          "classes": [],
+          "functions": [
+            "generate_simple_ticket_image",
+            "save_simple_image"
+          ]
+        }
+      ],
+      "key_functions": []
+    },
+    "modules": {
+      "file_count": 1,
+      "python_files": [
+        {
+          "name": "order_detail_manager.py",
+          "path": "modules\\order_display\\order_detail_manager.py",
+          "size_kb": 15.9
+        }
+      ],
+      "total_size_kb": 15.9,
+      "main_modules": [
+        {
+          "file": "order_detail_manager.py",
+          "classes": [
+            "FieldNameMapper",
+            "OrderDetailManager"
+          ],
+          "functions": [
+            "normalize_data",
+            "get_cinema_id",
+            "__init__",
+            "display_order_detail",
+            "_enhance_and_normalize_order_data",
+            "_enhance_with_context_data",
+            "_build_display_content",
+            "_build_basic_info",
+            "_build_password_policy_info",
+            "_build_price_info"
+          ]
+        }
+      ],
+      "key_functions": []
+    },
+    "controllers": {
+      "file_count": 3,
+      "python_files": [
+        {
+          "name": "account_controller.py",
+          "path": "controllers\\account_controller.py",
+          "size_kb": 10.6
+        },
+        {
+          "name": "cinema_controller.py",
+          "path": "controllers\\cinema_controller.py",
+          "size_kb": 13.5
+        },
+        {
+          "name": "order_controller.py",
+          "path": "controllers\\order_controller.py",
+          "size_kb": 12.1
+        }
+      ],
+      "total_size_kb": 36.3,
+      "main_modules": [
+        {
+          "file": "account_controller.py",
+          "classes": [
+            "AccountController"
+          ],
+          "functions": [
+            "__init__",
+            "_connect_events",
+            "_on_cinema_selected",
+            "_on_user_login_success",
+            "load_account_list",
+            "select_account",
+            "_load_member_info",
+            "login_account",
+            "add_account",
+            "remove_account"
+          ]
+        },
+        {
+          "file": "cinema_controller.py",
+          "classes": [
+            "CinemaController"
+          ],
+          "functions": [
+            "__init__",
+            "_connect_events",
+            "_on_account_selected",
+            "_on_user_login_success",
+            "load_cinema_list",
+            "select_cinema",
+            "load_movie_list",
+            "select_movie",
+            "load_session_list",
+            "select_session"
+          ]
+        },
+        {
+          "file": "order_controller.py",
+          "classes": [
+            "OrderController"
+          ],
+          "functions": [
+            "__init__",
+            "_connect_events",
+            "_on_account_selected",
+            "_on_coupon_selected",
+            "_handle_order_submission",
+            "create_order",
+            "_load_order_detail",
+            "_load_available_coupons",
+            "pay_order",
+            "_get_order_qrcode"
+          ]
+        }
+      ],
+      "key_functions": []
+    },
+    "views": {
+      "file_count": 4,
+      "python_files": [
+        {
+          "name": "main_window.py",
+          "path": "views\\main_window.py",
+          "size_kb": 25.7
+        },
+        {
+          "name": "account_panel.py",
+          "path": "views\\components\\account_panel.py",
+          "size_kb": 14.7
+        },
+        {
+          "name": "cinema_panel.py",
+          "path": "views\\components\\cinema_panel.py",
+          "size_kb": 15.5
+        },
+        {
+          "name": "seat_map_panel.py",
+          "path": "views\\components\\seat_map_panel.py",
+          "size_kb": 18.7
+        }
+      ],
+      "total_size_kb": 74.7,
+      "main_modules": [
+        {
+          "file": "main_window.py",
+          "classes": [
+            "MainWindow"
+          ],
+          "functions": [
+            "__init__",
+            "_init_controllers",
+            "_init_ui_components",
+            "_setup_window",
+            "_init_ui",
+            "_create_left_panel",
+            "_create_center_panel",
+            "_create_right_panel",
+            "_create_order_detail_area",
+            "_create_payment_area"
+          ]
+        },
+        {
+          "file": "account_panel.py",
+          "classes": [
+            "AccountPanel"
+          ],
+          "functions": [
+            "__init__",
+            "_init_ui",
+            "_connect_events",
+            "_on_cinema_selected",
+            "_on_account_list_updated",
+            "_on_account_selected",
+            "_on_account_login_success",
+            "_on_account_added",
+            "_on_account_removed",
+            "_update_account_list_display"
+          ]
+        },
+        {
+          "file": "cinema_panel.py",
+          "classes": [
+            "CinemaPanel"
+          ],
+          "functions": [
+            "__init__",
+            "_init_ui",
+            "_connect_events",
+            "_on_cinema_list_updated",
+            "_on_movie_list_updated",
+            "_on_session_list_updated",
+            "_on_cinema_selected",
+            "_on_movie_selected",
+            "_on_session_selected",
+            "_update_cinema_combo"
+          ]
+        },
+        {
+          "file": "seat_map_panel.py",
+          "classes": [
+            "SeatButton",
+            "SeatMapPanel"
+          ],
+          "functions": [
+            "__init__",
+            "_update_style",
+            "_on_clicked",
+            "set_status",
+            "__init__",
+            "_init_ui",
+            "_connect_events",
+            "update_seat_data",
+            "_parse_seat_data",
+            "_render_seat_map"
+          ]
+        }
+      ],
+      "key_functions": []
+    },
+    "widgets": {
+      "file_count": 3,
+      "python_files": [
+        {
+          "name": "login_window.py",
+          "path": "widgets\\auth\\login_window.py",
+          "size_kb": 0.0
+        },
+        {
+          "name": "base_widget.py",
+          "path": "widgets\\base\\base_widget.py",
+          "size_kb": 0.0
+        },
+        {
+          "name": "custom_controls.py",
+          "path": "widgets\\base\\custom_controls.py",
+          "size_kb": 0.0
+        }
+      ],
+      "total_size_kb": 0.0,
+      "main_modules": [],
+      "key_functions": []
+    }
+  },
+  "function_modules": {
+    "user_authentication": {
+      "description": "用户认证模块",
+      "files": [
+        "services\\account_api.py",
+        "services\\auth_service.py",
+        "services\\cinema_info_api.py",
+        "services\\film_service.py",
+        "services\\member_service.py",
+        "services\\order_api.py",
+        "services\\ui_utils.py",
+        "ui\\login_window.py",
+        "ui\\components\\account_list_panel_pyqt5.py",
+        "ui\\components\\auto_browser.py",
+        "ui\\components\\cinema_select_panel_pyqt5.py",
+        "ui\\components\\curl_parser.py",
+        "ui\\dialogs\\auto_parameter_extractor.py",
+        "ui\\interfaces\\plugin_interface.py",
+        "ui\\widgets\\account_widget.py",
+        "ui\\widgets\\tab_manager_widget.py",
+        "utils\\signals.py",
+        "controllers\\account_controller.py",
+        "controllers\\cinema_controller.py",
+        "views\\main_window.py",
+        "views\\components\\account_panel.py"
+      ],
+      "key_features": [
+        "登录验证",
+        "令牌管理",
+        "权限检查"
+      ],
+      "status": "active"
+    },
+    "cinema_management": {
+      "description": "影院管理模块",
+      "files": [
+        "services\\account_api.py",
+        "services\\api_base.py",
+        "services\\cinema_id_helper.py",
+        "services\\cinema_info_api.py",
+        "services\\cinema_manager.py",
+        "services\\film_service.py",
+        "services\\member_service.py",
+        "services\\order_api.py",
+        "ui\\components\\auto_browser.py",
+        "ui\\components\\cinema_select_panel_pyqt5.py",
+        "ui\\components\\curl_parser.py",
+        "ui\\dialogs\\auto_parameter_extractor.py",
+        "ui\\interfaces\\plugin_interface.py",
+        "ui\\widgets\\account_widget.py",
+        "ui\\widgets\\seat_order_widget.py",
+        "ui\\widgets\\tab_manager_widget.py",
+        "utils\\qrcode_generator.py",
+        "utils\\signals.py",
+        "utils\\simple_qrcode_generator.py",
+        "modules\\order_display\\order_detail_manager.py",
+        "controllers\\account_controller.py",
+        "controllers\\cinema_controller.py",
+        "controllers\\__init__.py",
+        "views\\main_window.py",
+        "views\\components\\account_panel.py",
+        "views\\components\\cinema_panel.py",
+        "views\\components\\__init__.py"
+      ],
+      "key_features": [
+        "影院信息",
+        "电影列表",
+        "场次管理"
+      ],
+      "status": "active"
+    },
+    "seat_selection": {
+      "description": "座位选择模块",
+      "files": [
+        "services\\film_service.py",
+        "ui\\components\\account_list_panel_pyqt5.py",
+        "ui\\components\\auto_browser.py",
+        "ui\\components\\cinema_select_panel_pyqt5.py",
+        "ui\\components\\seat_map_panel_pyqt5.py",
+        "ui\\widgets\\account_widget.py",
+        "ui\\widgets\\classic_components.py",
+        "ui\\widgets\\seat_order_widget.py",
+        "ui\\widgets\\tab_manager_widget.py",
+        "utils\\qrcode_generator.py",
+        "utils\\signals.py",
+        "utils\\simple_qrcode_generator.py",
+        "modules\\order_display\\order_detail_manager.py",
+        "controllers\\cinema_controller.py",
+        "controllers\\order_controller.py",
+        "views\\main_window.py",
+        "views\\components\\seat_map_panel.py",
+        "views\\components\\__init__.py"
+      ],
+      "key_features": [
+        "座位图显示",
+        "座位状态",
+        "选座逻辑"
+      ],
+      "status": "active"
+    },
+    "order_processing": {
+      "description": "订单处理模块",
+      "files": [
+        "services\\order_api.py",
+        "services\\ui_utils.py",
+        "ui\\login_window.py",
+        "ui\\components\\account_list_panel_pyqt5.py",
+        "ui\\components\\auto_browser.py",
+        "ui\\components\\cinema_select_panel_pyqt5.py",
+        "ui\\components\\seat_map_panel_pyqt5.py",
+        "ui\\dialogs\\auto_parameter_extractor.py",
+        "ui\\interfaces\\plugin_interface.py",
+        "ui\\widgets\\account_widget.py",
+        "ui\\widgets\\classic_components.py",
+        "ui\\widgets\\seat_order_widget.py",
+        "ui\\widgets\\tab_manager_widget.py",
+        "utils\\qrcode_generator.py",
+        "utils\\signals.py",
+        "utils\\simple_qrcode_generator.py",
+        "modules\\order_display\\order_detail_manager.py",
+        "modules\\order_display\\__init__.py",
+        "controllers\\order_controller.py",
+        "controllers\\__init__.py",
+        "views\\main_window.py",
+        "views\\components\\account_panel.py",
+        "views\\components\\cinema_panel.py",
+        "views\\components\\seat_map_panel.py"
+      ],
+      "key_features": [
+        "订单创建",
+        "订单查询",
+        "订单状态"
+      ],
+      "status": "active"
+    },
+    "payment_system": {
+      "description": "支付系统模块",
+      "files": [
+        "services\\account_api.py",
+        "services\\member_service.py",
+        "services\\order_api.py",
+        "services\\ui_utils.py",
+        "ui\\components\\account_list_panel_pyqt5.py",
+        "ui\\components\\cinema_select_panel_pyqt5.py",
+        "ui\\components\\seat_map_panel_pyqt5.py",
+        "ui\\interfaces\\plugin_interface.py",
+        "ui\\widgets\\account_widget.py",
+        "ui\\widgets\\seat_order_widget.py",
+        "ui\\widgets\\tab_manager_widget.py",
+        "utils\\signals.py",
+        "modules\\order_display\\order_detail_manager.py",
+        "controllers\\account_controller.py",
+        "controllers\\cinema_controller.py",
+        "controllers\\order_controller.py",
+        "views\\main_window.py",
+        "views\\components\\cinema_panel.py",
+        "views\\components\\seat_map_panel.py"
+      ],
+      "key_features": [
+        "会员卡支付",
+        "优惠券",
+        "价格计算"
+      ],
+      "status": "active"
+    },
+    "qrcode_generation": {
+      "description": "取票码生成模块",
+      "files": [
+        "services\\admin_api.py",
+        "services\\api_base.py",
+        "services\\auth_service.py",
+        "services\\cinema_info_api.py",
+        "services\\film_service.py",
+        "services\\member_service.py",
+        "services\\order_api.py",
+        "ui\\login_window.py",
+        "ui\\components\\auto_browser.py",
+        "ui\\components\\cinema_select_panel_pyqt5.py",
+        "ui\\dialogs\\auto_parameter_extractor.py",
+        "ui\\widgets\\tab_manager_widget.py",
+        "utils\\qrcode_generator.py",
+        "utils\\signals.py",
+        "utils\\simple_qrcode_generator.py",
+        "controllers\\account_controller.py",
+        "controllers\\cinema_controller.py",
+        "controllers\\order_controller.py",
+        "views\\main_window.py"
+      ],
+      "key_features": [
+        "二维码生成",
+        "取票码显示",
+        "订单确认"
+      ],
+      "status": "active"
+    }
+  },
+  "business_flows": {
+    "user_journey": {
+      "name": "用户购票完整流程",
+      "steps": [
+        {
+          "step": 1,
+          "name": "系统启动",
+          "description": "启动应用程序"
+        },
+        {
+          "step": 2,
+          "name": "用户认证",
+          "description": "登录验证和权限检查"
+        },
+        {
+          "step": 3,
+          "name": "选择影院",
+          "description": "浏览和选择影院"
+        },
+        {
+          "step": 4,
+          "name": "选择电影",
+          "description": "查看电影列表和场次"
+        },
+        {
+          "step": 5,
+          "name": "选择座位",
+          "description": "查看座位图并选择座位"
+        },
+        {
+          "step": 6,
+          "name": "确认订单",
+          "description": "确认订单信息和价格"
+        },
+        {
+          "step": 7,
+          "name": "支付处理",
+          "description": "选择支付方式并完成支付"
+        },
+        {
+          "step": 8,
+          "name": "生成取票码",
+          "description": "生成二维码取票码"
+        },
+        {
+          "step": 9,
+          "name": "订单完成",
+          "description": "显示订单详情和取票信息"
+        }
+      ],
+      "critical_path": true
+    },
+    "admin_workflow": {
+      "name": "管理员工作流程",
+      "steps": [
+        {
+          "step": 1,
+          "name": "系统管理",
+          "description": "系统配置和维护"
+        },
+        {
+          "step": 2,
+          "name": "数据管理",
+          "description": "影院和电影数据管理"
+        },
+        {
+          "step": 3,
+          "name": "订单管理",
+          "description": "订单查询和处理"
+        },
+        {
+          "step": 4,
+          "name": "用户管理",
+          "description": "用户账号和权限管理"
+        }
+      ],
+      "critical_path": false
+    }
+  },
+  "technical_layers": {
+    "presentation_layer": {
+      "name": "UI界面层",
+      "description": "PyQt5用户界面组件",
+      "components": [
+        "主窗口",
+        "对话框",
+        "控件",
+        "布局管理"
+      ],
+      "directories": [
+        "ui/",
+        "views/",
+        "widgets/"
+      ],
+      "responsibilities": [
+        "用户交互",
+        "界面展示",
+        "事件处理"
+      ]
+    },
+    "business_layer": {
+      "name": "业务逻辑层",
+      "description": "核心业务逻辑处理",
+      "components": [
+        "业务规则",
+        "流程控制",
+        "数据验证"
+      ],
+      "directories": [
+        "modules/",
+        "controllers/"
+      ],
+      "responsibilities": [
+        "业务流程",
+        "规则验证",
+        "逻辑处理"
+      ]
+    },
+    "service_layer": {
+      "name": "服务层",
+      "description": "API调用和数据服务",
+      "components": [
+        "API客户端",
+        "数据转换",
+        "缓存管理"
+      ],
+      "directories": [
+        "services/"
+      ],
+      "responsibilities": [
+        "API调用",
+        "数据获取",
+        "服务集成"
+      ]
+    },
+    "utility_layer": {
+      "name": "工具层",
+      "description": "通用工具和辅助功能",
+      "components": [
+        "工具函数",
+        "配置管理",
+        "日志处理"
+      ],
+      "directories": [
+        "utils/"
+      ],
+      "responsibilities": [
+        "通用功能",
+        "配置管理",
+        "辅助工具"
+      ]
+    }
+  },
+  "dependency_graph": {},
+  "optimization_plan": {
+    "phase_1": {
+      "name": "核心功能稳定化",
+      "duration": "2-3周",
+      "priority": "high",
+      "focus_areas": [
+        "用户认证",
+        "座位选择",
+        "支付流程"
+      ],
+      "objectives": [
+        "修复已知bug",
+        "提升核心功能稳定性",
+        "优化用户体验"
+      ],
+      "deliverables": [
+        "用户认证模块重构",
+        "座位选择逻辑优化",
+        "支付流程改进"
+      ]
+    },
+    "phase_2": {
+      "name": "性能优化",
+      "duration": "2-3周",
+      "priority": "medium",
+      "focus_areas": [
+        "API调用",
+        "界面响应",
+        "数据处理"
+      ],
+      "objectives": [
+        "提升系统响应速度",
+        "优化内存使用",
+        "改进API调用效率"
+      ],
+      "deliverables": [
+        "API调用优化",
+        "界面渲染优化",
+        "数据缓存机制"
+      ]
+    },
+    "phase_3": {
+      "name": "功能扩展",
+      "duration": "3-4周",
+      "priority": "medium",
+      "focus_areas": [
+        "新功能开发",
+        "用户体验",
+        "系统集成"
+      ],
+      "objectives": [
+        "添加新功能特性",
+        "改进用户界面",
+        "增强系统集成"
+      ],
+      "deliverables": [
+        "新功能模块",
+        "UI/UX改进",
+        "第三方集成"
+      ]
+    },
+    "phase_4": {
+      "name": "代码质量提升",
+      "duration": "2-3周",
+      "priority": "low",
+      "focus_areas": [
+        "代码重构",
+        "文档完善",
+        "测试覆盖"
+      ],
+      "objectives": [
+        "提升代码质量",
+        "完善项目文档",
+        "增加测试覆盖率"
+      ],
+      "deliverables": [
+        "代码重构报告",
+        "完整项目文档",
+        "测试用例集"
+      ]
+    }
+  }
+}
