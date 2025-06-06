@@ -70,6 +70,10 @@ class ModularCinemaMainWindow(QMainWindow):
         self.cinema_manager = CinemaManager()
         self.member_service = MemberService()
 
+        # 🆕 初始化订单详情管理器
+        from modules.order_display import OrderDetailManager
+        self.order_detail_manager = OrderDetailManager(self)
+
         # ===== 第三步：复制关键数据属性（从源项目复制） =====
         self.current_user = None
         self.current_account = None
@@ -1272,207 +1276,20 @@ class ModularCinemaMainWindow(QMainWindow):
                 ])
     
     def _show_order_detail(self, order_detail):
-        """显示订单详情 - 修复空行问题，使用紧凑格式"""
+        """🆕 显示订单详情 - 使用统一的订单详情管理器"""
         try:
             if not order_detail:
                 return
 
-            # 调试输出：打印传入的订单详情数据
-            print(f"[调试-订单显示] 开始显示订单详情")
-            print(f"[调试-订单显示] order_detail类型: {type(order_detail)}")
-            print(f"[调试-订单显示] order_detail键: {list(order_detail.keys()) if isinstance(order_detail, dict) else 'N/A'}")
-            print(f"[调试-订单显示] order_detail内容: {order_detail}")
-
-            # 更新手机号显示
-            phone = order_detail.get('phone', '')
-            if phone:
-                self.phone_display.setText(f"手机号: {phone}")
-
-            # 构建格式化的订单详情 - 使用列表收集信息，避免多余空行
-            info_lines = []
-
-            # 订单号
-            order_id = order_detail.get('orderno', order_detail.get('order_id', 'N/A'))
-            info_lines.append(f"订单号: {order_id}")
-
-            # 影片信息
-            movie = order_detail.get('movie', order_detail.get('film_name', 'N/A'))
-            info_lines.append(f"影片: {movie}")
-
-            # 时间信息
-            show_time = order_detail.get('showTime', '')
-            if not show_time:
-                date = order_detail.get('date', '')
-                session = order_detail.get('session', '')
-                if date and session:
-                    show_time = f"{date} {session}"
-            info_lines.append(f"时间: {show_time}")
-
-            # 影厅信息
-            cinema = order_detail.get('cinema', order_detail.get('cinema_name', 'N/A'))
-            hall = order_detail.get('hall_name', '')
-            if hall:
-                info_lines.append(f"影厅: {hall}")
-            else:
-                info_lines.append(f"影院: {cinema}")
-
-            # 座位信息
-            seats = order_detail.get('seats', [])
-            if isinstance(seats, list) and seats:
-                if len(seats) == 1:
-                    info_lines.append(f"座位: {seats[0]}")
-                else:
-                    seat_str = ", ".join(seats)  # 🆕 修复：使用逗号分隔座位
-                    info_lines.append(f"座位: {seat_str}")
-            else:
-                info_lines.append(f"座位: {seats}")
-
-            # 状态信息 - 🆕 移动到座位信息后面
-            status = order_detail.get('status', '未知')
-            info_lines.append(f"状态: {status}")
-
-            # 🆕 密码策略信息 - 修复显示逻辑
-            enable_mempassword = None
-
-            # 方法1: 从api_data获取
-            api_data = order_detail.get('api_data', {})
-            print(f"[调试-订单显示] api_data: {api_data}")
-            print(f"[调试-订单显示] api_data类型: {type(api_data)}")
-
-            if api_data and isinstance(api_data, dict):
-                enable_mempassword = api_data.get('enable_mempassword')
-                print(f"[调试-订单显示] 从api_data获取enable_mempassword: {enable_mempassword}")
-
-            # 方法2: 直接从order_detail获取（如果api_data就是订单详情）
-            if enable_mempassword is None:
-                enable_mempassword = order_detail.get('enable_mempassword')
-                print(f"[调试-订单显示] 从order_detail获取enable_mempassword: {enable_mempassword}")
-
-            # 🆕 使用增强的密码显示方法
-            password_display = self._get_enhanced_password_display(enable_mempassword)
-            info_lines.append(password_display)
-
-            # 🆕 价格显示逻辑 - 修复：正确显示原价和实付金额
-            # 调试输出：打印所有价格相关参数
-            member_price = order_detail.get('mem_totalprice', 0)
-            original_amount = order_detail.get('amount', 0)
-
-            print(f"[调试-订单显示] 价格计算开始:")
-            print(f"[调试-订单显示] 获取的会员价格(mem_totalprice): {member_price}")
-            print(f"[调试-订单显示] 原始金额(amount): {original_amount}")
-            print(f"[调试-订单显示] 会员价格类型: {type(member_price)}")
-            print(f"[调试-订单显示] 原始金额类型: {type(original_amount)}")
-
-            # 从api_data中获取价格信息并进行类型转换
-            api_total_price = 0
-            api_mem_price = 0
-            if api_data and isinstance(api_data, dict):
-                # 🆕 安全的类型转换函数
-                def safe_int_convert(value, default=0):
-                    """安全地将价格字符串转换为整数（分）"""
-                    try:
-                        if isinstance(value, str):
-                            return int(value) if value.strip() else default
-                        elif isinstance(value, (int, float)):
-                            return int(value)
-                        else:
-                            return default
-                    except (ValueError, TypeError):
-                        return default
-
-                api_mem_price = safe_int_convert(api_data.get('mem_totalprice', 0))
-                api_total_price = safe_int_convert(api_data.get('totalprice', 0))
-                api_pay_amount = safe_int_convert(api_data.get('payAmount', 0))
-
-                print(f"[调试-订单显示] api_data中的价格信息:")
-                print(f"[调试-订单显示]   - mem_totalprice: {api_data.get('mem_totalprice')} → {api_mem_price}分")
-                print(f"[调试-订单显示]   - totalprice: {api_data.get('totalprice')} → {api_total_price}分")
-                print(f"[调试-订单显示]   - payAmount: {api_data.get('payAmount')} → {api_pay_amount}分")
-
-            # 🆕 修复价格显示逻辑 - 重新整理显示顺序和逻辑
-
-            # 2. 实付金额：检查是否有会员卡 - 修复会员状态检测逻辑
-            print(f"[调试-订单显示] 会员信息检查: {getattr(self, 'member_info', None)}")
-
-            # 🆕 修复：使用正确的会员状态判断逻辑
-            has_member_card = False
-            if hasattr(self, 'member_info') and self.member_info:
-                # 检查has_member_card字段（新的正确字段）
-                has_member_card = self.member_info.get('has_member_card', False)
-
-                # 如果没有新字段，尝试检查raw_data（兼容性处理）
-                if not has_member_card:
-                    raw_data = self.member_info.get('raw_data')
-                    has_member_card = raw_data is not None and isinstance(raw_data, dict)
-
-                print(f"[调试-订单显示] 会员卡状态检查:")
-                print(f"[调试-订单显示]   - has_member_card字段: {self.member_info.get('has_member_card', 'N/A')}")
-                print(f"[调试-订单显示]   - raw_data: {self.member_info.get('raw_data', 'N/A')}")
-                print(f"[调试-订单显示]   - 最终判断结果: {has_member_card}")
-            else:
-                print(f"[调试-订单显示] 无会员信息或member_info为空")
-
-            print(f"[调试-订单显示] 是否有会员卡: {has_member_card}")
-
-            # 🆕 对member_price也进行类型转换
-            safe_member_price = 0
-            if isinstance(member_price, str):
-                try:
-                    safe_member_price = int(member_price) if member_price.strip() else 0
-                except (ValueError, TypeError):
-                    safe_member_price = 0
-            elif isinstance(member_price, (int, float)):
-                safe_member_price = int(member_price)
-
-            print(f"[调试-订单显示] 转换后的会员价格: {safe_member_price}分")
-
-            # 🆕 修复：先显示原价，再显示实付金额
-            # 1. 原价：使用totalprice（分转元）
-            if api_total_price > 0:
-                original_price_yuan = api_total_price / 100.0
-                info_lines.append(f"原价: ¥{original_price_yuan:.2f}")
-                print(f"[调试-订单显示] 显示原价: ¥{original_price_yuan:.2f}")
-            elif original_amount > 0:
-                info_lines.append(f"原价: ¥{original_amount:.2f}")
-                print(f"[调试-订单显示] 显示原价(备选): ¥{original_amount:.2f}")
-
-            # 2. 实付金额：根据会员状态决定显示内容
-            if has_member_card and (api_mem_price > 0 or safe_member_price > 0):
-                # 有会员卡且有会员价格，显示会员价
-                final_mem_price = api_mem_price if api_mem_price > 0 else safe_member_price
-                member_amount = final_mem_price / 100.0
-                final_display = f"实付金额: ¥{member_amount:.2f} (会员价)"
-                print(f"[调试-订单显示] 使用会员价格: {member_amount:.2f}")
-                info_lines.append(final_display)
-            else:
-                # 无会员卡或无会员价格，显示原价
-                if api_total_price > 0:
-                    total_amount = api_total_price / 100.0
-                    final_display = f"实付金额: ¥{total_amount:.2f}"
-                    print(f"[调试-订单显示] 使用原价作为实付金额: {total_amount:.2f}")
-                elif original_amount > 0:
-                    final_display = f"实付金额: ¥{original_amount:.2f}"
-                    print(f"[调试-订单显示] 使用原价作为实付金额(备选): {original_amount:.2f}")
-                else:
-                    final_display = f"实付金额: ¥0.00"
-                    print(f"[调试-订单显示] 无价格信息，显示0")
-                info_lines.append(final_display)
-
-            print(f"[调试-订单显示] 最终显示: {final_display}")
-
-            # 🔧 修复：使用单个换行符连接，确保紧凑显示
-            details = "\n".join(info_lines)
-
-            print(f"[调试-订单显示] 完整显示内容:")
-            print(f"[调试-订单显示] {details}")
-            print(f"[调试-订单显示] 显示内容行数: {len(info_lines)}")
-
-            # 设置文本内容
-            self.order_detail_text.setPlainText(details)
+            print(f"[订单详情] 使用统一管理器显示订单详情")
+            # 🆕 使用统一的订单详情管理器
+            self.order_detail_manager.display_order_detail(order_detail, 'creation')
 
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            print(f"[订单详情] 显示失败: {e}")
+            # 降级处理 - 显示基本错误信息
+            if hasattr(self, 'order_detail_text'):
+                self.order_detail_text.setPlainText(f"订单详情显示失败: {str(e)}")
     
     def _show_qr_code(self, qr_code):
         """显示取票码"""
@@ -2582,230 +2399,19 @@ class ModularCinemaMainWindow(QMainWindow):
             pass
 
     def _update_order_details(self, order_data: dict):
-        """更新订单详情显示 - 修复空行问题，使用紧凑格式"""
+        """🆕 更新订单详情显示 - 使用统一的订单详情管理器"""
         try:
-            # 🔧 修复：如果传入的order_data信息不完整，尝试从当前状态获取更多信息
-            enhanced_order_data = self._enhance_order_data(order_data)
-
-            # 更新手机号显示
-            phone = enhanced_order_data.get('phone', '')
-            if phone:
-                self.phone_display.setText(f"手机号: {phone}")
-
-            # 构建格式化的订单详情 - 使用列表收集信息，避免多余空行
-            info_lines = []
-
-            # 订单号
-            order_no = enhanced_order_data.get('order_id', enhanced_order_data.get('orderno', 'N/A'))
-            info_lines.append(f"订单号: {order_no}")
-
-            # 影片信息
-            movie = enhanced_order_data.get('movie', enhanced_order_data.get('filmname', 'N/A'))
-            info_lines.append(f"影片: {movie}")
-
-            # 时间信息
-            session_time = enhanced_order_data.get('session', enhanced_order_data.get('time', ''))
-            info_lines.append(f"时间: {session_time}")
-
-            # 影院信息
-            cinema = enhanced_order_data.get('cinema', enhanced_order_data.get('cinemaname', 'N/A'))
-            info_lines.append(f"影院: {cinema}")
-
-            # 座位信息
-            seats = enhanced_order_data.get('seats', [])
-            if isinstance(seats, list):
-                seats_str = ', '.join(seats) if seats else '[]'
-            else:
-                seats_str = str(seats)
-            info_lines.append(f"座位: {seats_str}")
-
-            # 状态
-            status = enhanced_order_data.get('status', '待支付')
-            info_lines.append(f"状态: {status}")
-
-            # 🆕 密码策略信息 - 增强显示逻辑
-            print(f"[调试-更新订单详情] 开始检查密码策略")
-            enable_mempassword = None
-
-            # 方法1: 从api_data获取
-            api_data = enhanced_order_data.get('api_data', {})
-            if api_data and isinstance(api_data, dict):
-                enable_mempassword = api_data.get('enable_mempassword')
-                print(f"[调试-更新订单详情] 从api_data获取enable_mempassword: {enable_mempassword}")
-
-            # 方法2: 直接从enhanced_order_data获取
-            if enable_mempassword is None:
-                enable_mempassword = enhanced_order_data.get('enable_mempassword')
-                print(f"[调试-更新订单详情] 从order_data获取enable_mempassword: {enable_mempassword}")
-
-            # 🆕 增强密码策略显示 - 包含密码状态检查
-            password_display = self._get_enhanced_password_display(enable_mempassword)
-            info_lines.append(password_display)
-            print(f"[调试-更新订单详情] 显示: {password_display}")
-
-            # 🆕 价格信息 - 与_show_order_detail保持一致的会员价格逻辑
-            print(f"[调试-更新订单详情] 开始处理价格信息")
-
-            # 安全的类型转换函数
-            def safe_int_convert(value, default=0):
-                try:
-                    if isinstance(value, str):
-                        return int(value) if value.strip() else default
-                    elif isinstance(value, (int, float)):
-                        return int(value)
-                    else:
-                        return default
-                except (ValueError, TypeError):
-                    return default
-
-            # 从api_data中获取价格信息并进行类型转换
-            api_total_price = 0
-            api_mem_price = 0
-            if api_data and isinstance(api_data, dict):
-                api_mem_price = safe_int_convert(api_data.get('mem_totalprice', 0))
-                api_total_price = safe_int_convert(api_data.get('totalprice', 0))
-
-                print(f"[调试-更新订单详情] api_data中的价格信息:")
-                print(f"[调试-更新订单详情]   - mem_totalprice: {api_data.get('mem_totalprice')} → {api_mem_price}分")
-                print(f"[调试-更新订单详情]   - totalprice: {api_data.get('totalprice')} → {api_total_price}分")
-
-            # 检查会员状态
-            has_member_card = False
-            if hasattr(self, 'member_info') and self.member_info:
-                has_member_card = self.member_info.get('has_member_card', False)
-                if not has_member_card:
-                    raw_data = self.member_info.get('raw_data')
-                    has_member_card = raw_data is not None and isinstance(raw_data, dict)
-                print(f"[调试-更新订单详情] 会员状态: {has_member_card}")
-
-            # 显示原价
-            if api_total_price > 0:
-                original_price_yuan = api_total_price / 100.0
-                info_lines.append(f"原价: ¥{original_price_yuan:.2f}")
-                print(f"[调试-更新订单详情] 显示原价: ¥{original_price_yuan:.2f}")
-            else:
-                # 备选方案：从enhanced_order_data获取
-                amount = enhanced_order_data.get('amount', enhanced_order_data.get('totalprice', 0))
-                if isinstance(amount, str):
-                    try:
-                        amount = float(amount) / 100  # 如果是分为单位，转换为元
-                    except:
-                        amount = 0
-                if amount > 0:
-                    info_lines.append(f"原价: ¥{amount:.2f}")
-                    print(f"[调试-更新订单详情] 显示原价(备选): ¥{amount:.2f}")
-
-            # 券信息
-            coupon_count = len(enhanced_order_data.get('selected_coupons', []))
-            if coupon_count > 0:
-                info_lines.append(f"使用券: {coupon_count}张")
-
-                # 券抵扣金额
-                discount = enhanced_order_data.get('discount_amount', 0)
-                if discount > 0:
-                    info_lines.append(f"券抵扣: -¥{discount:.2f}")
-
-            # 实付金额 - 根据会员状态和券使用情况决定
-            if coupon_count > 0:
-                # 有券的情况
-                pay_amount = enhanced_order_data.get('pay_amount', 0)
-                if pay_amount == 0:
-                    info_lines.append(f"实付金额: ¥{pay_amount:.2f} (纯券支付)")
-                else:
-                    info_lines.append(f"实付金额: ¥{pay_amount:.2f}")
-                print(f"[调试-更新订单详情] 券支付实付金额: ¥{pay_amount:.2f}")
-            else:
-                # 无券的情况 - 检查会员价格
-                if has_member_card and api_mem_price > 0:
-                    # 有会员卡且有会员价格，显示会员价
-                    member_amount = api_mem_price / 100.0
-                    final_display = f"实付金额: ¥{member_amount:.2f} (会员价)"
-                    info_lines.append(final_display)
-                    print(f"[调试-更新订单详情] 使用会员价格: {member_amount:.2f}")
-                else:
-                    # 无会员卡或无会员价格，显示原价
-                    if api_total_price > 0:
-                        total_amount = api_total_price / 100.0
-                        final_display = f"实付金额: ¥{total_amount:.2f}"
-                        info_lines.append(final_display)
-                        print(f"[调试-更新订单详情] 使用原价作为实付金额: {total_amount:.2f}")
-                    else:
-                        # 备选方案
-                        amount = enhanced_order_data.get('amount', 0)
-                        if isinstance(amount, str):
-                            try:
-                                amount = float(amount) / 100
-                            except:
-                                amount = 0
-                        final_display = f"实付金额: ¥{amount:.2f}"
-                        info_lines.append(final_display)
-                        print(f"[调试-更新订单详情] 使用原价作为实付金额(备选): {amount:.2f}")
-
-            # 🔧 修复：使用单个换行符连接，确保紧凑显示
-            details = "\n".join(info_lines)
-
-            self.order_detail_text.setPlainText(details)
-
-            # 🆕 移除倒计时更新
-        except Exception as e:
-            pass
-
-    def _enhance_order_data(self, order_data: dict) -> dict:
-        """增强订单数据 - 从当前状态获取更完整的信息"""
-        try:
-            enhanced_data = order_data.copy()
-
-            # 从当前账号获取手机号
-            if self.current_account and not enhanced_data.get('phone'):
-                enhanced_data['phone'] = self.current_account.get('userid', self.current_account.get('phone', ''))
-
-            # 从Tab管理器获取当前选择的信息
-            if hasattr(self, 'tab_manager_widget'):
-                tab_widget = self.tab_manager_widget
-
-                # 影院信息
-                if hasattr(tab_widget, 'current_cinema_data') and tab_widget.current_cinema_data:
-                    cinema_data = tab_widget.current_cinema_data
-                    if not enhanced_data.get('cinema') and not enhanced_data.get('cinemaname'):
-                        enhanced_data['cinema'] = cinema_data.get('cinemaShortName', cinema_data.get('cinemaname', 'N/A'))
-
-                # 影片信息
-                if hasattr(tab_widget, 'current_movie_data') and tab_widget.current_movie_data:
-                    movie_data = tab_widget.current_movie_data
-                    if not enhanced_data.get('movie') and not enhanced_data.get('filmname'):
-                        enhanced_data['movie'] = movie_data.get('filmname', movie_data.get('name', 'N/A'))
-
-                # 场次信息
-                if hasattr(tab_widget, 'current_session_data') and tab_widget.current_session_data:
-                    session_data = tab_widget.current_session_data
-                    if not enhanced_data.get('session') and not enhanced_data.get('time'):
-                        start_time = session_data.get('startTime', '')
-                        date = session_data.get('showDate', '')
-                        if start_time and date:
-                            enhanced_data['session'] = f"{date} {start_time}"
-                        elif start_time:
-                            enhanced_data['session'] = start_time
-
-            # 从当前订单状态获取信息
-            if hasattr(self, 'current_order') and self.current_order:
-                current_order = self.current_order
-                for key in ['orderno', 'totalprice', 'seats', 'selected_coupons']:
-                    if not enhanced_data.get(key) and current_order.get(key):
-                        enhanced_data[key] = current_order[key]
-
-            # 从券选择状态获取信息
-            if hasattr(self, 'selected_coupons') and self.selected_coupons:
-                enhanced_data['selected_coupons'] = self.selected_coupons
-
-            if hasattr(self, 'current_coupon_info') and self.current_coupon_info:
-                coupon_info = self.current_coupon_info
-                enhanced_data['discount_amount'] = coupon_info.get('discount_price', 0) / 100
-                enhanced_data['pay_amount'] = coupon_info.get('payment_amount', 0) / 100
-
-            return enhanced_data
+            print(f"[订单详情] 使用统一管理器更新订单详情")
+            # 🆕 使用统一的订单详情管理器
+            self.order_detail_manager.display_order_detail(order_data, 'update')
 
         except Exception as e:
-            return order_data
+            print(f"[订单详情] 更新失败: {e}")
+            # 降级处理 - 显示基本错误信息
+            if hasattr(self, 'order_detail_text'):
+                self.order_detail_text.setPlainText(f"订单详情更新失败: {str(e)}")
+
+    # 🆕 _enhance_order_data 方法已移至 OrderDetailManager 中
 
     def closeEvent(self, event):
         """窗口关闭事件"""
