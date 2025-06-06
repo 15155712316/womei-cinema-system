@@ -49,6 +49,9 @@ from services.account_api import get_account_list, save_account, delete_account
 # 工具类
 import json, os, time, traceback
 
+# 🆕 增强支付系统导入
+from PyQt5.QtWidgets import QInputDialog, QLineEdit
+
 # 导入登录窗口
 from ui.login_window import LoginWindow
 
@@ -66,12 +69,12 @@ class ModularCinemaMainWindow(QMainWindow):
         self.auth_service = AuthService()
         self.cinema_manager = CinemaManager()
         self.member_service = MemberService()
-        
+
         # ===== 第三步：复制关键数据属性（从源项目复制） =====
         self.current_user = None
         self.current_account = None
         self.current_order = None
-        self.member_info = None
+        self.member_info = {'has_member_card': False}  # 🆕 初始化会员信息
         # 🆕 券选择和支付相关状态变量
         self.selected_coupons = []           # 存储选中券号列表
         self.selected_coupons_info = None    # 选中券的详细信息
@@ -113,9 +116,34 @@ class ModularCinemaMainWindow(QMainWindow):
         # 不要显示主窗口，直接启动登录流程
         # 移除了之前的show()/hide()逻辑避免闪烁
         
+        # 🆕 初始化增强支付系统
+        self._init_enhanced_payment_system()
+
         # 启动用户认证检查
         QTimer.singleShot(100, self._start_auth_check)
-    
+
+    def _init_enhanced_payment_system(self):
+        """🆕 初始化增强支付系统"""
+        try:
+            # 初始化API客户端（如果还没有）
+            if not hasattr(self, 'api_client'):
+                from services.api_base import APIBase
+                self.api_client = APIBase()
+
+            # 🆕 初始化会员卡密码策略状态
+            self.member_password_required = False  # 是否需要会员卡密码
+            self.member_password_policy = None     # 密码策略详情
+            self.member_card_password = None       # 用户输入的会员卡密码
+
+            print("[增强支付] 🚀 增强支付系统初始化完成")
+            print("[增强支付] ✅ 支持动态密码策略检测")
+            print("[增强支付] ✅ 支持会员信息API实时获取")
+            print("[增强支付] ✅ 支持券预支付验证")
+            print("[增强支付] ✅ 支持会员卡密码动态验证")
+
+        except Exception as e:
+            print(f"[增强支付] ❌ 初始化失败: {e}")
+
     def _init_ui(self):
         """初始化用户界面"""
         # 创建中央部件
@@ -855,6 +883,21 @@ class ModularCinemaMainWindow(QMainWindow):
 
             cinema_id = cinema_data.get('cinemaid', '')
 
+            # 🆕 检测会员卡密码策略
+            password_policy_result = self.validate_member_password_policy(order_id)
+            if not password_policy_result.get('success'):
+                MessageManager.show_error(self, "支付失败", f"密码策略检测失败: {password_policy_result.get('error')}")
+                return
+
+            requires_password = password_policy_result.get('requires_password', False)
+            member_password = None
+
+            # 🆕 如果需要密码，获取用户输入
+            if requires_password:
+                member_password = self.get_member_password_input()
+                if member_password is None:
+                    MessageManager.show_info(self, "支付取消", "用户取消密码输入")
+                    return
 
             # 🆕 获取选中的券号
             selected_coupons = getattr(self, 'selected_coupons', [])
@@ -873,8 +916,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 discount_price = coupon_data.get('discountprice', '0')  # 优惠价格（分）
 
                 # 🆕 检查会员支付金额
-                is_member = self.member_info and self.member_info.get('is_member')
-                if is_member:
+                has_member_card = self.member_info and self.member_info.get('has_member_card', False)
+                if has_member_card:
                     mem_payment = coupon_data.get('mempaymentAmount', '0')
                     if mem_payment != '0':
                         pay_amount = mem_payment  # 会员优先使用会员支付金额
@@ -885,8 +928,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 couponcode = ''  # 清空券号
 
                 # 获取原价支付金额
-                is_member = self.member_info and self.member_info.get('is_member')
-                if is_member:
+                has_member_card = self.member_info and self.member_info.get('has_member_card', False)
+                if has_member_card:
                     # 会员：使用会员总价
                     pay_amount = str(order_detail.get('mem_totalprice', 0))  # 会员总价（分）
                 else:
@@ -914,6 +957,13 @@ class ModularCinemaMainWindow(QMainWindow):
                 'source': '2'
             }
 
+            # 🆕 根据密码策略添加会员卡密码参数
+            if requires_password and member_password:
+                pay_params['mempass'] = member_password
+                print(f"[支付] 添加会员卡密码参数 (密码长度: {len(member_password)})")
+            else:
+                print(f"[支付] 不需要会员卡密码 (策略: {requires_password})")
+
 
             # 🆕 调用支付API
             pay_result = pay_order(pay_params)
@@ -936,6 +986,8 @@ class ModularCinemaMainWindow(QMainWindow):
                     'source': '2'
                 }
 
+                # 支付成功后获取订单详情（此时订单已支付，使用get_order_detail）
+                print(f"[调试-支付成功] 获取已支付订单详情，使用接口: get_order_detail")
                 updated_order_detail = get_order_detail(detail_params)
 
                 if updated_order_detail and updated_order_detail.get('resultCode') == '0':
@@ -991,16 +1043,75 @@ class ModularCinemaMainWindow(QMainWindow):
             pass
     
     def _get_member_info(self, account, cinemaid):
-        """获取会员信息"""
+        """获取会员信息 - 修复：严格按照API返回数据结构判断"""
         try:
-            member_info = self.member_service.get_member_info(account, cinemaid)
-            if member_info:
-                self.member_info = member_info
+            print(f"[调试-会员信息] 开始获取会员信息，影院ID: {cinemaid}")
+
+            # 直接调用会员信息API，不使用增强方法的包装
+            from services.api_base import api_get
+            params = {
+                'groupid': '',
+                'cinemaid': cinemaid,
+                'cardno': account.get('cardno', ''),
+                'userid': account.get('userid', ''),
+                'openid': account.get('openid', ''),
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': account.get('token', ''),
+                'source': '2'
+            }
+
+            print(f"[调试-会员信息] API请求参数: {params}")
+
+            # 调用getMemberInfo API
+            api_result = api_get('/MiniTicket/index.php/MiniMember/getMemberInfo', cinemaid, params)
+
+            print(f"[调试-会员信息] API原始返回: {api_result}")
+
+            # 🆕 修复：严格按照API返回数据结构判断会员状态
+            if api_result and api_result.get('resultCode') == '0':
+                result_data = api_result.get('resultData')
+
+                print(f"[调试-会员信息] resultData: {result_data}")
+                print(f"[调试-会员信息] resultData类型: {type(result_data)}")
+
+                if result_data is not None and isinstance(result_data, dict):
+                    # 🆕 有会员卡：resultData不为null且包含会员信息
+                    self.member_info = {
+                        'has_member_card': True,  # 使用明确的字段名
+                        'cardno': result_data.get('cardno', ''),
+                        'mobile': result_data.get('mobile', ''),
+                        'memberId': result_data.get('memberId', ''),
+                        'cardtype': result_data.get('cardtype', '0'),
+                        'cardcinemaid': result_data.get('cardcinemaid', ''),
+                        'balance': result_data.get('balance', 0),
+                        'raw_data': result_data  # 保存原始数据供后续使用
+                    }
+                    print(f"[调试-会员信息] ✅ 检测到会员卡: {self.member_info}")
+                else:
+                    # 🆕 无会员卡：resultData为null
+                    self.member_info = {
+                        'has_member_card': False,
+                        'raw_data': None
+                    }
+                    print(f"[调试-会员信息] ❌ 无会员卡 (resultData为null)")
             else:
-                pass
-                
+                # API调用失败
+                error_desc = api_result.get('resultDesc', '未知错误') if api_result else '网络错误'
+                self.member_info = {
+                    'has_member_card': False,
+                    'error': error_desc,
+                    'raw_data': None
+                }
+                print(f"[调试-会员信息] ❌ API调用失败: {error_desc}")
+
         except Exception as e:
-            pass
+            print(f"[调试-会员信息] 获取会员信息异常: {e}")
+            self.member_info = {
+                'has_member_card': False,
+                'error': str(e),
+                'raw_data': None
+            }
     
     def _create_order(self, account, cinemaid, selected_seats):
         """创建订单（保留原方法供其他地方调用）"""
@@ -1153,6 +1264,12 @@ class ModularCinemaMainWindow(QMainWindow):
             if not order_detail:
                 return
 
+            # 调试输出：打印传入的订单详情数据
+            print(f"[调试-订单显示] 开始显示订单详情")
+            print(f"[调试-订单显示] order_detail类型: {type(order_detail)}")
+            print(f"[调试-订单显示] order_detail键: {list(order_detail.keys()) if isinstance(order_detail, dict) else 'N/A'}")
+            print(f"[调试-订单显示] order_detail内容: {order_detail}")
+
             # 更新手机号显示
             phone = order_detail.get('phone', '')
             if phone:
@@ -1192,39 +1309,162 @@ class ModularCinemaMainWindow(QMainWindow):
                 if len(seats) == 1:
                     info_lines.append(f"座位: {seats[0]}")
                 else:
-                    seat_str = " ".join(seats)
+                    seat_str = ", ".join(seats)  # 🆕 修复：使用逗号分隔座位
                     info_lines.append(f"座位: {seat_str}")
             else:
                 info_lines.append(f"座位: {seats}")
 
-            # 票价信息
-            amount = order_detail.get('amount', 0)
-            seat_count = order_detail.get('seat_count', len(seats) if isinstance(seats, list) else 1)
-
-            if seat_count > 1:
-                unit_price = amount / seat_count if seat_count > 0 else amount
-                info_lines.append(f"票价: {seat_count}张×¥{unit_price:.2f}")
-            else:
-                info_lines.append(f"票价: ¥{amount:.2f}")
-
-            # 状态信息
+            # 状态信息 - 🆕 移动到座位信息后面
             status = order_detail.get('status', '未知')
             info_lines.append(f"状态: {status}")
 
-            # 实付金额
-            info_lines.append(f"实付金额: ¥{amount:.2f}")
+            # 🆕 密码策略信息 - 修复显示逻辑
+            enable_mempassword = None
+
+            # 方法1: 从api_data获取
+            api_data = order_detail.get('api_data', {})
+            print(f"[调试-订单显示] api_data: {api_data}")
+            print(f"[调试-订单显示] api_data类型: {type(api_data)}")
+
+            if api_data and isinstance(api_data, dict):
+                enable_mempassword = api_data.get('enable_mempassword')
+                print(f"[调试-订单显示] 从api_data获取enable_mempassword: {enable_mempassword}")
+
+            # 方法2: 直接从order_detail获取（如果api_data就是订单详情）
+            if enable_mempassword is None:
+                enable_mempassword = order_detail.get('enable_mempassword')
+                print(f"[调试-订单显示] 从order_detail获取enable_mempassword: {enable_mempassword}")
+
+            # 显示密码策略
+            if enable_mempassword == '1':
+                info_lines.append("密码: 需要输入")
+            elif enable_mempassword == '0':
+                info_lines.append("密码: 无需输入")
+            else:
+                # 如果没有获取到策略，尝试从实例状态获取
+                if hasattr(self, 'member_password_policy') and self.member_password_policy:
+                    requires_password = self.member_password_policy.get('requires_password', True)
+                    info_lines.append(f"密码: {'需要输入' if requires_password else '无需输入'}")
+                else:
+                    info_lines.append("密码: 检测中...")
+
+            # 🆕 价格显示逻辑 - 修复：正确显示原价和实付金额
+            # 调试输出：打印所有价格相关参数
+            member_price = order_detail.get('mem_totalprice', 0)
+            original_amount = order_detail.get('amount', 0)
+
+            print(f"[调试-订单显示] 价格计算开始:")
+            print(f"[调试-订单显示] 获取的会员价格(mem_totalprice): {member_price}")
+            print(f"[调试-订单显示] 原始金额(amount): {original_amount}")
+            print(f"[调试-订单显示] 会员价格类型: {type(member_price)}")
+            print(f"[调试-订单显示] 原始金额类型: {type(original_amount)}")
+
+            # 从api_data中获取价格信息并进行类型转换
+            api_total_price = 0
+            api_mem_price = 0
+            if api_data and isinstance(api_data, dict):
+                # 🆕 安全的类型转换函数
+                def safe_int_convert(value, default=0):
+                    """安全地将价格字符串转换为整数（分）"""
+                    try:
+                        if isinstance(value, str):
+                            return int(value) if value.strip() else default
+                        elif isinstance(value, (int, float)):
+                            return int(value)
+                        else:
+                            return default
+                    except (ValueError, TypeError):
+                        return default
+
+                api_mem_price = safe_int_convert(api_data.get('mem_totalprice', 0))
+                api_total_price = safe_int_convert(api_data.get('totalprice', 0))
+                api_pay_amount = safe_int_convert(api_data.get('payAmount', 0))
+
+                print(f"[调试-订单显示] api_data中的价格信息:")
+                print(f"[调试-订单显示]   - mem_totalprice: {api_data.get('mem_totalprice')} → {api_mem_price}分")
+                print(f"[调试-订单显示]   - totalprice: {api_data.get('totalprice')} → {api_total_price}分")
+                print(f"[调试-订单显示]   - payAmount: {api_data.get('payAmount')} → {api_pay_amount}分")
+
+            # 🆕 修复价格显示逻辑 - 重新整理显示顺序和逻辑
+
+            # 2. 实付金额：检查是否有会员卡 - 修复会员状态检测逻辑
+            print(f"[调试-订单显示] 会员信息检查: {getattr(self, 'member_info', None)}")
+
+            # 🆕 修复：使用正确的会员状态判断逻辑
+            has_member_card = False
+            if hasattr(self, 'member_info') and self.member_info:
+                # 检查has_member_card字段（新的正确字段）
+                has_member_card = self.member_info.get('has_member_card', False)
+
+                # 如果没有新字段，尝试检查raw_data（兼容性处理）
+                if not has_member_card:
+                    raw_data = self.member_info.get('raw_data')
+                    has_member_card = raw_data is not None and isinstance(raw_data, dict)
+
+                print(f"[调试-订单显示] 会员卡状态检查:")
+                print(f"[调试-订单显示]   - has_member_card字段: {self.member_info.get('has_member_card', 'N/A')}")
+                print(f"[调试-订单显示]   - raw_data: {self.member_info.get('raw_data', 'N/A')}")
+                print(f"[调试-订单显示]   - 最终判断结果: {has_member_card}")
+            else:
+                print(f"[调试-订单显示] 无会员信息或member_info为空")
+
+            print(f"[调试-订单显示] 是否有会员卡: {has_member_card}")
+
+            # 🆕 对member_price也进行类型转换
+            safe_member_price = 0
+            if isinstance(member_price, str):
+                try:
+                    safe_member_price = int(member_price) if member_price.strip() else 0
+                except (ValueError, TypeError):
+                    safe_member_price = 0
+            elif isinstance(member_price, (int, float)):
+                safe_member_price = int(member_price)
+
+            print(f"[调试-订单显示] 转换后的会员价格: {safe_member_price}分")
+
+            # 🆕 修复：先显示原价，再显示实付金额
+            # 1. 原价：使用totalprice（分转元）
+            if api_total_price > 0:
+                original_price_yuan = api_total_price / 100.0
+                info_lines.append(f"原价: ¥{original_price_yuan:.2f}")
+                print(f"[调试-订单显示] 显示原价: ¥{original_price_yuan:.2f}")
+            elif original_amount > 0:
+                info_lines.append(f"原价: ¥{original_amount:.2f}")
+                print(f"[调试-订单显示] 显示原价(备选): ¥{original_amount:.2f}")
+
+            # 2. 实付金额：根据会员状态决定显示内容
+            if has_member_card and (api_mem_price > 0 or safe_member_price > 0):
+                # 有会员卡且有会员价格，显示会员价
+                final_mem_price = api_mem_price if api_mem_price > 0 else safe_member_price
+                member_amount = final_mem_price / 100.0
+                final_display = f"实付金额: ¥{member_amount:.2f} (会员价)"
+                print(f"[调试-订单显示] 使用会员价格: {member_amount:.2f}")
+                info_lines.append(final_display)
+            else:
+                # 无会员卡或无会员价格，显示原价
+                if api_total_price > 0:
+                    total_amount = api_total_price / 100.0
+                    final_display = f"实付金额: ¥{total_amount:.2f}"
+                    print(f"[调试-订单显示] 使用原价作为实付金额: {total_amount:.2f}")
+                elif original_amount > 0:
+                    final_display = f"实付金额: ¥{original_amount:.2f}"
+                    print(f"[调试-订单显示] 使用原价作为实付金额(备选): {original_amount:.2f}")
+                else:
+                    final_display = f"实付金额: ¥0.00"
+                    print(f"[调试-订单显示] 无价格信息，显示0")
+                info_lines.append(final_display)
+
+            print(f"[调试-订单显示] 最终显示: {final_display}")
 
             # 🔧 修复：使用单个换行符连接，确保紧凑显示
             details = "\n".join(info_lines)
 
+            print(f"[调试-订单显示] 完整显示内容:")
+            print(f"[调试-订单显示] {details}")
+            print(f"[调试-订单显示] 显示内容行数: {len(info_lines)}")
+
             # 设置文本内容
             self.order_detail_text.setPlainText(details)
-
-            # 启动倒计时
-            if status == '待支付':
-                self.start_countdown(900)  # 15分钟倒计时
-            else:
-                self.stop_countdown()
 
         except Exception as e:
             import traceback
@@ -1819,23 +2059,37 @@ class ModularCinemaMainWindow(QMainWindow):
             pass
 
     def _on_global_order_paid(self, order_id: str):
-        """全局订单支付处理"""
+        """全局订单支付处理 - 修复：不覆盖已显示的取票码二维码"""
         try:
-            # 更新取票码显示
-            self.qr_display.setText(f"支付成功！\n\n订单号: {order_id}\n取票码: TK{order_id[-6:]}")
-            self.qr_display.setStyleSheet("""
-                QLabel {
-                    color: #2e7d32;
-                    font: bold 12px "Microsoft YaHei";
-                    background-color: #e8f5e8;
-                    border: 2px solid #4caf50;
-                    padding: 20px;
-                    border-radius: 5px;
-                }
-            """)
-            
+            # 🔧 修复：支付成功后不再覆盖取票码显示
+            # 因为_get_ticket_code_after_payment已经处理了取票码显示
+            # 这里只做必要的状态更新，不覆盖二维码显示
+
+            print(f"[主窗口] 📋 订单支付成功事件: {order_id}")
+
+            # 检查是否已经有取票码二维码显示
+            if hasattr(self, 'qr_display'):
+                # 如果当前显示的是图片（二维码），则不覆盖
+                if self.qr_display.pixmap() and not self.qr_display.pixmap().isNull():
+                    print(f"[主窗口] ✅ 取票码二维码已显示，保持当前显示")
+                    return
+
+                # 如果当前没有二维码显示，则显示支付成功信息
+                success_text = f"支付成功！\n\n订单号: {order_id}\n\n取票码正在生成中..."
+                self.qr_display.setText(success_text)
+                self.qr_display.setStyleSheet("""
+                    QLabel {
+                        color: #2e7d32;
+                        font: bold 12px "Microsoft YaHei";
+                        background-color: #e8f5e8;
+                        border: 2px solid #4caf50;
+                        padding: 20px;
+                        border-radius: 5px;
+                    }
+                """)
+
             # 🆕 移除倒计时显示更新
-            
+
         except Exception as e:
             pass
 
@@ -1898,12 +2152,14 @@ class ModularCinemaMainWindow(QMainWindow):
                     'seat_info': detail_data.get('seatInfo', ''),
                     'cinema_name': detail_data.get('cinemaName', ''),
                     'is_generated': True,  # 标识这是自主生成的二维码
-                    'is_payment_success': True  # 标识这是支付成功后的显示
+                    'source': 'payment_success'  # 🔧 标识来源为支付成功（用于调试）
                 }
 
                 print(f"[支付成功] 📤 - 图片大小: {len(qr_bytes)} bytes")
 
                 # 🎯 直接调用显示方法（不通过事件总线，避免延迟）
+                # 🔧 修复：确保支付成功后的显示与双击订单查看完全一致
+                print(f"[支付成功] 📤 调用统一显示函数，显示类型: {qr_data.get('display_type')}")
                 self._on_show_qrcode(qr_data)
 
 
@@ -2197,7 +2453,7 @@ class ModularCinemaMainWindow(QMainWindow):
             traceback.print_exc()
 
     def _display_generated_qrcode(self, qr_data: dict):
-        """显示生成的取票码二维码"""
+        """显示生成的取票码二维码 - 修复：确保支付成功后与双击订单查看显示一致"""
         try:
             from PyQt5.QtGui import QPixmap
             from PyQt5.QtCore import QByteArray, Qt
@@ -2207,8 +2463,13 @@ class ModularCinemaMainWindow(QMainWindow):
             film_name = qr_data.get('film_name', '')
             qr_bytes = qr_data.get('qr_bytes')
             qr_path = qr_data.get('qr_path', '')  # 🎯 获取图片路径
+            source = qr_data.get('source', 'unknown')  # 🔧 获取来源信息
 
+            print(f"[主窗口] 🎨 显示来源: {source}")
+            print(f"[主窗口] 🎨 - 订单号: {order_no}")
+            print(f"[主窗口] 🎨 - 取票码: {ticket_code}")
             print(f"[主窗口] 🎨 - 二维码: {len(qr_bytes) if qr_bytes else 0} bytes")
+            print(f"[主窗口] 🎨 - 图片路径: {qr_path}")
 
             # 🎯 保存图片路径和原始数据供按钮使用
             self.current_qr_path = qr_path
@@ -2319,21 +2580,174 @@ class ModularCinemaMainWindow(QMainWindow):
     def _update_order_details(self, order_data: dict):
         """更新订单详情显示 - 修复空行问题，使用紧凑格式"""
         try:
+            # 🔧 修复：如果传入的order_data信息不完整，尝试从当前状态获取更多信息
+            enhanced_order_data = self._enhance_order_data(order_data)
+
             # 更新手机号显示
-            phone = order_data.get('phone', '')
+            phone = enhanced_order_data.get('phone', '')
             if phone:
                 self.phone_display.setText(f"手机号: {phone}")
 
             # 构建格式化的订单详情 - 使用列表收集信息，避免多余空行
             info_lines = []
 
-            info_lines.append("订单信息:")
-            info_lines.append(f"影院: {order_data.get('cinema', '未选择')}")
-            info_lines.append(f"影片: {order_data.get('movie', '未选择')}")
-            info_lines.append(f"场次: {order_data.get('session', '未选择')}")
-            info_lines.append(f"座位: {order_data.get('seats', '未选择')}")
-            info_lines.append(f"金额: ¥{order_data.get('amount', 0):.2f}")
-            info_lines.append(f"状态: {order_data.get('status', '待支付')}")
+            # 订单号
+            order_no = enhanced_order_data.get('order_id', enhanced_order_data.get('orderno', 'N/A'))
+            info_lines.append(f"订单号: {order_no}")
+
+            # 影片信息
+            movie = enhanced_order_data.get('movie', enhanced_order_data.get('filmname', 'N/A'))
+            info_lines.append(f"影片: {movie}")
+
+            # 时间信息
+            session_time = enhanced_order_data.get('session', enhanced_order_data.get('time', ''))
+            info_lines.append(f"时间: {session_time}")
+
+            # 影院信息
+            cinema = enhanced_order_data.get('cinema', enhanced_order_data.get('cinemaname', 'N/A'))
+            info_lines.append(f"影院: {cinema}")
+
+            # 座位信息
+            seats = enhanced_order_data.get('seats', [])
+            if isinstance(seats, list):
+                seats_str = ', '.join(seats) if seats else '[]'
+            else:
+                seats_str = str(seats)
+            info_lines.append(f"座位: {seats_str}")
+
+            # 状态
+            status = enhanced_order_data.get('status', '待支付')
+            info_lines.append(f"状态: {status}")
+
+            # 🆕 密码策略信息 - 与_show_order_detail保持一致
+            print(f"[调试-更新订单详情] 开始检查密码策略")
+            enable_mempassword = None
+
+            # 方法1: 从api_data获取
+            api_data = enhanced_order_data.get('api_data', {})
+            if api_data and isinstance(api_data, dict):
+                enable_mempassword = api_data.get('enable_mempassword')
+                print(f"[调试-更新订单详情] 从api_data获取enable_mempassword: {enable_mempassword}")
+
+            # 方法2: 直接从enhanced_order_data获取
+            if enable_mempassword is None:
+                enable_mempassword = enhanced_order_data.get('enable_mempassword')
+                print(f"[调试-更新订单详情] 从order_data获取enable_mempassword: {enable_mempassword}")
+
+            # 显示密码策略
+            if enable_mempassword == '1':
+                info_lines.append("密码: 需要输入")
+                print(f"[调试-更新订单详情] 显示: 密码: 需要输入")
+            elif enable_mempassword == '0':
+                info_lines.append("密码: 无需输入")
+                print(f"[调试-更新订单详情] 显示: 密码: 无需输入")
+            else:
+                # 如果没有获取到策略，尝试从实例状态获取
+                if hasattr(self, 'member_password_policy') and self.member_password_policy:
+                    requires_password = self.member_password_policy.get('requires_password', True)
+                    info_lines.append(f"密码: {'需要输入' if requires_password else '无需输入'}")
+                    print(f"[调试-更新订单详情] 从实例状态显示: 密码: {'需要输入' if requires_password else '无需输入'}")
+                else:
+                    info_lines.append("密码: 检测中...")
+                    print(f"[调试-更新订单详情] 显示: 密码: 检测中...")
+
+            # 🆕 价格信息 - 与_show_order_detail保持一致的会员价格逻辑
+            print(f"[调试-更新订单详情] 开始处理价格信息")
+
+            # 安全的类型转换函数
+            def safe_int_convert(value, default=0):
+                try:
+                    if isinstance(value, str):
+                        return int(value) if value.strip() else default
+                    elif isinstance(value, (int, float)):
+                        return int(value)
+                    else:
+                        return default
+                except (ValueError, TypeError):
+                    return default
+
+            # 从api_data中获取价格信息并进行类型转换
+            api_total_price = 0
+            api_mem_price = 0
+            if api_data and isinstance(api_data, dict):
+                api_mem_price = safe_int_convert(api_data.get('mem_totalprice', 0))
+                api_total_price = safe_int_convert(api_data.get('totalprice', 0))
+
+                print(f"[调试-更新订单详情] api_data中的价格信息:")
+                print(f"[调试-更新订单详情]   - mem_totalprice: {api_data.get('mem_totalprice')} → {api_mem_price}分")
+                print(f"[调试-更新订单详情]   - totalprice: {api_data.get('totalprice')} → {api_total_price}分")
+
+            # 检查会员状态
+            has_member_card = False
+            if hasattr(self, 'member_info') and self.member_info:
+                has_member_card = self.member_info.get('has_member_card', False)
+                if not has_member_card:
+                    raw_data = self.member_info.get('raw_data')
+                    has_member_card = raw_data is not None and isinstance(raw_data, dict)
+                print(f"[调试-更新订单详情] 会员状态: {has_member_card}")
+
+            # 显示原价
+            if api_total_price > 0:
+                original_price_yuan = api_total_price / 100.0
+                info_lines.append(f"原价: ¥{original_price_yuan:.2f}")
+                print(f"[调试-更新订单详情] 显示原价: ¥{original_price_yuan:.2f}")
+            else:
+                # 备选方案：从enhanced_order_data获取
+                amount = enhanced_order_data.get('amount', enhanced_order_data.get('totalprice', 0))
+                if isinstance(amount, str):
+                    try:
+                        amount = float(amount) / 100  # 如果是分为单位，转换为元
+                    except:
+                        amount = 0
+                if amount > 0:
+                    info_lines.append(f"原价: ¥{amount:.2f}")
+                    print(f"[调试-更新订单详情] 显示原价(备选): ¥{amount:.2f}")
+
+            # 券信息
+            coupon_count = len(enhanced_order_data.get('selected_coupons', []))
+            if coupon_count > 0:
+                info_lines.append(f"使用券: {coupon_count}张")
+
+                # 券抵扣金额
+                discount = enhanced_order_data.get('discount_amount', 0)
+                if discount > 0:
+                    info_lines.append(f"券抵扣: -¥{discount:.2f}")
+
+            # 实付金额 - 根据会员状态和券使用情况决定
+            if coupon_count > 0:
+                # 有券的情况
+                pay_amount = enhanced_order_data.get('pay_amount', 0)
+                if pay_amount == 0:
+                    info_lines.append(f"实付金额: ¥{pay_amount:.2f} (纯券支付)")
+                else:
+                    info_lines.append(f"实付金额: ¥{pay_amount:.2f}")
+                print(f"[调试-更新订单详情] 券支付实付金额: ¥{pay_amount:.2f}")
+            else:
+                # 无券的情况 - 检查会员价格
+                if has_member_card and api_mem_price > 0:
+                    # 有会员卡且有会员价格，显示会员价
+                    member_amount = api_mem_price / 100.0
+                    final_display = f"实付金额: ¥{member_amount:.2f} (会员价)"
+                    info_lines.append(final_display)
+                    print(f"[调试-更新订单详情] 使用会员价格: {member_amount:.2f}")
+                else:
+                    # 无会员卡或无会员价格，显示原价
+                    if api_total_price > 0:
+                        total_amount = api_total_price / 100.0
+                        final_display = f"实付金额: ¥{total_amount:.2f}"
+                        info_lines.append(final_display)
+                        print(f"[调试-更新订单详情] 使用原价作为实付金额: {total_amount:.2f}")
+                    else:
+                        # 备选方案
+                        amount = enhanced_order_data.get('amount', 0)
+                        if isinstance(amount, str):
+                            try:
+                                amount = float(amount) / 100
+                            except:
+                                amount = 0
+                        final_display = f"实付金额: ¥{amount:.2f}"
+                        info_lines.append(final_display)
+                        print(f"[调试-更新订单详情] 使用原价作为实付金额(备选): {amount:.2f}")
 
             # 🔧 修复：使用单个换行符连接，确保紧凑显示
             details = "\n".join(info_lines)
@@ -2343,6 +2757,63 @@ class ModularCinemaMainWindow(QMainWindow):
             # 🆕 移除倒计时更新
         except Exception as e:
             pass
+
+    def _enhance_order_data(self, order_data: dict) -> dict:
+        """增强订单数据 - 从当前状态获取更完整的信息"""
+        try:
+            enhanced_data = order_data.copy()
+
+            # 从当前账号获取手机号
+            if self.current_account and not enhanced_data.get('phone'):
+                enhanced_data['phone'] = self.current_account.get('userid', self.current_account.get('phone', ''))
+
+            # 从Tab管理器获取当前选择的信息
+            if hasattr(self, 'tab_manager_widget'):
+                tab_widget = self.tab_manager_widget
+
+                # 影院信息
+                if hasattr(tab_widget, 'current_cinema_data') and tab_widget.current_cinema_data:
+                    cinema_data = tab_widget.current_cinema_data
+                    if not enhanced_data.get('cinema') and not enhanced_data.get('cinemaname'):
+                        enhanced_data['cinema'] = cinema_data.get('cinemaShortName', cinema_data.get('cinemaname', 'N/A'))
+
+                # 影片信息
+                if hasattr(tab_widget, 'current_movie_data') and tab_widget.current_movie_data:
+                    movie_data = tab_widget.current_movie_data
+                    if not enhanced_data.get('movie') and not enhanced_data.get('filmname'):
+                        enhanced_data['movie'] = movie_data.get('filmname', movie_data.get('name', 'N/A'))
+
+                # 场次信息
+                if hasattr(tab_widget, 'current_session_data') and tab_widget.current_session_data:
+                    session_data = tab_widget.current_session_data
+                    if not enhanced_data.get('session') and not enhanced_data.get('time'):
+                        start_time = session_data.get('startTime', '')
+                        date = session_data.get('showDate', '')
+                        if start_time and date:
+                            enhanced_data['session'] = f"{date} {start_time}"
+                        elif start_time:
+                            enhanced_data['session'] = start_time
+
+            # 从当前订单状态获取信息
+            if hasattr(self, 'current_order') and self.current_order:
+                current_order = self.current_order
+                for key in ['orderno', 'totalprice', 'seats', 'selected_coupons']:
+                    if not enhanced_data.get(key) and current_order.get(key):
+                        enhanced_data[key] = current_order[key]
+
+            # 从券选择状态获取信息
+            if hasattr(self, 'selected_coupons') and self.selected_coupons:
+                enhanced_data['selected_coupons'] = self.selected_coupons
+
+            if hasattr(self, 'current_coupon_info') and self.current_coupon_info:
+                coupon_info = self.current_coupon_info
+                enhanced_data['discount_amount'] = coupon_info.get('discount_price', 0) / 100
+                enhanced_data['pay_amount'] = coupon_info.get('payment_amount', 0) / 100
+
+            return enhanced_data
+
+        except Exception as e:
+            return order_data
 
     def closeEvent(self, event):
         """窗口关闭事件"""
@@ -2355,6 +2826,267 @@ class ModularCinemaMainWindow(QMainWindow):
             
         except Exception as e:
             event.accept()
+
+    # ===== 🆕 增强支付系统核心方法 =====
+
+    def get_member_info_enhanced(self) -> Dict[str, Any]:
+        """🆕 增强的会员信息获取 - API实时获取替代本地JSON"""
+        try:
+            if not self.current_account:
+                return {'success': False, 'is_member': False, 'error': '当前无登录账号'}
+
+            # 调用会员信息API - 使用APIBase的接口
+            cinema_id = self.current_account.get('cinema_id', '')
+            params = {
+                'groupid': '',
+                'cinemaid': cinema_id,
+                'cardno': '',
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': self.current_account.get('token', ''),
+                'source': '2'
+            }
+
+            # 使用APIBase的便捷函数
+            from services.api_base import api_get
+            response = api_get('/MiniTicket/index.php/MiniMember/getMemberInfo', cinema_id, params)
+
+            if response.get('resultCode') == '0':
+                member_data = response.get('resultData', {})
+                return {
+                    'success': True,
+                    'is_member': True,
+                    'cardno': member_data.get('cardno', ''),
+                    'mobile': member_data.get('mobile', ''),
+                    'memberId': member_data.get('memberId', ''),
+                    'cardtype': member_data.get('cardtype', '0'),
+                    'cardcinemaid': member_data.get('cardcinemaid', ''),
+                    'balance': int(float(member_data.get('balance', 0)) * 100),  # 转换为分
+                    'data_source': 'api'
+                }
+            else:
+                return {
+                    'success': False,
+                    'is_member': False,
+                    'error': response.get('resultDesc', '获取会员信息失败'),
+                    'data_source': 'api'
+                }
+
+        except Exception as e:
+            print(f"[增强支付] 会员信息API调用失败: {e}")
+            # 降级到本地数据
+            return self._get_member_info_fallback()
+
+    def _get_member_info_fallback(self) -> Dict[str, Any]:
+        """会员信息获取降级处理"""
+        try:
+            # 尝试从现有的member_info获取
+            if hasattr(self, 'member_info') and self.member_info:
+                if isinstance(self.member_info, dict) and self.member_info.get('has_member_card', False):
+                    fallback_info = self.member_info.copy()
+                    fallback_info['data_source'] = 'local_cache'
+                    fallback_info['success'] = True
+                    return fallback_info
+
+            return {
+                'success': False,
+                'is_member': False,
+                'error': 'API调用失败且无本地缓存',
+                'data_source': 'none'
+            }
+        except Exception as e:
+            return {
+                'success': False,
+                'is_member': False,
+                'error': f'降级处理失败: {str(e)}',
+                'data_source': 'error'
+            }
+
+    def get_password_policy_from_order(self, order_no: str) -> Dict[str, Any]:
+        """🆕 从订单详情获取密码策略"""
+        try:
+            if not self.current_account:
+                return {'success': False, 'error': '当前无登录账号'}
+
+            # 使用APIBase的接口
+            cinema_id = self.current_account.get('cinema_id', '')
+            params = {
+                'orderno': order_no,
+                'groupid': '',
+                'cinemaid': cinema_id,
+                'cardno': '',
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': self.current_account.get('token', ''),
+                'source': '2'
+            }
+
+            from services.api_base import api_get
+            response = api_get('/MiniTicket/index.php/MiniOrder/getUnpaidOrderDetail', cinema_id, params)
+
+            if response.get('resultCode') == '0':
+                order_data = response.get('resultData', {})
+                enable_mempassword = order_data.get('enable_mempassword', '0')
+
+                return {
+                    'success': True,
+                    'requires_password': enable_mempassword == '1',
+                    'enable_mempassword': enable_mempassword,
+                    'mem_pay_only': order_data.get('memPayONLY', '0'),
+                    'source': 'order_detail_api',
+                    'description': f"{'需要' if enable_mempassword == '1' else '不需要'}会员卡密码"
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': response.get('resultDesc', '获取订单详情失败')
+                }
+
+        except Exception as e:
+            print(f"[增强支付] 密码策略获取失败: {e}")
+            # 降级到默认策略
+            return {
+                'success': True,
+                'requires_password': True,
+                'enable_mempassword': '1',
+                'source': 'default',
+                'description': '默认策略 - 需要会员卡密码'
+            }
+
+    def validate_coupon_prepay_enhanced(self, order_no: str, coupon_codes: str) -> Dict[str, Any]:
+        """🆕 增强的券预支付验证"""
+        try:
+            if not self.current_account:
+                return {'success': False, 'error': '当前无登录账号'}
+
+            # 使用APIBase的接口
+            cinema_id = self.current_account.get('cinema_id', '')
+            params = {
+                'orderno': order_no,
+                'couponcode': coupon_codes,
+                'cinemaid': cinema_id,
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'token': self.current_account.get('token', ''),
+                'source': '2'
+            }
+
+            from services.api_base import api_get
+            response = api_get('/MiniTicket/index.php/MiniOrder/ordercouponPrepay', cinema_id, params)
+
+            if response.get('resultCode') == '0':
+                result_data = response.get('resultData', {})
+                return {
+                    'success': True,
+                    'payment_amount': int(result_data.get('paymentAmount', '0')),
+                    'member_payment_amount': int(result_data.get('mempaymentAmount', '0')),
+                    'discount_price': int(result_data.get('discountprice', '0')),
+                    'discount_member_price': int(result_data.get('discountmemprice', '0')),
+                    'total_price': int(result_data.get('totalprice', '0')),
+                    'total_member_price': int(result_data.get('totalmemprice', '0')),
+                    'coupon_codes': result_data.get('couponcodes', ''),
+                    'bind_type': result_data.get('bindType', 0),
+                    'coupon_count': result_data.get('couponcount', 0)
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': response.get('resultDesc', '券验证失败')
+                }
+
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+    def process_member_card_payment_enhanced(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
+        """🆕 增强的会员卡支付处理 - 支持动态密码策略"""
+        try:
+            # 1. 获取实时会员信息
+            member_result = self.get_member_info_enhanced()
+            if not member_result.get('success') or not member_result.get('is_member'):
+                return {
+                    'success': False,
+                    'error': member_result.get('error', '请先登录会员账户')
+                }
+
+            member_info = member_result
+
+            # 2. 检查余额
+            balance = member_info.get('balance', 0)
+            total_amount = int(order_data.get('amount', 0) * 100)  # 转换为分
+
+            if balance < total_amount:
+                return {
+                    'success': False,
+                    'error': f"会员卡余额不足\n余额: ¥{balance/100:.2f}\n需要: ¥{total_amount/100:.2f}"
+                }
+
+            # 3. 获取密码策略
+            order_no = order_data.get('orderno', '')
+            cinema_id = self.current_account.get('cinema_id', '')
+            password_policy = self.get_password_policy_from_order(order_no)
+
+            # 4. 根据策略决定是否需要密码
+            member_password = None
+            if password_policy.get('requires_password', True):
+                from PyQt5.QtWidgets import QInputDialog, QLineEdit
+                password, ok = QInputDialog.getText(
+                    self,
+                    "会员密码",
+                    f"请输入会员卡密码\n({password_policy.get('description', '需要密码验证')}):",
+                    QLineEdit.Password
+                )
+                if not ok or not password:
+                    return {'success': False, 'error': '用户取消密码输入'}
+                member_password = password
+
+            # 5. 构建支付参数
+            payment_params = {
+                'totalprice': str(total_amount),
+                'memberinfo': json.dumps({
+                    'cardno': member_info.get('cardno', ''),
+                    'mobile': member_info.get('mobile', ''),
+                    'memberId': member_info.get('memberId', ''),
+                    'cardtype': '0',
+                    'cardcinemaid': member_info.get('cardcinemaid', ''),
+                    'balance': member_info.get('balance', 0) / 100  # 转换为元
+                }),
+                'orderno': order_no,
+                'couponcodes': '',
+                'price': str(total_amount),
+                'discountprice': '0',
+                'filmname': order_data.get('movie', ''),
+                'featureno': order_data.get('featureno', ''),
+                'ticketcount': str(len(order_data.get('seats', []))),
+                'cinemaname': order_data.get('cinema', ''),
+                'cinemaid': self.current_account.get('cinema_id', ''),
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'token': self.current_account.get('token', ''),
+                'source': '2'
+            }
+
+            # 根据策略添加密码字段
+            if password_policy.get('requires_password', True) and member_password:
+                payment_params['mempass'] = member_password
+
+            # 6. 执行支付
+            from services.api_base import api_post
+            response = api_post('/MiniTicket/index.php/MiniPay/memcardPay', cinema_id, payment_params)
+
+            if response.get('resultCode') == '0':
+                return {'success': True, 'message': '会员卡支付成功'}
+            else:
+                return {
+                    'success': False,
+                    'error': response.get('resultDesc', '支付失败')
+                }
+
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
 
     # ===== 第三步：核心业务方法（从源项目复制） =====
 
@@ -2580,7 +3312,80 @@ class ModularCinemaMainWindow(QMainWindow):
                     seat_price = session_data.get('first_price', session_data.get('b', 33.9))
 
                 seat_display.append(f"{seat_row}排{seat_col}座")
-                total_amount += seat_price
+
+                # 🔧 修复：确保seat_price是数字类型
+                try:
+                    if isinstance(seat_price, str):
+                        seat_price = float(seat_price)
+                    elif isinstance(seat_price, (int, float)):
+                        seat_price = float(seat_price)
+                    else:
+                        seat_price = 0.0
+                    total_amount += seat_price
+                except (ValueError, TypeError):
+                    print(f"[主窗口] 座位价格转换失败: {seat_price}，使用默认价格0")
+                    total_amount += 0.0
+
+            # 🆕 获取会员信息以判断是否有会员卡
+            print(f"[调试-订单创建] 开始获取会员信息")
+            self._get_member_info(self.current_account, cinema_data.get('cinemaid', ''))
+
+            # 🆕 获取未支付订单详情以获取会员价格信息
+            from services.order_api import get_unpaid_order_detail
+            detail_params = {
+                'orderno': order_id,
+                'groupid': '',
+                'cinemaid': cinema_data.get('cinemaid', ''),
+                'cardno': self.current_account.get('cardno', ''),
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': self.current_account.get('token', ''),
+                'source': '2'
+            }
+
+            print(f"[调试-订单创建] 开始获取未支付订单详情，订单号: {order_id}")
+            print(f"[调试-订单创建] 使用接口: get_unpaid_order_detail")
+            print(f"[调试-订单创建] API请求参数: {detail_params}")
+
+            order_detail_result = get_unpaid_order_detail(detail_params)
+
+            print(f"[调试-订单创建] API返回数据: {order_detail_result}")
+
+            # 🆕 从订单详情中获取会员价格 - 添加类型转换
+            member_total_price = 0
+            if order_detail_result and order_detail_result.get('resultCode') == '0':
+                detail_data = order_detail_result.get('resultData', {})
+
+                # 调试输出：打印所有价格相关字段
+                print(f"[调试-订单创建] 订单详情数据: {detail_data}")
+                print(f"[调试-订单创建] mem_totalprice: {detail_data.get('mem_totalprice', 'N/A')}")
+                print(f"[调试-订单创建] totalprice: {detail_data.get('totalprice', 'N/A')}")
+                print(f"[调试-订单创建] payAmount: {detail_data.get('payAmount', 'N/A')}")
+                print(f"[调试-订单创建] orderPrice: {detail_data.get('orderPrice', 'N/A')}")
+                print(f"[调试-订单创建] memprice: {detail_data.get('memprice', 'N/A')}")
+
+                # 🆕 安全的类型转换
+                def safe_price_convert(value, default=0):
+                    """安全地将价格转换为整数（分）"""
+                    try:
+                        if isinstance(value, str):
+                            return int(value) if value.strip() else default
+                        elif isinstance(value, (int, float)):
+                            return int(value)
+                        else:
+                            return default
+                    except (ValueError, TypeError):
+                        return default
+
+                member_total_price = safe_price_convert(detail_data.get('mem_totalprice', '0'))
+                print(f"[调试-订单创建] 解析后的会员价格: {member_total_price} 分")
+                print(f"[调试-订单创建] 会员价格(元): {member_total_price/100.0:.2f}")
+            else:
+                print(f"[调试-订单创建] 获取订单详情失败")
+                print(f"[调试-订单创建] 失败原因: {order_detail_result}")
+                print(f"[调试-订单创建] 将使用原价: {total_amount}")
 
             # 保存当前订单 - 使用真实API返回的数据
             self.current_order = {
@@ -2594,15 +3399,29 @@ class ModularCinemaMainWindow(QMainWindow):
                 'seats': seat_display,
                 'seat_count': len(selected_seats),
                 'amount': total_amount,
+                'mem_totalprice': member_total_price,  # 🆕 添加会员价格
                 'status': '待支付',
                 'create_time': time.strftime("%Y-%m-%d %H:%M:%S"),
                 'phone': self.current_account.get('userid', ''),  # 使用userid作为手机号
                 'cinema_name': cinema_text,
                 'film_name': movie_text,
                 'hall_name': session_data.get('hall_name', ''),
-                'api_data': order_data  # 保存完整的API返回数据
+                'api_data': order_detail_result.get('resultData', {}) if order_detail_result else order_data  # 保存完整的API返回数据
             }
-            
+
+            # 调试输出：打印保存到订单对象中的价格数据
+            print(f"[调试-订单创建] 保存到current_order的数据:")
+            print(f"[调试-订单创建] amount(原价): {self.current_order.get('amount')}")
+            print(f"[调试-订单创建] mem_totalprice(会员价): {self.current_order.get('mem_totalprice')}")
+            print(f"[调试-订单创建] api_data类型: {type(self.current_order.get('api_data'))}")
+            if isinstance(self.current_order.get('api_data'), dict):
+                api_data = self.current_order.get('api_data')
+                print(f"[调试-订单创建] api_data中的价格字段:")
+                print(f"[调试-订单创建]   - mem_totalprice: {api_data.get('mem_totalprice', 'N/A')}")
+                print(f"[调试-订单创建]   - totalprice: {api_data.get('totalprice', 'N/A')}")
+                print(f"[调试-订单创建]   - payAmount: {api_data.get('payAmount', 'N/A')}")
+                print(f"[调试-订单创建]   - enable_mempassword: {api_data.get('enable_mempassword', 'N/A')}")
+
             # 显示订单详情
             self._show_order_detail(self.current_order)
 
@@ -2660,6 +3479,20 @@ class ModularCinemaMainWindow(QMainWindow):
                     # 如果座位没有价格，从场次数据获取默认价格
                     seat_price = session_data.get('first_price', session_data.get('b', 33.9))
 
+                # 🔧 修复：确保seat_price是字符串类型（API要求）
+                try:
+                    if isinstance(seat_price, (int, float)):
+                        seat_price_str = str(seat_price)
+                    elif isinstance(seat_price, str):
+                        # 验证字符串是否为有效数字
+                        float(seat_price)  # 验证是否可转换为数字
+                        seat_price_str = seat_price
+                    else:
+                        seat_price_str = "33.9"  # 默认价格
+                except (ValueError, TypeError):
+                    print(f"[主窗口] 座位价格格式错误: {seat_price}，使用默认价格")
+                    seat_price_str = "33.9"
+
                 # 获取座位位置信息
                 seat_row = seat.get('rn', seat.get('row', 1))
                 seat_col = seat.get('cn', seat.get('col', 1))
@@ -2668,8 +3501,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 seat_info = {
                     "seatInfo": f"{seat_row}排{seat_col}座",
                     "eventPrice": 0,
-                    "strategyPrice": seat_price,
-                    "ticketPrice": seat_price,
+                    "strategyPrice": seat_price_str,
+                    "ticketPrice": seat_price_str,
                     "seatRow": seat_row,
                     "seatRowId": seat_row,
                     "seatCol": seat_col,
@@ -3138,6 +3971,12 @@ class ModularCinemaMainWindow(QMainWindow):
             if not self.current_order:
                 return
 
+            # 调试输出：打印券抵扣更新的订单数据
+            print(f"[调试-券抵扣更新] 开始更新订单详情")
+            print(f"[调试-券抵扣更新] current_order类型: {type(self.current_order)}")
+            print(f"[调试-券抵扣更新] current_order内容: {self.current_order}")
+            print(f"[调试-券抵扣更新] current_coupon_info: {getattr(self, 'current_coupon_info', None)}")
+
             # 获取基础订单信息
             order_detail = self.current_order
 
@@ -3203,8 +4042,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 pay_amount_fen = int(coupon_data.get('paymentAmount', '0'))
 
                 # 检查会员支付金额
-                is_member = self.member_info and self.member_info.get('is_member')
-                if is_member:
+                has_member_card = self.member_info and self.member_info.get('has_member_card', False)
+                if has_member_card:
                     mem_payment_fen = int(coupon_data.get('mempaymentAmount', '0'))
                     if mem_payment_fen != 0:
                         pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
@@ -3221,15 +4060,15 @@ class ModularCinemaMainWindow(QMainWindow):
                     info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
                 else:
                     final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
-                    if is_member and mem_payment_fen != 0:
+                    if has_member_card and mem_payment_fen != 0:
                         final_amount += " (会员价)"
                     info_lines.append(final_amount)
 
             else:
                 # 无券抵扣，显示原价
                 # 检查会员价格
-                is_member = self.member_info and self.member_info.get('is_member')
-                if is_member:
+                has_member_card = self.member_info and self.member_info.get('has_member_card', False)
+                if has_member_card:
                     mem_total_price = order_detail.get('mem_totalprice', 0)
                     if mem_total_price > 0:
                         info_lines.append(f"实付金额: ¥{mem_total_price/100.0:.2f} (会员价)")
@@ -3241,6 +4080,31 @@ class ModularCinemaMainWindow(QMainWindow):
             # 状态信息
             status = order_detail.get('status', '待支付')
             info_lines.append(f"状态: {status}")
+
+            # 🆕 密码策略信息 - 修复显示逻辑
+            enable_mempassword = None
+
+            # 方法1: 从api_data获取
+            api_data = order_detail.get('api_data', {})
+            if api_data and isinstance(api_data, dict):
+                enable_mempassword = api_data.get('enable_mempassword')
+
+            # 方法2: 直接从order_detail获取（如果api_data就是订单详情）
+            if enable_mempassword is None:
+                enable_mempassword = order_detail.get('enable_mempassword')
+
+            # 显示密码策略
+            if enable_mempassword == '1':
+                info_lines.append("密码: 需要输入")
+            elif enable_mempassword == '0':
+                info_lines.append("密码: 无需输入")
+            else:
+                # 如果没有获取到策略，尝试从实例状态获取
+                if hasattr(self, 'member_password_policy') and self.member_password_policy:
+                    requires_password = self.member_password_policy.get('requires_password', True)
+                    info_lines.append(f"密码: {'需要输入' if requires_password else '无需输入'}")
+                else:
+                    info_lines.append("密码: 检测中...")
 
             # 🔧 修复：使用单个换行符连接，确保紧凑显示
             details = "\n".join(info_lines)
@@ -3371,6 +4235,119 @@ class ModularCinemaMainWindow(QMainWindow):
 
         except Exception as e:
             pass
+
+    def detect_member_password_policy(self, order_detail: dict) -> bool:
+        """🆕 检测会员卡密码策略"""
+        try:
+            if not order_detail:
+                print("[密码策略] 订单详情为空，默认需要密码")
+                return True
+
+            # 从订单详情中获取密码策略字段
+            enable_mempassword = order_detail.get('enable_mempassword', '1')
+
+            print(f"[密码策略] enable_mempassword: {enable_mempassword}")
+
+            # 更新实例状态
+            self.member_password_required = (enable_mempassword == '1')
+            self.member_password_policy = {
+                'enable_mempassword': enable_mempassword,
+                'mem_pay_only': order_detail.get('memPayONLY', '0'),
+                'requires_password': self.member_password_required,
+                'source': 'order_detail_api'
+            }
+
+            if self.member_password_required:
+                print("[密码策略] ✅ 该影院需要会员卡密码")
+            else:
+                print("[密码策略] ❌ 该影院不需要会员卡密码")
+
+            return self.member_password_required
+
+        except Exception as e:
+            print(f"[密码策略] 检测失败: {e}")
+            # 默认需要密码，确保安全
+            self.member_password_required = True
+            return True
+
+    def get_member_password_input(self) -> str:
+        """🆕 获取会员卡密码输入"""
+        try:
+            from PyQt5.QtWidgets import QInputDialog, QLineEdit
+
+            # 构建提示信息
+            policy_desc = "需要会员卡密码验证"
+            if hasattr(self, 'member_password_policy') and self.member_password_policy:
+                policy_desc = f"该影院{policy_desc}"
+
+            # 显示密码输入对话框
+            password, ok = QInputDialog.getText(
+                self,
+                "会员卡密码",
+                f"{policy_desc}\n请输入会员卡密码:",
+                QLineEdit.Password
+            )
+
+            if ok and password:
+                self.member_card_password = password
+                return password
+            else:
+                return None
+
+        except Exception as e:
+            print(f"[密码输入] 获取密码失败: {e}")
+            return None
+
+    def validate_member_password_policy(self, order_id: str) -> dict:
+        """🆕 验证会员卡密码策略"""
+        try:
+            if not self.current_account:
+                return {'success': False, 'error': '当前无登录账号'}
+
+            # 获取订单详情以检查密码策略
+            from services.order_api import get_order_detail, get_unpaid_order_detail
+
+            cinema_id = self.current_account.get('cinema_id', '')
+
+            # 构建API参数
+            detail_params = {
+                'orderno': order_id,
+                'groupid': '',
+                'cinemaid': cinema_id,
+                'cardno': self.current_account.get('cardno', ''),
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': self.current_account.get('token', ''),
+                'source': '2'
+            }
+
+            # 🆕 优先尝试获取未支付订单详情，如果失败则使用普通订单详情
+            print(f"[调试-密码策略] 检查订单密码策略，订单号: {order_id}")
+            order_detail = get_unpaid_order_detail(detail_params)
+
+            if not order_detail or order_detail.get('resultCode') != '0':
+                print(f"[调试-密码策略] 未支付订单详情获取失败，尝试普通订单详情")
+                order_detail = get_order_detail(detail_params)
+
+            if not order_detail or order_detail.get('resultCode') != '0':
+                return {'success': False, 'error': '获取订单详情失败'}
+
+            order_data = order_detail.get('resultData', {})
+
+            # 检测密码策略
+            requires_password = self.detect_member_password_policy(order_data)
+
+            return {
+                'success': True,
+                'requires_password': requires_password,
+                'policy': self.member_password_policy,
+                'order_data': order_data
+            }
+
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
 
 
 def main():

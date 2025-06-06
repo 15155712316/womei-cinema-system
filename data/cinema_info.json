@@ -44,5 +44,19 @@
     "cinemaState": 0,
     "createTime": "2025-06-03 13:49:36",
     "updateTime": "2025-06-03 13:49:36"
+  },
+  {
+    "cinemaid": "72f496f05710",
+    "cinemaShortName": "中影星美国际影城（郓城店）",
+    "cityName": "郓城",
+    "cinemaAddress": "郓城鲁商银座广场4F",
+    "cinemaPhone": "",
+    "base_url": "pwe10.h5yuanheng.cn",
+    "limitTicketAmount": "6",
+    "cinemaState": 0,
+    "createTime": "2025-06-04 17:00:56",
+    "updateTime": "2025-06-04 17:00:56",
+    "auto_added": true,
+    "api_verified": true
   }
 ]

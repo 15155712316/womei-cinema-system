@@ -63,7 +63,10 @@ class SeatMapPanelPyQt5(QWidget):
         self.seat_widget = QWidget()
         self.seat_layout = QGridLayout(self.seat_widget)
         self.seat_layout.setSpacing(2)  # 座位之间的间距
-        
+
+        # 🔧 修复：设置座位图居中对齐
+        self.seat_layout.setAlignment(Qt.AlignCenter)
+
         self.scroll_area.setWidget(self.seat_widget)
         layout.addWidget(self.scroll_area, 1)
         

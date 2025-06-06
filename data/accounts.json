@@ -47,18 +47,8 @@
     "points": 0,
     "cardno": "15155712316",
     "score": 0,
-    "is_main": false
-  },
-  {
-    "userid": "14700283316",
-    "openid": "oAOCp7fvQZ57uCG-5H0XZyUSbO-4",
-    "token": "a53201ca598cfcc8",
-    "cinemaid": "35fec8259e74",
-    "balance": 0,
-    "points": 0,
-    "cardno": "",
-    "score": 0,
-    "is_main": true
+    "is_main": true,
+    "payment_password": "710254"
   },
   {
     "userid": "15155712316",
@@ -70,6 +60,18 @@
     "is_main": false,
     "auto_added": true,
     "add_time": "2025-06-03 13:49:36",
+    "source": "curl_collection"
+  },
+  {
+    "userid": "15738807532",
+    "cinemaid": "72f496f05710",
+    "openid": "oXHZ57XEb7fJaMSptvffYtGSaIQ8",
+    "token": "eafc637d258fa82e",
+    "balance": 0,
+    "score": 0,
+    "is_main": false,
+    "auto_added": true,
+    "add_time": "2025-06-04 17:00:56",
     "source": "curl_collection"
   }
 ]

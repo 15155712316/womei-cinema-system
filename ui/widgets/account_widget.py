@@ -190,9 +190,9 @@ class AccountWidget(QWidget):
         self.account_table.setFixedWidth(240)  # 110+60+50+20(边距) = 240
         self.account_table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        # 🆕 移除右键菜单设置，因为不再需要主账号设置选项
-        # self.account_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        # self.account_table.customContextMenuRequested.connect(self._show_context_menu)
+        # 🆕 恢复右键菜单设置，支持增强的右键菜单功能
+        self.account_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.account_table.customContextMenuRequested.connect(self._show_context_menu)
 
         layout.addWidget(self.account_table)
     
@@ -204,7 +204,7 @@ class AccountWidget(QWidget):
         
         # 表格选择事件
         self.account_table.itemSelectionChanged.connect(self._on_account_selection_changed)
-        self.account_table.cellDoubleClicked.connect(self._on_account_double_clicked)
+        # 🆕 移除双击事件，避免快速登录功能
     
     def _connect_global_events(self):
         """连接全局事件"""
@@ -279,25 +279,10 @@ class AccountWidget(QWidget):
         except Exception as e:
             print(f"[账号组件] 选择处理错误: {e}")
     
-    def _on_account_double_clicked(self, row: int, column: int):
-        """账号双击处理"""
-        try:
-            account_item = self.account_table.item(row, 0)
-            if account_item:
-                account_data = account_item.data(Qt.UserRole)
-                if account_data:
-                    # 双击直接登录该账号
-                    userid = account_data.get("userid", "")
-                    QMessageBox.information(
-                        self, "快速登录",
-                        f"准备快速登录账号: {userid}\n此功能待实现"
-                    )
-
-        except Exception as e:
-            print(f"[账号组件] 双击处理错误: {e}")
+    # 🆕 移除双击处理方法，避免快速登录功能
 
     def _show_context_menu(self, position):
-        """显示右键菜单 - 🆕 移除主账号设置选项"""
+        """显示右键菜单 - 🆕 增强版右键菜单"""
         try:
             # 获取点击位置的项目
             item = self.account_table.itemAt(position)
@@ -315,9 +300,24 @@ class AccountWidget(QWidget):
             if not account_data:
                 return
 
-            # 🆕 暂时不显示右键菜单，因为主账号设置已移除
-            # 如果将来需要添加其他右键菜单选项，可以在这里添加
-            return
+            # 🆕 创建右键菜单
+            from PyQt5.QtWidgets import QMenu
+            menu = QMenu(self)
+
+            # 设置为主账号
+            set_main_action = menu.addAction("设置为主账号")
+            set_main_action.triggered.connect(lambda: self._set_as_main_account(account_data))
+
+            # 设置支付密码
+            set_password_action = menu.addAction("设置支付密码")
+            set_password_action.triggered.connect(lambda: self._set_payment_password(account_data))
+
+            # 删除账号
+            delete_action = menu.addAction("删除账号")
+            delete_action.triggered.connect(lambda: self._delete_account(account_data))
+
+            # 显示菜单
+            menu.exec_(self.account_table.mapToGlobal(position))
 
         except Exception as e:
             print(f"[账号组件] 显示右键菜单错误: {e}")
@@ -344,6 +344,128 @@ class AccountWidget(QWidget):
 
         except Exception as e:
             print(f"[账号组件] 设置主账号错误: {e}")
+
+    def _set_payment_password(self, account_data: dict):
+        """设置支付密码"""
+        try:
+            from PyQt5.QtWidgets import QInputDialog, QLineEdit, QMessageBox
+
+            # 获取密码输入
+            password, ok = QInputDialog.getText(
+                self, "设置支付密码",
+                f"为账号 {account_data.get('userid', 'N/A')} 设置会员卡支付密码:",
+                QLineEdit.Password
+            )
+
+            if ok and password:
+                # 保存密码到账号数据（实际应用中应该加密存储）
+                account_data['payment_password'] = password
+
+                # 保存到文件
+                self._save_payment_password_to_file(account_data)
+
+                QMessageBox.information(self, "操作成功", "支付密码设置成功")
+                print(f"[账号组件] 设置支付密码: {account_data.get('userid', 'N/A')}")
+
+        except Exception as e:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "操作失败", f"设置支付密码失败: {str(e)}")
+            print(f"[账号组件] 设置支付密码错误: {e}")
+
+    def _delete_account(self, account_data: dict):
+        """删除账号"""
+        try:
+            from PyQt5.QtWidgets import QMessageBox
+
+            # 确认对话框
+            reply = QMessageBox.question(
+                self, "确认删除",
+                f"确定要删除账号 {account_data.get('userid', 'N/A')} 吗？\n此操作不可撤销！",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No
+            )
+
+            if reply == QMessageBox.Yes:
+                # 从文件中删除账号
+                success = self._delete_account_from_file(account_data)
+
+                if success:
+                    # 刷新账号列表
+                    self.refresh_accounts()
+
+                    QMessageBox.information(self, "操作成功", "账号删除成功")
+                    print(f"[账号组件] 删除账号: {account_data.get('userid', 'N/A')}")
+                else:
+                    QMessageBox.critical(self, "操作失败", "删除账号失败")
+
+        except Exception as e:
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.critical(self, "操作失败", f"删除账号失败: {str(e)}")
+            print(f"[账号组件] 删除账号错误: {e}")
+
+    def _save_payment_password_to_file(self, account_data: dict):
+        """保存支付密码到文件"""
+        try:
+            accounts_file = "data/accounts.json"
+
+            if not os.path.exists(accounts_file):
+                return False
+
+            # 读取现有账号数据
+            with open(accounts_file, 'r', encoding='utf-8') as f:
+                accounts = json.load(f)
+
+            # 更新密码
+            userid = account_data.get('userid', '')
+            cinemaid = account_data.get('cinemaid', '')
+
+            for account in accounts:
+                if (account.get('userid') == userid and
+                    account.get('cinemaid') == cinemaid):
+                    account['payment_password'] = account_data.get('payment_password', '')
+                    break
+
+            # 写回文件
+            with open(accounts_file, 'w', encoding='utf-8') as f:
+                json.dump(accounts, f, ensure_ascii=False, indent=2)
+
+            return True
+
+        except Exception as e:
+            print(f"[账号组件] 保存支付密码错误: {e}")
+            return False
+
+    def _delete_account_from_file(self, account_data: dict) -> bool:
+        """从文件中删除账号"""
+        try:
+            accounts_file = "data/accounts.json"
+
+            if not os.path.exists(accounts_file):
+                return False
+
+            # 读取现有账号数据
+            with open(accounts_file, 'r', encoding='utf-8') as f:
+                accounts = json.load(f)
+
+            # 删除账号
+            userid = account_data.get('userid', '')
+            cinemaid = account_data.get('cinemaid', '')
+
+            accounts = [
+                account for account in accounts
+                if not (account.get('userid') == userid and
+                       account.get('cinemaid') == cinemaid)
+            ]
+
+            # 写回文件
+            with open(accounts_file, 'w', encoding='utf-8') as f:
+                json.dump(accounts, f, ensure_ascii=False, indent=2)
+
+            return True
+
+        except Exception as e:
+            print(f"[账号组件] 删除账号文件错误: {e}")
+            return False
 
     def _update_main_account_in_file(self, cinemaid: str, userid: str) -> bool:
         """更新账号文件中的主账号设置"""
