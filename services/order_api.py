@@ -498,14 +498,14 @@ def get_coupon_prepay_info(params: dict) -> dict:
         traceback.print_exc()
         return {"resultCode": "-1", "resultDesc": f"请求异常: {e}", "resultData": None}
 
-def pay_order(params):
+def member_card_pay(params):
     """
-    订单支付接口 - 使用券支付 - 使用动态base_url
+    会员卡支付接口 - 支持纯会员卡支付和混合支付
     """
     cinemaid = params.get('cinemaid')
     if not cinemaid:
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
-    
+
     # 特殊的headers for 支付接口
     special_headers = {
         'Sec-Fetch-Site': 'cross-site',
@@ -514,19 +514,138 @@ def pay_order(params):
         'Referer': 'https://servicewechat.com/wx03aeb42bd6a3580e/1/page-frame.html',
         'Accept-Language': 'zh-CN,zh;q=0.9'
     }
-    
+
     try:
-        print(f"[支付API] 开始调用支付接口")
-        print(f"[支付API] 影院ID: {cinemaid}")
-        print(f"[支付API] 订单号: {params.get('orderno')}")
-        print(f"[支付API] 券号: {params.get('couponcodes')}")
-        print(f"[支付API] 支付金额: {params.get('payprice')}")
-        
-        result = api_post('MiniTicket/index.php/MiniPay/couponPay', cinemaid, data=params, headers=special_headers)
-        
-        print(f"[支付API] 支付响应: {result}")
+        # 🆕 构建会员卡支付参数
+        couponcodes = params.get('couponcodes', '')
+        payprice = params.get('payprice', '0')
+
+        print(f"[会员卡支付API] 开始调用会员卡支付接口")
+        print(f"[会员卡支付API] 影院ID: {cinemaid}")
+        print(f"[会员卡支付API] 订单号: {params.get('orderno')}")
+        print(f"[会员卡支付API] 券号: '{couponcodes}'")
+        print(f"[会员卡支付API] 支付金额: {payprice}")
+
+        # 🆕 构建会员卡支付专用参数
+        member_pay_params = {
+            # 基础订单信息
+            'orderno': params.get('orderno', ''),
+            'cinemaid': cinemaid,
+            'userid': params.get('userid', ''),
+            'openid': params.get('openid', ''),
+            'token': params.get('token', ''),
+            'source': params.get('source', '2'),
+            'CVersion': params.get('CVersion', '3.9.12'),
+            'OS': params.get('OS', 'Windows'),
+
+            # 🆕 会员卡支付特有参数
+            'totalprice': payprice,  # 总支付金额
+            'couponcodes': couponcodes,  # 券码（空字符串表示纯会员卡支付）
+            'price': str(int(int(payprice) // 2)) if payprice.isdigit() else '0',  # 实际单张会员价（示例计算）
+            'discountprice': '0' if not couponcodes else params.get('discountprice', '0'),  # 券抵扣金额
+
+            # 🆕 会员信息和密码
+            'memberinfo': params.get('memberinfo', '{}'),  # 会员信息JSON
+            'mempass': params.get('mempass', ''),  # 会员卡密码
+
+            # 🆕 订单详情信息
+            'filmname': params.get('filmname', ''),
+            'featureno': params.get('featureno', ''),
+            'ticketcount': params.get('ticketcount', '1'),
+            'cinemaname': params.get('cinemaname', ''),
+            'groupid': params.get('groupid', ''),
+            'cardno': params.get('cardno', '')
+        }
+
+        print(f"[会员卡支付API] 会员信息: {member_pay_params.get('memberinfo', 'N/A')}")
+        print(f"[会员卡支付API] 密码长度: {len(member_pay_params.get('mempass', ''))}")
+        print(f"[会员卡支付API] 支付类型: {'混合支付' if couponcodes else '纯会员卡支付'}")
+
+        result = api_post('MiniTicket/index.php/MiniPay/memcardPay', cinemaid, data=member_pay_params, headers=special_headers)
+
+        print(f"[会员卡支付API] 支付响应: {result}")
         return result
-        
+
     except Exception as e:
-        print(f"[支付API] 支付异常: {e}")
-        return {"resultCode": "-1", "resultDesc": f"支付异常: {e}", "resultData": None} 
+        print(f"[会员卡支付API] 支付异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"resultCode": "-1", "resultDesc": f"会员卡支付异常: {e}", "resultData": None}
+
+def coupon_pay(params):
+    """
+    券支付接口 - 纯券支付（最终金额为0）
+    """
+    cinemaid = params.get('cinemaid')
+    if not cinemaid:
+        return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+
+    # 特殊的headers for 支付接口
+    special_headers = {
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Dest': 'empty',
+        'Referer': 'https://servicewechat.com/wx03aeb42bd6a3580e/1/page-frame.html',
+        'Accept-Language': 'zh-CN,zh;q=0.9'
+    }
+
+    try:
+        print(f"[券支付API] 开始调用券支付接口")
+        print(f"[券支付API] 影院ID: {cinemaid}")
+        print(f"[券支付API] 订单号: {params.get('orderno')}")
+        print(f"[券支付API] 券号: {params.get('couponcodes')}")
+        print(f"[券支付API] 支付金额: {params.get('payprice')}")
+
+        result = api_post('MiniTicket/index.php/MiniPay/couponPay', cinemaid, data=params, headers=special_headers)
+
+        print(f"[券支付API] 支付响应: {result}")
+        return result
+
+    except Exception as e:
+        print(f"[券支付API] 支付异常: {e}")
+        return {"resultCode": "-1", "resultDesc": f"券支付异常: {e}", "resultData": None}
+
+def pay_order(params):
+    """
+    🆕 智能支付接口 - 根据支付参数自动选择正确的支付接口
+    """
+    try:
+        cinemaid = params.get('cinemaid')
+        if not cinemaid:
+            return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
+
+        # 🆕 获取关键参数进行支付方式判断
+        couponcodes = params.get('couponcodes', '')
+        payprice = params.get('payprice', '0')
+
+        print(f"[智能支付] 开始支付方式判断")
+        print(f"[智能支付] 券码: '{couponcodes}'")
+        print(f"[智能支付] 支付金额: {payprice}")
+
+        # 🆕 支付接口选择逻辑
+        if not couponcodes or couponcodes.strip() == '':
+            # 情况1: 纯会员卡支付 - couponcodes为空
+            print(f"[智能支付] ✅ 选择支付方式: 纯会员卡支付 (memcardPay)")
+            return member_card_pay(params)
+
+        else:
+            # 情况2: 有券码 - 需要进一步判断
+            try:
+                pay_amount = int(payprice) if payprice.isdigit() else 0
+            except (ValueError, TypeError):
+                pay_amount = 0
+
+            if pay_amount == 0:
+                # 情况2a: 纯券支付 - 券完全抵扣，最终金额为0
+                print(f"[智能支付] ✅ 选择支付方式: 纯券支付 (couponPay)")
+                return coupon_pay(params)
+            else:
+                # 情况2b: 混合支付 - 券部分抵扣，剩余金额用会员卡支付
+                print(f"[智能支付] ✅ 选择支付方式: 混合支付 (memcardPay)")
+                return member_card_pay(params)
+
+    except Exception as e:
+        print(f"[智能支付] 支付方式判断异常: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"resultCode": "-1", "resultDesc": f"支付方式判断异常: {e}", "resultData": None}
