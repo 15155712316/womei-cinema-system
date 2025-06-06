@@ -227,9 +227,31 @@ class OrderDetailManager:
         else:
             info_lines.append(f"座位: {seats}")
         
-        # 状态信息
+        # ⚠️ 【同步维护点1】状态信息 - 必须与main_modular.py第1465行保持一致
+        # 修复：使用中文状态映射
         status = order_data.get('status', '待支付')
-        info_lines.append(f"状态: {status}")
+        print(f"[订单详情管理器] 原始状态: {status}")
+
+        # 状态映射：英文状态转中文状态
+        # TODO: 修改此映射时，必须同步更新main_modular.py中的_legacy_order_detail_display方法
+        status_map = {
+            'created': '待支付',
+            'paid': '已支付',
+            'confirmed': '已确认',
+            'cancelled': '已取消',
+            'completed': '已完成',
+            'refunded': '已退款',
+            'failed': '支付失败',
+            '0': '待支付',
+            '1': '已支付',
+            '2': '已取票',
+            '3': '已取消',
+            '4': '已退款',
+            '5': '支付失败'
+        }
+        chinese_status = status_map.get(status, status)
+        print(f"[订单详情管理器] 映射后状态: {chinese_status}")
+        info_lines.append(f"状态: {chinese_status}")
         
         return info_lines
     
@@ -312,24 +334,70 @@ class OrderDetailManager:
                 if amount > 0:
                     info_lines.append(f"原价: ¥{amount:.2f}")
             
-            # 券信息
-            coupon_count = len(order_data.get('selected_coupons', []))
+            # ⚠️ 【同步维护点2】券信息 - 必须与main_modular.py第1521行保持一致
+            # 修复：正确获取券信息
+            coupon_count = 0
+            has_coupon_info = False
+
+            print(f"[订单详情管理器] 检查券信息...")
+            print(f"[订单详情管理器] 主窗口类型: {type(self.main_window)}")
+            print(f"[订单详情管理器] 主窗口是否有selected_coupons: {hasattr(self.main_window, 'selected_coupons')}")
+            if hasattr(self.main_window, 'selected_coupons'):
+                print(f"[订单详情管理器] selected_coupons值: {self.main_window.selected_coupons}")
+            print(f"[订单详情管理器] 主窗口是否有current_coupon_info: {hasattr(self.main_window, 'current_coupon_info')}")
+            if hasattr(self.main_window, 'current_coupon_info'):
+                print(f"[订单详情管理器] current_coupon_info值: {self.main_window.current_coupon_info}")
+
+            # 从主窗口获取券选择状态
+            if hasattr(self.main_window, 'selected_coupons') and self.main_window.selected_coupons:
+                coupon_count = len(self.main_window.selected_coupons)
+                has_coupon_info = True
+                print(f"[订单详情管理器] 从主窗口获取券数量: {coupon_count}")
+            elif order_data.get('selected_coupons'):
+                coupon_count = len(order_data.get('selected_coupons', []))
+                has_coupon_info = True
+                print(f"[订单详情管理器] 从订单数据获取券数量: {coupon_count}")
+            else:
+                print(f"[订单详情管理器] 未找到券信息")
+
+            # 获取券抵扣信息
+            discount_price_yuan = 0
+            pay_amount_yuan = 0
+
+            if has_coupon_info and hasattr(self.main_window, 'current_coupon_info') and self.main_window.current_coupon_info:
+                coupon_data = self.main_window.current_coupon_info.get('resultData', {})
+                if coupon_data:
+                    # 获取券抵扣金额（分转元）
+                    discount_price_fen = int(coupon_data.get('discountprice', '0') or '0')
+                    discount_price_yuan = discount_price_fen / 100.0
+
+                    # 获取实付金额（分转元）
+                    pay_amount_fen = int(coupon_data.get('paymentAmount', '0') or '0')
+
+                    # 检查会员支付金额
+                    if has_member_card:
+                        mem_payment_fen = int(coupon_data.get('mempaymentAmount', '0') or '0')
+                        if mem_payment_fen != 0:
+                            pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
+
+                    pay_amount_yuan = pay_amount_fen / 100.0
+
+            # 显示券信息
             if coupon_count > 0:
                 info_lines.append(f"使用券: {coupon_count}张")
-                
-                # 券抵扣金额
-                discount = order_data.get('discount_amount', 0)
-                if discount > 0:
-                    info_lines.append(f"券抵扣: -¥{discount:.2f}")
-            
+                if discount_price_yuan > 0:
+                    info_lines.append(f"券优惠: -¥{discount_price_yuan:.2f}")
+
             # 实付金额
-            if coupon_count > 0:
+            if coupon_count > 0 and has_coupon_info:
                 # 有券的情况
-                pay_amount = order_data.get('pay_amount', 0)
-                if pay_amount == 0:
-                    info_lines.append(f"实付金额: ¥{pay_amount:.2f} (纯券支付)")
+                if pay_amount_yuan == 0:
+                    info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
                 else:
-                    info_lines.append(f"实付金额: ¥{pay_amount:.2f}")
+                    final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
+                    if has_member_card and pay_amount_yuan != (api_total_price / 100.0):
+                        final_amount += " (会员价)"
+                    info_lines.append(final_amount)
             else:
                 # 无券的情况 - 检查会员价格
                 if has_member_card and api_mem_price > 0:

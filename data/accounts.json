@@ -26,7 +26,8 @@
     "points": 0,
     "cardno": "15155712316",
     "score": 3833,
-    "is_main": true
+    "is_main": true,
+    "payment_password": "111111"
   },
   {
     "userid": "14700283316",

@@ -13,9 +13,6 @@ from PyQt5.QtWidgets import (
 )
 from ui.ui_component_factory import UIComponentFactory
 from utils.data_utils import DataUtils
-from api.cinema_api_client import get_api_client, APIException
-from patterns.order_observer import get_order_subject, setup_order_observers, OrderStatus
-from patterns.payment_strategy import get_payment_context, PaymentContext
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
 
 # 导入插件系统
@@ -40,9 +37,9 @@ from services.ui_utils import MessageManager, CouponManager, UIConstants
 
 # 所有API接口  
 from services.order_api import (
-    create_order, get_unpaid_order_detail, get_coupons_by_order,
+    create_order, get_unpaid_order_detail, get_coupons_by_order, 
     bind_coupon, get_order_list, get_order_detail, get_order_qrcode_api,
-    cancel_all_unpaid_orders, get_coupon_prepay_info
+    cancel_all_unpaid_orders, get_coupon_prepay_info, pay_order
 )
 
 # 影院和账号管理
@@ -70,11 +67,6 @@ class ModularCinemaMainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         
-        # 初始化API客户端
-        self.api_client = get_api_client()
-        # 初始化设计模式
-        self.payment_context = get_payment_context()
-        self.order_subject = setup_order_observers(self)
         # 初始化业务服务
         self.auth_service = AuthService()
         self.cinema_manager = CinemaManager()
@@ -871,43 +863,20 @@ class ModularCinemaMainWindow(QMainWindow):
             pass
     
     def on_one_click_pay(self):
-        """🆕 一键支付处理 - 重构完整支付逻辑"""
+        """🆕 一键支付处理 - 完整的券支付逻辑"""
         try:
-            # 第一阶段：基础验证
-            if not self._validate_payment_prerequisites():
-                return
-
-            # 第二阶段：优惠券验证（如果用户选择了券）
-            coupon_validation_result = self._validate_and_process_coupons()
-            if coupon_validation_result is None:  # 用户取消或验证失败
-                return
-
-            # 第三阶段：支付方式判断和执行
-            payment_success = self._execute_payment_process(coupon_validation_result)
-
-            if payment_success:
-                print("[支付] 一键支付流程完成")
-            else:
-                print("[支付] 一键支付流程失败")
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            from services.ui_utils import MessageManager
-            MessageManager.show_error(self, "支付失败", f"支付过程中发生错误: {e}")
-
-    def _validate_payment_prerequisites(self):
-        """验证支付前置条件"""
-        try:
-            from services.ui_utils import MessageManager
-
             if not self.current_order:
                 MessageManager.show_error(self, "支付失败", "没有待支付的订单")
-                return False
+                return
 
             if not self.current_account:
                 MessageManager.show_error(self, "支付失败", "请先选择账号")
-                return False
+                return
+
+            # 获取订单和账号信息
+            order_detail = self.current_order
+            account = self.current_account
+            order_id = order_detail.get('orderno') or order_detail.get('order_id', '')
 
             # 获取影院信息
             cinema_data = None
@@ -916,673 +885,161 @@ class ModularCinemaMainWindow(QMainWindow):
 
             if not cinema_data:
                 MessageManager.show_error(self, "支付失败", "缺少影院信息")
-                return False
+                return
 
-            # 保存到实例变量供后续使用
-            self._payment_cinema_data = cinema_data
-            self._payment_order_id = self.current_order.get('orderno') or self.current_order.get('order_id', '')
-            self._payment_cinema_id = cinema_data.get('cinemaid', '')
+            cinema_id = cinema_data.get('cinemaid', '')
 
-            print(f"[支付验证] 前置条件检查通过 - 订单: {self._payment_order_id}, 影院: {self._payment_cinema_id}")
-            return True
+            # 🆕 检测会员卡密码策略
+            password_policy_result = self.validate_member_password_policy(order_id)
+            if not password_policy_result.get('success'):
+                MessageManager.show_error(self, "支付失败", f"密码策略检测失败: {password_policy_result.get('error')}")
+                return
 
-        except Exception as e:
-            print(f"[支付验证] 前置条件检查失败: {e}")
-            return False
+            requires_password = password_policy_result.get('requires_password', False)
+            member_password = None
 
-    def _validate_and_process_coupons(self):
-        """验证和处理优惠券（第二阶段）"""
-        try:
-            # 获取选中的券号
+            # 🆕 智能密码处理 - 优先使用预设密码
+            if requires_password:
+                print(f"[支付-密码] 订单需要会员卡密码，开始获取密码")
+
+                # 1. 首先尝试获取预设的支付密码
+                member_password = self._get_account_payment_password(self.current_account)
+
+                if member_password:
+                    print(f"[支付-密码] ✅ 使用预设支付密码 (长度: {len(member_password)})")
+                else:
+                    print(f"[支付-密码] ⚠️ 未设置预设密码，弹出输入对话框")
+                    # 2. 如果没有预设密码，才弹出输入对话框
+                    member_password = self.get_member_password_input()
+                    if member_password is None:
+                        MessageManager.show_info(self, "支付取消", "用户取消密码输入")
+                        return
+                    print(f"[支付-密码] ✅ 用户手动输入密码 (长度: {len(member_password)})")
+            else:
+                print(f"[支付-密码] 订单无需会员卡密码")
+
+            # 🆕 获取选中的券号
             selected_coupons = getattr(self, 'selected_coupons', [])
             couponcode = ','.join(selected_coupons) if selected_coupons else ''
 
-            if not couponcode:
-                # 没有选择券，直接返回无券支付结果
-                print("[券验证] 未选择优惠券，使用原价支付")
-                return {
-                    'has_coupon': False,
-                    'couponcode': '',
-                    'coupon_info': None,
-                    'final_amount': self._get_original_payment_amount()
-                }
+            # 🆕 获取券选择后的价格信息
+            coupon_info = getattr(self, 'current_coupon_info', None)
 
-            # 有选择券，需要验证券并获取实时价格
-            print(f"[券验证] 开始验证优惠券: {couponcode}")
+            # 🆕 判断是否使用券支付
+            use_coupon = bool(couponcode and coupon_info and coupon_info.get('resultCode') == '0')
 
-            # 调用优惠券验证接口
-            coupon_validation = self._validate_coupon_prepay(self._payment_order_id, couponcode)
+            if use_coupon:
+                # 🆕 使用券支付：从券价格信息中获取支付参数
+                coupon_data = coupon_info['resultData']
+                pay_amount = coupon_data.get('paymentAmount', '0')  # 实付金额（分）
+                discount_price = coupon_data.get('discountprice', '0')  # 优惠价格（分）
 
-            if not coupon_validation.get('success'):
-                # 券验证失败
-                error_msg = coupon_validation.get('error', '券验证失败')
-                from services.ui_utils import MessageManager
-                MessageManager.show_error(self, "券验证失败", f"优惠券验证失败: {error_msg}")
-                return None
+                # 🆕 检查会员支付金额
+                has_member_card = self.member_info and self.member_info.get('has_member_card', False)
+                if has_member_card:
+                    mem_payment = coupon_data.get('mempaymentAmount', '0')
+                    if mem_payment != '0':
+                        pay_amount = mem_payment  # 会员优先使用会员支付金额
 
-            # 券验证成功，获取实时订单数据
-            coupon_data = coupon_validation.get('data', {})
-
-            # 更新订单详情显示，让用户看到优惠效果
-            self.current_coupon_info = {
-                'resultCode': '0',
-                'resultData': coupon_data
-            }
-            self.selected_coupons = selected_coupons
-            self._update_order_detail_with_coupon_info()
-
-            # 获取最终支付金额
-            final_amount = self._calculate_final_payment_amount(coupon_data)
-
-            print(f"[券验证] 券验证成功，最终支付金额: {final_amount}分")
-
-            return {
-                'has_coupon': True,
-                'couponcode': couponcode,
-                'coupon_info': coupon_data,
-                'final_amount': final_amount
-            }
-
-        except Exception as e:
-            print(f"[券验证] 券验证处理异常: {e}")
-            return None
-
-    def _execute_payment_process(self, coupon_result):
-        """执行支付流程（第三阶段）"""
-        try:
-            from services.ui_utils import MessageManager
-
-            has_coupon = coupon_result.get('has_coupon', False)
-            final_amount = coupon_result.get('final_amount', 0)
-            couponcode = coupon_result.get('couponcode', '')
-
-            # 判断支付方式：根据最终支付金额
-            if has_coupon and final_amount == 0:
-                # 纯券支付：最终金额为0，使用券支付接口，无需密码
-                print("[支付执行] 纯券支付模式，无需密码")
-                return self._execute_coupon_payment(coupon_result)
             else:
-                # 会员卡支付：需要密码验证
-                print("[支付执行] 会员卡支付模式，需要密码验证")
-                return self._execute_member_card_payment(coupon_result)
+                pass
+                # 🆕 不使用券，按原价支付
+                couponcode = ''  # 清空券号
 
-        except Exception as e:
-            print(f"[支付执行] 支付流程执行异常: {e}")
-            return False
+                # 获取原价支付金额
+                has_member_card = self.member_info and self.member_info.get('has_member_card', False)
+                if has_member_card:
+                    # 会员：使用会员总价
+                    pay_amount = str(order_detail.get('mem_totalprice', 0))  # 会员总价（分）
+                else:
+                    pass
+                    # 非会员：使用订单总价
+                    pay_amount = str(order_detail.get('payAmount', 0))  # 订单总价（分）
 
-    def _execute_coupon_payment(self, coupon_result):
-        """执行纯券支付"""
-        try:
-            from services.order_api import coupon_pay
-            from services.ui_utils import MessageManager
+                discount_price = '0'  # 无优惠
 
-            coupon_data = coupon_result.get('coupon_info', {})
-            couponcode = coupon_result.get('couponcode', '')
 
-            # 构建券支付参数
+            # 🆕 构建支付参数 - 完全按照原版格式
             pay_params = {
-                'orderno': self._payment_order_id,
-                'payprice': '0',  # 纯券支付金额为0
-                'discountprice': coupon_data.get('discountprice', '0'),
-                'couponcodes': couponcode,
-                'groupid': '',
-                'cinemaid': self._payment_cinema_id,
-                'cardno': self.current_account.get('cardno', ''),
-                'userid': self.current_account['userid'],
-                'openid': self.current_account['openid'],
-                'CVersion': '3.9.12',
-                'OS': 'Windows',
-                'token': self.current_account['token'],
-                'source': '2'
-            }
-
-            print(f"[券支付] 调用券支付接口，参数: {pay_params}")
-
-            # 调用券支付API
-            pay_result = coupon_pay(pay_params)
-
-            if pay_result and pay_result.get('resultCode') == '0':
-                # 支付成功
-                print("[券支付] 券支付成功")
-                self._handle_payment_success(pay_result)
-                return True
-            else:
-                # 支付失败
-                error_msg = pay_result.get('resultDesc', '券支付失败') if pay_result else '券支付请求失败'
-                print(f"[券支付] 券支付失败: {error_msg}")
-                MessageManager.show_error(self, "券支付失败", f"券支付失败: {error_msg}")
-                return False
-
-        except Exception as e:
-            print(f"[券支付] 券支付异常: {e}")
-            return False
-
-    def _execute_member_card_payment(self, coupon_result):
-        """执行会员卡支付（可能包含券）"""
-        try:
-            from services.order_api import member_card_pay
-            from services.ui_utils import MessageManager
-
-            has_coupon = coupon_result.get('has_coupon', False)
-            final_amount = coupon_result.get('final_amount', 0)
-            couponcode = coupon_result.get('couponcode', '')
-
-            # 密码验证
-            member_password = self._get_member_card_password()
-            if member_password is None:
-                MessageManager.show_info(self, "支付取消", "用户取消密码输入")
-                return False
-
-            # 构建会员卡支付参数
-            pay_params = {
-                'orderno': self._payment_order_id,
-                'payprice': str(final_amount),
-                'discountprice': '0' if not has_coupon else coupon_result.get('coupon_info', {}).get('discountprice', '0'),
-                'couponcodes': couponcode,
-                'groupid': '',
-                'cinemaid': self._payment_cinema_id,
-                'cardno': self.current_account.get('cardno', ''),
-                'userid': self.current_account['userid'],
-                'openid': self.current_account['openid'],
-                'CVersion': '3.9.12',
-                'OS': 'Windows',
-                'token': self.current_account['token'],
-                'source': '2',
-                'mempass': member_password  # 添加会员卡密码
-            }
-
-            print(f"[会员卡支付] 调用会员卡支付接口，最终金额: {final_amount}分")
-
-            # 调用会员卡支付API
-            pay_result = member_card_pay(pay_params)
-
-            if pay_result and pay_result.get('resultCode') == '0':
-                # 支付成功
-                print("[会员卡支付] 会员卡支付成功")
-                self._handle_payment_success(pay_result)
-                return True
-            else:
-                # 支付失败
-                error_msg = pay_result.get('resultDesc', '会员卡支付失败') if pay_result else '会员卡支付请求失败'
-                print(f"[会员卡支付] 会员卡支付失败: {error_msg}")
-                MessageManager.show_error(self, "会员卡支付失败", f"会员卡支付失败: {error_msg}")
-                return False
-
-        except Exception as e:
-            print(f"[会员卡支付] 会员卡支付异常: {e}")
-            return False
-
-    def _get_original_payment_amount(self):
-        """获取原始支付金额"""
-        try:
-            # 检查是否有会员卡
-            has_member_card = self.member_info and self.member_info.get('has_member_card', False)
-
-            if has_member_card:
-                # 会员：使用会员总价
-                amount = self.current_order.get('mem_totalprice', 0)
-                print(f"[支付金额] 会员原价: {amount}分")
-                return amount
-            else:
-                # 非会员：使用订单总价
-                amount = self.current_order.get('payAmount', self.current_order.get('totalprice', 0))
-                print(f"[支付金额] 非会员原价: {amount}分")
-                return amount
-
-        except Exception as e:
-            print(f"[支付金额] 获取原始支付金额失败: {e}")
-            return 0
-
-    def _calculate_final_payment_amount(self, coupon_data):
-        """计算最终支付金额"""
-        try:
-            # 检查是否有会员卡
-            has_member_card = self.member_info and self.member_info.get('has_member_card', False)
-
-            if has_member_card:
-                # 会员：优先使用会员支付金额
-                final_amount = coupon_data.get('mempaymentAmount', coupon_data.get('paymentAmount', '0'))
-            else:
-                # 非会员：使用普通支付金额
-                final_amount = coupon_data.get('paymentAmount', '0')
-
-            # 确保返回整数
-            try:
-                final_amount = int(final_amount) if final_amount else 0
-            except (ValueError, TypeError):
-                final_amount = 0
-
-            print(f"[支付金额] 券后最终金额: {final_amount}分")
-            return final_amount
-
-        except Exception as e:
-            print(f"[支付金额] 计算最终支付金额失败: {e}")
-            return 0
-
-    def _get_member_card_password(self):
-        """获取会员卡密码"""
-        try:
-            # 首先尝试获取预设密码
-            preset_password = self._get_account_payment_password(self.current_account)
-            if preset_password:
-                print("[密码获取] 使用预设支付密码")
-                return preset_password
-
-            # 没有预设密码，弹出输入对话框
-            print("[密码获取] 弹出密码输入对话框")
-            return self.get_member_password_input()
-
-        except Exception as e:
-            print(f"[密码获取] 获取会员卡密码失败: {e}")
-            return None
-
-    def _handle_payment_success(self, pay_result):
-        """处理支付成功"""
-        try:
-            from services.ui_utils import MessageManager
-
-            print("[支付成功] 开始处理支付成功流程")
-
-            # 获取已支付订单详情
-            detail_params = {
-                'orderno': self._payment_order_id,
-                'groupid': '',
-                'cinemaid': self._payment_cinema_id,
-                'cardno': self.current_account.get('cardno', ''),
-                'userid': self.current_account['userid'],
-                'openid': self.current_account['openid'],
-                'CVersion': '3.9.12',
-                'OS': 'Windows',
-                'token': self.current_account['token'],
-                'source': '2'
-            }
-
-            # 获取支付后的订单详情
-            updated_order_detail = get_order_detail(detail_params)
-
-            if updated_order_detail and updated_order_detail.get('resultCode') == '0':
-                # 获取取票码
-                if hasattr(self, '_get_ticket_code_after_payment'):
-                    self._get_ticket_code_after_payment(
-                        self._payment_order_id,
-                        self._payment_cinema_id,
-                        updated_order_detail.get('resultData', {})
-                    )
-
-                # 更新订单详情显示
-                self.current_order = updated_order_detail.get('resultData', {})
-                if hasattr(self, '_update_order_detail_with_coupon_info'):
-                    self._update_order_detail_with_coupon_info()
-            else:
-                print("[支付成功] 获取订单详情失败，但支付已成功")
-
-            # 应用观察者模式通知状态变化
-            if hasattr(self, 'order_subject'):
-                from patterns.order_observer import OrderStatus
-                self.order_subject.update_order_status(
-                    self._payment_order_id,
-                    OrderStatus.PAID,
-                    self.current_order
-                )
-
-            # 发布支付成功事件
-            if hasattr(self, 'event_bus'):
-                self.event_bus.order_paid.emit(self._payment_order_id)
-
-            # 清空券选择状态
-            if hasattr(self, 'selected_coupons'):
-                self.selected_coupons.clear()
-            if hasattr(self, 'current_coupon_info'):
-                self.current_coupon_info = None
-
-            # 显示成功消息
-            MessageManager.show_success(self, "支付成功", "订单支付成功！")
-
-            print("[支付成功] 支付成功处理完成")
-
-        except Exception as e:
-            print(f"[支付成功] 处理支付成功异常: {e}")
-            # 即使处理过程有异常，也要显示基本成功消息
-            from services.ui_utils import MessageManager
-            MessageManager.show_success(self, "支付成功", "订单支付成功！")
-
-    def _validate_coupon_prepay(self, order_no: str, coupon_codes: str) -> dict:
-        """验证券预支付 - 复用现有实现"""
-        try:
-            if not self.current_account:
-                return {'success': False, 'error': '账号信息缺失'}
-
-            cinema_id = self._payment_cinema_id
-
-            # 构建参数
-            params = {
-                'orderno': order_no,
-                'couponcode': coupon_codes,
+                'orderno': order_id,
+                'payprice': pay_amount,        # 实付金额（分）
+                'discountprice': discount_price, # 优惠价格（分）
+                'couponcodes': couponcode,     # 券号列表（逗号分隔，无券时为空字符串）
                 'groupid': '',
                 'cinemaid': cinema_id,
-                'cardno': self.current_account.get('cardno', ''),
-                'userid': self.current_account.get('userid', ''),
-                'openid': self.current_account.get('openid', ''),
+                'cardno': account.get('cardno', ''),
+                'userid': account['userid'],
+                'openid': account['openid'],
                 'CVersion': '3.9.12',
                 'OS': 'Windows',
-                'token': self.current_account.get('token', ''),
+                'token': account['token'],
                 'source': '2'
             }
 
-            print(f"[券验证] 调用券验证API，参数: {params}")
+            # 🆕 根据密码策略添加会员卡密码参数
+            if requires_password and member_password:
+                pay_params['mempass'] = member_password
+                print(f"[支付] 添加会员卡密码参数 (密码长度: {len(member_password)})")
+            else:
+                print(f"[支付] 不需要会员卡密码 (策略: {requires_password})")
 
-            # 调用API
-            result = get_coupon_prepay_info(params)
 
-            if result and result.get('resultCode') == '0':
-                print(f"[券验证] 券验证成功")
-                return {
-                    'success': True,
-                    'data': result.get('resultData', {})
+            # 🆕 调用支付API
+            pay_result = pay_order(pay_params)
+
+
+            if pay_result and pay_result.get('resultCode') == '0':
+                # 🆕 支付成功处理流程
+
+                # 🆕 获取已支付订单详情
+                detail_params = {
+                    'orderno': order_id,
+                    'groupid': '',
+                    'cinemaid': cinema_id,
+                    'cardno': account.get('cardno', ''),
+                    'userid': account['userid'],
+                    'openid': account['openid'],
+                    'CVersion': '3.9.12',
+                    'OS': 'Windows',
+                    'token': account['token'],
+                    'source': '2'
                 }
+
+                # 支付成功后获取订单详情（此时订单已支付，使用get_order_detail）
+                print(f"[调试-支付成功] 获取已支付订单详情，使用接口: get_order_detail")
+                updated_order_detail = get_order_detail(detail_params)
+
+                if updated_order_detail and updated_order_detail.get('resultCode') == '0':
+                    # 🎯 集成取票码获取和显示流程（与双击订单流程一致）
+                    self._get_ticket_code_after_payment(order_id, cinema_id, updated_order_detail.get('resultData', {}))
+
+                    # 🆕 更新订单详情显示为支付成功状态
+                    self.current_order = updated_order_detail
+                    self._update_order_detail_with_coupon_info()
+
+                else:
+                    MessageManager.show_warning(self, "提示", "支付成功，但获取订单详情失败，请手动在订单列表中查看")
+
+                # 🆕 发布支付成功事件
+                event_bus.order_paid.emit(order_id)
+
+                # 🆕 清空当前订单和券选择状态
+                self.current_order = None
+                self.selected_coupons.clear()
+                self.current_coupon_info = None
+
+                MessageManager.show_info(self, "支付成功", "订单支付成功！")
+
             else:
-                error_msg = result.get('resultDesc', '券验证失败') if result else 'API调用失败'
-                print(f"[券验证] 券验证失败: {error_msg}")
-                return {
-                    'success': False,
-                    'error': error_msg
-                }
+                pass
+                # 🆕 支付失败处理
+                error_msg = pay_result.get('resultDesc', '未知错误') if pay_result else '支付请求失败'
+                MessageManager.show_error(self, "支付失败", f"支付失败: {error_msg}")
 
         except Exception as e:
-            print(f"[券验证] 券验证异常: {e}")
-            return {'success': False, 'error': str(e)}
-
-    def _get_account_payment_password(self, account: dict) -> str:
-        """获取账号的支付密码 - 复用现有实现"""
-        try:
-            if not account:
-                print(f"[密码管理] ❌ 账号数据为空")
-                return ""
-
-            # 详细的账号信息调试
-            userid = account.get('userid', 'N/A')
-            cinemaid = account.get('cinemaid', 'N/A')
-            print(f"[密码管理] 🔍 检查账号密码设置:")
-            print(f"[密码管理]   - userid: {userid}")
-            print(f"[密码管理]   - cinemaid: {cinemaid}")
-
-            # 从账号数据中获取支付密码
-            payment_password = account.get('payment_password', '')
-            print(f"[密码管理]   - payment_password字段: {repr(payment_password)}")
-
-            if payment_password:
-                print(f"[密码管理] ✅ 账号 {userid}@{cinemaid} 已设置支付密码 (长度: {len(payment_password)})")
-                return payment_password
-            else:
-                print(f"[密码管理] ❌ 账号 {userid}@{cinemaid} 未设置支付密码")
-                return ""
-
-        except Exception as e:
-            print(f"[密码管理] 获取支付密码异常: {e}")
-            return ""
-
-    def get_member_password_input(self) -> str:
-        """获取会员卡密码输入 - 复用现有实现"""
-        try:
-            from PyQt5.QtWidgets import QInputDialog, QLineEdit
-
-            # 构建提示信息
-            policy_desc = "需要会员卡密码验证"
-            if hasattr(self, 'member_password_policy') and self.member_password_policy:
-                policy_desc = f"该影院{policy_desc}"
-
-            # 显示密码输入对话框
-            password, ok = QInputDialog.getText(
-                self,
-                "会员卡密码",
-                f"{policy_desc}\n请输入会员卡密码:",
-                QLineEdit.Password
-            )
-
-            if ok and password:
-                self.member_card_password = password
-                print(f"[密码输入] 用户输入密码成功 (长度: {len(password)})")
-                return password
-            else:
-                print(f"[密码输入] 用户取消密码输入")
-                return None
-
-        except Exception as e:
-            print(f"[密码输入] 获取密码失败: {e}")
-            return None
-
-    def _update_order_detail_with_coupon_info(self):
-        """
-        ⚠️ 【双重维护警告】⚠️
-
-        这是订单详情显示的辅助方法，主要用于券相关操作的实时UI更新。
-
-        🔄 双重显示系统架构：
-        1. 主系统：OrderDetailManager.display_order_detail() (modules/order_display/order_detail_manager.py)
-        2. 辅助系统：本方法 (_update_order_detail_with_coupon_info)
-
-        📋 维护要求：
-        - 修改订单详情显示逻辑时，必须同时检查和更新两个位置
-        - 状态映射、券优惠计算等核心逻辑必须保持一致
-        - 任何显示格式变更都需要在两个系统中同步
-
-        🎯 本方法职责：
-        - 券选择后的实时UI响应
-        - 支付成功后的状态更新
-        - 券取消选择的UI清理
-        - OrderDetailManager不可用时的降级处理
-
-        TODO: 未来重构时考虑完全整合到OrderDetailManager或使用事件驱动架构
-        """
-        try:
-            if not self.current_order:
-                return
-
-            print(f"[订单详情-辅助] 开始更新订单详情")
-            print(f"[订单详情-辅助] current_order类型: {type(self.current_order)}")
-            print(f"[订单详情-辅助] current_coupon_info: {getattr(self, 'current_coupon_info', None)}")
-
-            # 🎯 优化调用方式：优先使用OrderDetailManager
-            if hasattr(self, 'order_detail_manager') and self.order_detail_manager:
-                print(f"[订单详情-辅助] 委托给OrderDetailManager处理")
-                try:
-                    # 委托给主显示系统处理
-                    self.order_detail_manager.display_order_detail(self.current_order, 'payment')
-                    print(f"[订单详情-辅助] OrderDetailManager处理成功")
-                    return
-                except Exception as e:
-                    print(f"[订单详情-辅助] OrderDetailManager处理失败，使用降级方案: {e}")
-                    # 继续执行降级逻辑
-            else:
-                print(f"[订单详情-辅助] OrderDetailManager不可用，使用降级方案")
-
-            # 🔄 降级处理：保持原有的直接UI更新逻辑
-            print(f"[订单详情-辅助] 执行降级显示逻辑")
-            self._legacy_order_detail_display()
-
-        except Exception as e:
-            print(f"[订单详情-辅助] 更新订单详情异常: {e}")
             import traceback
             traceback.print_exc()
-            # 最终降级处理
-            if hasattr(self, 'order_detail_text'):
-                self.order_detail_text.setPlainText(f"订单详情更新失败: {str(e)}")
-
-    def _legacy_order_detail_display(self):
-        """
-        ⚠️ 【双重维护警告】⚠️
-
-        降级订单详情显示逻辑 - 当OrderDetailManager不可用时使用
-
-        📋 维护要求：
-        - 本方法的显示逻辑必须与OrderDetailManager保持一致
-        - 状态映射逻辑必须同步：modules/order_display/order_detail_manager.py 第231行
-        - 券优惠计算逻辑必须同步：modules/order_display/order_detail_manager.py 第335行
-
-        TODO: 定期检查与OrderDetailManager的一致性
-        """
-        try:
-            # 获取基础订单信息
-            order_detail = self.current_order
-
-            # 构建格式化的订单详情 - 按照重构前的顺序和格式
-            info_lines = []
-
-            # 订单号
-            order_id = DataUtils.safe_get(order_detail, 'orderno', order_detail.get('order_id', 'N/A'))
-            info_lines.append(f"订单号: {order_id}")
-
-            # 影片信息
-            movie = DataUtils.safe_get(order_detail, 'movie', order_detail.get('film_name', 'N/A'))
-            info_lines.append(f"影片: {movie}")
-
-            # 时间信息 - 按照重构前的格式
-            show_time = DataUtils.safe_get(order_detail, 'showTime', '')
-            if not show_time:
-                date = DataUtils.safe_get(order_detail, 'date', '')
-                session = DataUtils.safe_get(order_detail, 'session', '')
-                if date and session:
-                    show_time = f"{date} {session}"
-            if show_time:
-                info_lines.append(f"时间: {show_time}")
-
-            # 影院信息
-            cinema = DataUtils.safe_get(order_detail, 'cinema', order_detail.get('cinema_name', 'N/A'))
-            info_lines.append(f"影院: {cinema}")
-
-            # 座位信息 - 按照重构前的格式
-            seats = DataUtils.safe_get(order_detail, 'seats', [])
-            if isinstance(seats, list) and seats:
-                if len(seats) == 1:
-                    info_lines.append(f"座位: {seats[0]}")
-                else:
-                    seat_str = " ".join(seats)
-                    info_lines.append(f"座位: {seat_str}")
-            else:
-                info_lines.append(f"座位: {seats}")
-
-            # ⚠️ 【同步维护点1】状态信息 - 必须与OrderDetailManager第231行保持一致
-            status = DataUtils.safe_get(order_detail, 'status', '待支付')
-            # 状态映射：英文状态转中文状态
-            status_map = {
-                'created': '待支付',
-                'paid': '已支付',
-                'confirmed': '已确认',
-                'cancelled': '已取消',
-                'completed': '已完成',
-                'refunded': '已退款',
-                'failed': '支付失败',
-                '0': '待支付',
-                '1': '已支付',
-                '2': '已取票',
-                '3': '已取消',
-                '4': '已退款',
-                '5': '支付失败'
-            }
-            chinese_status = status_map.get(status, status)
-            info_lines.append(f"状态: {chinese_status}")
-
-            # 密码策略信息 - 按照重构前的逻辑
-            enable_mempassword = None
-
-            # 方法1: 从api_data获取
-            api_data = DataUtils.safe_get(order_detail, 'api_data', {})
-            if api_data and isinstance(api_data, dict):
-                enable_mempassword = api_data.get('enable_mempassword')
-
-            # 方法2: 直接从order_detail获取
-            if enable_mempassword is None:
-                enable_mempassword = order_detail.get('enable_mempassword')
-
-            # 显示密码策略
-            if enable_mempassword == '1':
-                info_lines.append("密码: 需要输入")
-            elif enable_mempassword == '0':
-                info_lines.append("密码: 无需输入")
-            else:
-                # 如果没有获取到策略，尝试从实例状态获取
-                if hasattr(self, 'member_password_policy') and self.member_password_policy:
-                    requires_password = DataUtils.safe_get(self.member_password_policy, 'requires_password', True)
-                    info_lines.append(f"密码: {'需要输入' if requires_password else '无需输入'}")
-                else:
-                    info_lines.append("密码: 无需输入")
-
-            # 价格信息 - 按照重构前的完整逻辑
-            original_amount = DataUtils.safe_get(order_detail, 'amount', 0)
-            seat_count = DataUtils.safe_get(order_detail, 'seat_count', len(seats) if isinstance(seats, list) else 1)
-
-            # 显示原价
-            if seat_count > 1:
-                unit_price = original_amount / seat_count if seat_count > 0 else original_amount
-                info_lines.append(f"原价: {seat_count}张×¥{unit_price:.2f} = ¥{original_amount:.2f}")
-            else:
-                info_lines.append(f"原价: ¥{original_amount:.2f}")
-
-            # ⚠️ 【同步维护点2】券抵扣信息 - 必须与OrderDetailManager第335行保持一致
-            if hasattr(self, 'current_coupon_info') and self.current_coupon_info and hasattr(self, 'selected_coupons') and self.selected_coupons:
-                coupon_data = DataUtils.safe_get(self.current_coupon_info, 'resultData', {})
-
-                if coupon_data:
-                    # 获取券抵扣金额（分）
-                    discount_price_fen = int(DataUtils.safe_get(coupon_data, 'discountprice', '0'))
-                    discount_price_yuan = discount_price_fen / 100.0
-
-                    # 获取实付金额（分）
-                    pay_amount_fen = int(DataUtils.safe_get(coupon_data, 'paymentAmount', '0'))
-
-                    # 检查会员支付金额
-                    has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
-                    if has_member_card:
-                        mem_payment_fen = int(DataUtils.safe_get(coupon_data, 'mempaymentAmount', '0'))
-                        if mem_payment_fen != 0:
-                            pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
-
-                    pay_amount_yuan = pay_amount_fen / 100.0
-
-                    # 显示券信息
-                    coupon_count = len(self.selected_coupons)
-                    info_lines.append(f"使用券: {coupon_count}张")
-                    if discount_price_yuan > 0:
-                        info_lines.append(f"券优惠: -¥{discount_price_yuan:.2f}")
-
-                    # 显示实付金额
-                    if pay_amount_yuan == 0:
-                        info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
-                    else:
-                        final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
-                        if has_member_card and mem_payment_fen != 0:
-                            final_amount += " (会员价)"
-                        info_lines.append(final_amount)
-            else:
-                # 无券抵扣，显示原价或会员价
-                has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
-                if has_member_card:
-                    mem_total_price = DataUtils.safe_get(order_detail, 'mem_totalprice', 0)
-                    if mem_total_price > 0:
-                        info_lines.append(f"实付金额: ¥{mem_total_price/100.0:.2f} (会员价)")
-                    else:
-                        info_lines.append(f"实付金额: ¥{original_amount:.2f}")
-                else:
-                    info_lines.append(f"实付金额: ¥{original_amount:.2f}")
-
-            # 使用单个换行符连接，确保紧凑显示
-            order_info_text = '\n'.join(info_lines)
-
-            # 降级显示：直接更新UI组件
-            print(f"[订单详情-降级] 使用直接文本显示")
-            if hasattr(self, 'order_detail_text'):
-                self.order_detail_text.setPlainText(order_info_text)
-                print(f"[订单详情-降级] 直接文本显示成功")
-            else:
-                print(f"[订单详情-降级] 无可用的显示组件")
-
-        except Exception as e:
-            print(f"[订单详情-降级] 降级显示异常: {e}")
-            import traceback
-            traceback.print_exc()
-            # 最终降级处理
-            if hasattr(self, 'order_detail_text'):
-                self.order_detail_text.setPlainText(f"订单详情显示失败: {str(e)}")
+            MessageManager.show_error(self, "支付失败", f"支付过程中发生错误: {e}")
     
     def show_order_detail(self, detail):
         """显示订单详情"""
@@ -3608,8 +3065,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 'source': '2'
             }
 
-            # 调用API - 修复：只传递params参数
-            result = get_coupon_prepay_info(params)
+            # 调用API
+            result = get_coupon_prepay_info(cinema_id, params)
 
             if result and result.get('resultCode') == '0':
                 return {
@@ -3841,79 +3298,42 @@ class ModularCinemaMainWindow(QMainWindow):
         except Exception as e:
             pass
 
-    def on_submit_order(self, selected_seats=None):
-        """提交订单 - 重构后的主方法，复用现有完整流程"""
+    def on_submit_order(self, selected_seats):
+        """提交订单处理 - 完整流程整合"""
         try:
             # 导入消息管理器
             from services.ui_utils import MessageManager
-
-            # 如果传入了座位信息，需要完整处理座位数据
-            if selected_seats is not None:
-                # 验证基础条件
-                if not self.current_account:
-                    MessageManager.show_error(self, "提交失败", "请先选择账号", auto_close=False)
-                    return False
-
-                # 获取并验证选择信息
-                cinema_text = self.tab_manager_widget.cinema_combo.currentText()
-                movie_text = self.tab_manager_widget.movie_combo.currentText()
-                date_text = self.tab_manager_widget.date_combo.currentText()
-                session_text = self.tab_manager_widget.session_combo.currentText()
-
-                # 验证选择完整性
-                if not all([cinema_text, movie_text, date_text, session_text]):
-                    MessageManager.show_error(self, "信息不完整", "请完整选择影院、影片、日期和场次", auto_close=False)
-                    return False
-
-                if not selected_seats:
-                    MessageManager.show_error(self, "座位未选择", "请选择座位", auto_close=False)
-                    return False
-
-                # 过滤无效选择
-                invalid_selections = ["请选择", "请先选择", "正在加载", "暂无", "加载失败", "选择影院"]
-                if any(text in invalid_selections for text in [cinema_text, movie_text, date_text, session_text]):
-                    MessageManager.show_error(self, "选择无效", "请重新选择有效的影院、影片、日期和场次", auto_close=False)
-                    return False
-
-                # 调用完整的订单创建流程（复用现有实现）
-                return self._create_order_with_full_process(selected_seats)
-
-            # 如果没有传入座位信息，使用原有的验证和处理流程
-            if not self._validate_order_data():
+            
+            # 1. 基础验证
+            if not self.current_account:
+                MessageManager.show_error(self, "提交失败", "请先选择账号", auto_close=False)
                 return False
-
-            # 构建订单参数
-            order_params = self._build_order_params()
-            if not order_params:
-                return False
-
-            # 提交订单
-            success = self._submit_order_to_api(order_params)
-            if success:
-                self._handle_order_success()
-                return True
-            else:
-                self._handle_order_failure()
-                return False
-
-        except Exception as e:
-            self._handle_order_exception(e)
-            return False
-
-    def _create_order_with_full_process(self, selected_seats):
-        """完整的订单创建流程 - 复用现有实现"""
-        try:
-            from services.ui_utils import MessageManager
-            import time
-
-            # 获取当前选择信息
+                
+            # 2. 获取并验证选择信息
             cinema_text = self.tab_manager_widget.cinema_combo.currentText()
             movie_text = self.tab_manager_widget.movie_combo.currentText()
             date_text = self.tab_manager_widget.date_combo.currentText()
             session_text = self.tab_manager_widget.session_combo.currentText()
-
-            print(f"[订单创建] 账号: {self.current_account.get('userid', 'N/A')}")
-            print(f"[订单创建] 座位: {len(selected_seats)} 个")
+            
+            print(f"  账号: {self.current_account.get('userid', 'N/A')}")
+            print(f"  座位: {len(selected_seats)} 个")
+            
+            # 验证选择完整性
+            if not all([cinema_text, movie_text, date_text, session_text]):
+                MessageManager.show_error(self, "信息不完整", "请完整选择影院、影片、日期和场次", auto_close=False)
+                return False
+                
+            if not selected_seats:
+                MessageManager.show_error(self, "座位未选择", "请选择座位", auto_close=False)
+                return False
+            
+            # 过滤无效选择
+            invalid_selections = ["请选择", "请先选择", "正在加载", "暂无", "加载失败", "选择影院"]
+            if any(text in invalid_selections for text in [cinema_text, movie_text, date_text, session_text]):
+                MessageManager.show_error(self, "选择无效", "请重新选择有效的影院、影片、日期和场次", auto_close=False)
+                return False
+            
+            # 真正的订单创建 - 调用API
 
             # 第一步：取消该账号的所有未付款订单
             cinema_data = self._get_cinema_info_by_name(cinema_text)
@@ -3921,10 +3341,11 @@ class ModularCinemaMainWindow(QMainWindow):
                 from services.order_api import cancel_all_unpaid_orders
                 cancel_result = cancel_all_unpaid_orders(self.current_account, cinema_data.get('cinemaid', ''))
                 cancelled_count = cancel_result.get('cancelledCount', 0)
-                print(f"[订单创建] 取消了 {cancelled_count} 个未支付订单")
+            else:
+                pass
 
-            # 第二步：构建完整的订单参数
-            order_params = self._build_complete_order_params(selected_seats)
+            # 第二步：构建订单参数
+            order_params = self._build_order_params(selected_seats)
             if not order_params:
                 MessageManager.show_error(self, "参数错误", "构建订单参数失败", auto_close=False)
                 return False
@@ -3938,9 +3359,148 @@ class ModularCinemaMainWindow(QMainWindow):
                 MessageManager.show_error(self, "创建失败", f"订单创建失败: {error_msg}", auto_close=False)
                 return False
 
-            # 第四步：处理订单创建成功
-            return self._handle_order_creation_success(result, selected_seats, cinema_data)
+            # 获取订单数据
+            order_data = result.get('resultData', {})
+            order_id = order_data.get('orderno', f"ORDER{int(time.time())}")
 
+            # 获取场次数据用于显示
+            tab_manager = self.tab_manager_widget
+            session_data = getattr(tab_manager, 'current_session_data', {})
+
+            # 构建座位显示信息
+            seat_display = []
+            total_amount = 0
+            for seat in selected_seats:
+                seat_row = seat.get('rn', seat.get('row', 1))
+                seat_col = seat.get('cn', seat.get('col', 1))
+                seat_price = seat.get('price', 0)
+                if seat_price == 0:
+                    seat_price = session_data.get('first_price', session_data.get('b', 33.9))
+
+                seat_display.append(f"{seat_row}排{seat_col}座")
+
+                # 🔧 修复：确保seat_price是数字类型
+                try:
+                    if isinstance(seat_price, str):
+                        seat_price = float(seat_price)
+                    elif isinstance(seat_price, (int, float)):
+                        seat_price = float(seat_price)
+                    else:
+                        seat_price = 0.0
+                    total_amount += seat_price
+                except (ValueError, TypeError):
+                    print(f"[主窗口] 座位价格转换失败: {seat_price}，使用默认价格0")
+                    total_amount += 0.0
+
+            # 🆕 获取会员信息以判断是否有会员卡
+            print(f"[调试-订单创建] 开始获取会员信息")
+            self._get_member_info(self.current_account, cinema_data.get('cinemaid', ''))
+
+            # 🆕 获取未支付订单详情以获取会员价格信息
+            from services.order_api import get_unpaid_order_detail
+            detail_params = {
+                'orderno': order_id,
+                'groupid': '',
+                'cinemaid': cinema_data.get('cinemaid', ''),
+                'cardno': self.current_account.get('cardno', ''),
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'CVersion': '3.9.12',
+                'OS': 'Windows',
+                'token': self.current_account.get('token', ''),
+                'source': '2'
+            }
+
+            print(f"[调试-订单创建] 开始获取未支付订单详情，订单号: {order_id}")
+            print(f"[调试-订单创建] 使用接口: get_unpaid_order_detail")
+            print(f"[调试-订单创建] API请求参数: {detail_params}")
+
+            order_detail_result = get_unpaid_order_detail(detail_params)
+
+            print(f"[调试-订单创建] API返回数据: {order_detail_result}")
+
+            # 🆕 从订单详情中获取会员价格 - 添加类型转换
+            member_total_price = 0
+            if order_detail_result and order_detail_result.get('resultCode') == '0':
+                detail_data = order_detail_result.get('resultData', {})
+
+                # 调试输出：打印所有价格相关字段
+                print(f"[调试-订单创建] 订单详情数据: {detail_data}")
+                print(f"[调试-订单创建] mem_totalprice: {detail_data.get('mem_totalprice', 'N/A')}")
+                print(f"[调试-订单创建] totalprice: {detail_data.get('totalprice', 'N/A')}")
+                print(f"[调试-订单创建] payAmount: {detail_data.get('payAmount', 'N/A')}")
+                print(f"[调试-订单创建] orderPrice: {detail_data.get('orderPrice', 'N/A')}")
+                print(f"[调试-订单创建] memprice: {detail_data.get('memprice', 'N/A')}")
+
+                # 🆕 安全的类型转换
+                def safe_price_convert(value, default=0):
+                    """安全地将价格转换为整数（分）"""
+                    try:
+                        if isinstance(value, str):
+                            return int(value) if value.strip() else default
+                        elif isinstance(value, (int, float)):
+                            return int(value)
+                        else:
+                            return default
+                    except (ValueError, TypeError):
+                        return default
+
+                member_total_price = safe_price_convert(detail_data.get('mem_totalprice', '0'))
+                print(f"[调试-订单创建] 解析后的会员价格: {member_total_price} 分")
+                print(f"[调试-订单创建] 会员价格(元): {member_total_price/100.0:.2f}")
+            else:
+                print(f"[调试-订单创建] 获取订单详情失败")
+                print(f"[调试-订单创建] 失败原因: {order_detail_result}")
+                print(f"[调试-订单创建] 将使用原价: {total_amount}")
+
+            # 保存当前订单 - 使用真实API返回的数据
+            self.current_order = {
+                'order_id': order_id,
+                'orderno': order_id,  # API返回的订单号
+                'cinema': cinema_text,
+                'movie': movie_text,
+                'date': date_text,
+                'session': session_text,
+                'showTime': session_data.get('show_date', '') + ' ' + session_data.get('q', ''),
+                'seats': seat_display,
+                'seat_count': len(selected_seats),
+                'amount': total_amount,
+                'mem_totalprice': member_total_price,  # 🆕 添加会员价格
+                'status': '待支付',
+                'create_time': time.strftime("%Y-%m-%d %H:%M:%S"),
+                'phone': self.current_account.get('userid', ''),  # 使用userid作为手机号
+                'cinema_name': cinema_text,
+                'film_name': movie_text,
+                'hall_name': session_data.get('hall_name', ''),
+                'api_data': order_detail_result.get('resultData', {}) if order_detail_result else order_data  # 保存完整的API返回数据
+            }
+
+            # 调试输出：打印保存到订单对象中的价格数据
+            print(f"[调试-订单创建] 保存到current_order的数据:")
+            print(f"[调试-订单创建] amount(原价): {self.current_order.get('amount')}")
+            print(f"[调试-订单创建] mem_totalprice(会员价): {self.current_order.get('mem_totalprice')}")
+            print(f"[调试-订单创建] api_data类型: {type(self.current_order.get('api_data'))}")
+            if isinstance(self.current_order.get('api_data'), dict):
+                api_data = self.current_order.get('api_data')
+                print(f"[调试-订单创建] api_data中的价格字段:")
+                print(f"[调试-订单创建]   - mem_totalprice: {api_data.get('mem_totalprice', 'N/A')}")
+                print(f"[调试-订单创建]   - totalprice: {api_data.get('totalprice', 'N/A')}")
+                print(f"[调试-订单创建]   - payAmount: {api_data.get('payAmount', 'N/A')}")
+                print(f"[调试-订单创建]   - enable_mempassword: {api_data.get('enable_mempassword', 'N/A')}")
+
+            # 显示订单详情
+            self._show_order_detail(self.current_order)
+
+            # 第四步：获取可用券列表
+            self._load_available_coupons(order_id, cinema_data.get('cinemaid', ''))
+
+            # 发布订单创建事件
+            event_bus.order_created.emit(self.current_order)
+
+            # 🆕 移除支付倒计时功能
+
+            return True
+                
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -3948,28 +3508,31 @@ class ModularCinemaMainWindow(QMainWindow):
             MessageManager.show_error(self, "提交失败", f"提交订单失败\n\n错误: {str(e)}", auto_close=False)
             return False
 
-    def _build_complete_order_params(self, selected_seats):
-        """构建完整的订单参数 - 复用现有实现"""
+    def _build_order_params(self, selected_seats: list) -> dict:
+        """构建订单创建参数"""
         try:
-            # 获取场次数据
+            # 获取当前选择信息
+            if not hasattr(self, 'tab_manager_widget'):
+                return None
+
             tab_manager = self.tab_manager_widget
+
+            # 获取场次数据
             session_data = getattr(tab_manager, 'current_session_data', None)
             if not session_data:
-                print("[订单参数] 缺少场次数据")
                 return None
 
             # 获取影院数据
             cinema_text = tab_manager.cinema_combo.currentText()
             cinema_data = self._get_cinema_info_by_name(cinema_text)
             if not cinema_data:
-                print("[订单参数] 缺少影院数据")
                 return None
 
-            # 构建座位参数 - 使用真实API格式
+            # 构建座位参数 - 修复：使用真实API格式的seatInfo
             seat_info_list = []
             for i, seat in enumerate(selected_seats):
                 # 从座位数据中获取正确的字段
-                seat_no = seat.get('sn', '')
+                seat_no = seat.get('sn', '')  # 座位编号
                 if not seat_no:
                     # 如果没有sn字段，尝试构建座位编号
                     row_num = seat.get('rn', seat.get('row', 1))
@@ -3982,17 +3545,18 @@ class ModularCinemaMainWindow(QMainWindow):
                     # 如果座位没有价格，从场次数据获取默认价格
                     seat_price = session_data.get('first_price', session_data.get('b', 33.9))
 
-                # 确保seat_price是字符串类型（API要求）
+                # 🔧 修复：确保seat_price是字符串类型（API要求）
                 try:
                     if isinstance(seat_price, (int, float)):
                         seat_price_str = str(seat_price)
                     elif isinstance(seat_price, str):
+                        # 验证字符串是否为有效数字
                         float(seat_price)  # 验证是否可转换为数字
                         seat_price_str = seat_price
                     else:
                         seat_price_str = "33.9"  # 默认价格
                 except (ValueError, TypeError):
-                    print(f"[订单参数] 座位价格格式错误: {seat_price}，使用默认价格")
+                    print(f"[主窗口] 座位价格格式错误: {seat_price}，使用默认价格")
                     seat_price_str = "33.9"
 
                 # 获取座位位置信息
@@ -4012,18 +3576,19 @@ class ModularCinemaMainWindow(QMainWindow):
                     "seatNo": seat_no,
                     "sectionId": "11111",
                     "ls": "",
-                    "rowIndex": seat.get('r', 1) - 1,
-                    "colIndex": DataUtils.safe_get(seat, 'c', 1) - 1,
+                    "rowIndex": seat.get('r', 1) - 1,  # 行索引从0开始
+                    "colIndex": DataUtils.safe_get(seat, 'c', 1) - 1,  # 列索引从0开始
                     "index": i + 1
                 }
                 seat_info_list.append(seat_info)
 
-            # 构建订单参数 - 使用真实API格式
+
+            # 构建订单参数 - 修复：使用真实API格式
             import json
             order_params = {
                 # 基础参数
                 'groupid': '',
-                'cardno': 'undefined',
+                'cardno': 'undefined',  # 真实API使用undefined
                 'userid': DataUtils.safe_get(self.current_account, 'userid', ''),
                 'cinemaid': DataUtils.safe_get(cinema_data, 'cinemaid', ''),
                 'CVersion': '3.9.12',
@@ -4034,186 +3599,42 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 # 订单相关参数
                 'oldOrderNo': '',
-                'showTime': f"{DataUtils.safe_get(session_data, 'show_date', '')} {DataUtils.safe_get(session_data, 'q', '')}",
+                'showTime': f"{DataUtils.safe_get(session_data, 'show_date', '')} {DataUtils.safe_get(session_data, 'q', '')}",  # 真实格式
                 'eventCode': '',
                 'hallCode': DataUtils.safe_get(session_data, 'j', ''),
                 'showCode': DataUtils.safe_get(session_data, 'g', ''),
-                'filmCode': 'null',
-                'filmNo': DataUtils.safe_get(session_data, 'h', ''),
+                'filmCode': 'null',  # 真实API使用null字符串
+                'filmNo': DataUtils.safe_get(session_data, 'h', ''),  # 使用h字段作为filmNo
                 'recvpPhone': 'undefined',
 
                 # 座位信息 - 使用真实API格式
-                'seatInfo': json.dumps(seat_info_list, separators=(',', ':')),
+                'seatInfo': json.dumps(seat_info_list, separators=(',', ':')),  # JSON字符串格式
 
                 # 支付相关参数
-                'payType': '3',
+                'payType': '3',  # 真实API使用的支付类型
                 'companyChannelId': 'undefined',
                 'shareMemberId': '',
                 'limitprocount': '0'
             }
 
-            print(f"[订单参数] 座位数量: {len(selected_seats)}")
-            print(f"[订单参数] 影院ID: {order_params.get('cinemaid')}")
-            print(f"[订单参数] 场次编码: {order_params.get('showCode')}")
+            print(f"  - 座位数量: {len(selected_seats)}")
 
             return order_params
 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            print(f"[订单参数] 构建失败: {e}")
             return None
 
-    def _handle_order_creation_success(self, result, selected_seats, cinema_data):
-        """处理订单创建成功 - 复用现有实现"""
-        try:
-            import time
-
-            # 获取订单数据
-            order_data = result.get('resultData', {})
-            order_id = order_data.get('orderno', f"ORDER{int(time.time())}")
-
-            # 获取场次数据用于显示
-            tab_manager = self.tab_manager_widget
-            session_data = getattr(tab_manager, 'current_session_data', {})
-
-            # 获取当前选择信息
-            cinema_text = tab_manager.cinema_combo.currentText()
-            movie_text = tab_manager.movie_combo.currentText()
-            date_text = tab_manager.date_combo.currentText()
-            session_text = tab_manager.session_combo.currentText()
-
-            # 构建座位显示信息和计算总价
-            seat_display = []
-            total_amount = 0
-            for seat in selected_seats:
-                seat_row = seat.get('rn', seat.get('row', 1))
-                seat_col = seat.get('cn', seat.get('col', 1))
-                seat_price = seat.get('price', 0)
-                if seat_price == 0:
-                    seat_price = session_data.get('first_price', session_data.get('b', 33.9))
-
-                seat_display.append(f"{seat_row}排{seat_col}座")
-
-                # 确保seat_price是数字类型
-                try:
-                    if isinstance(seat_price, str):
-                        seat_price = float(seat_price)
-                    elif isinstance(seat_price, (int, float)):
-                        seat_price = float(seat_price)
-                    else:
-                        seat_price = 0.0
-                    total_amount += seat_price
-                except (ValueError, TypeError):
-                    print(f"[订单成功] 座位价格转换失败: {seat_price}，使用默认价格0")
-                    total_amount += 0.0
-
-            # 获取会员信息
-            print(f"[订单成功] 开始获取会员信息")
-            self._get_member_info(self.current_account, cinema_data.get('cinemaid', ''))
-
-            # 获取未支付订单详情以获取会员价格信息
-            from services.order_api import get_unpaid_order_detail
-            detail_params = {
-                'orderno': order_id,
-                'groupid': '',
-                'cinemaid': cinema_data.get('cinemaid', ''),
-                'cardno': self.current_account.get('cardno', ''),
-                'userid': self.current_account.get('userid', ''),
-                'openid': self.current_account.get('openid', ''),
-                'CVersion': '3.9.12',
-                'OS': 'Windows',
-                'token': self.current_account.get('token', ''),
-                'source': '2'
-            }
-
-            print(f"[订单成功] 获取订单详情，订单号: {order_id}")
-            order_detail_result = get_unpaid_order_detail(detail_params)
-
-            # 从订单详情中获取会员价格
-            member_total_price = 0
-            if order_detail_result and order_detail_result.get('resultCode') == '0':
-                detail_data = order_detail_result.get('resultData', {})
-
-                # 安全的类型转换
-                def safe_price_convert(value, default=0):
-                    try:
-                        if isinstance(value, str):
-                            return int(value) if value.strip() else default
-                        elif isinstance(value, (int, float)):
-                            return int(value)
-                        else:
-                            return default
-                    except (ValueError, TypeError):
-                        return default
-
-                member_total_price = safe_price_convert(detail_data.get('mem_totalprice', '0'))
-                print(f"[订单成功] 会员价格: {member_total_price} 分 ({member_total_price/100.0:.2f} 元)")
-
-            # 保存当前订单 - 包含完整信息
-            self.current_order = {
-                'order_id': order_id,
-                'orderno': order_id,
-                'cinema': cinema_text,
-                'movie': movie_text,
-                'date': date_text,
-                'session': session_text,
-                'showTime': session_data.get('show_date', '') + ' ' + session_data.get('q', ''),
-                'seats': seat_display,
-                'seat_count': len(selected_seats),
-                'amount': total_amount,
-                'mem_totalprice': member_total_price,
-                'status': '待支付',
-                'create_time': time.strftime("%Y-%m-%d %H:%M:%S"),
-                'phone': self.current_account.get('userid', ''),
-                'cinema_name': cinema_text,
-                'film_name': movie_text,
-                'hall_name': session_data.get('hall_name', ''),
-                'api_data': order_detail_result.get('resultData', {}) if order_detail_result else order_data,
-                # 添加重构后需要的字段
-                'movieid': session_data.get('h', ''),  # 从session_data获取电影ID
-                'showid': session_data.get('g', ''),   # 从session_data获取场次ID
-                'totalprice': total_amount,            # 设置总价
-                'cinemaid': cinema_data.get('cinemaid', '')  # 影院ID
-            }
-
-            print(f"[订单成功] 订单创建完成:")
-            print(f"  - 订单号: {order_id}")
-            print(f"  - 座位数: {len(selected_seats)}")
-            print(f"  - 总价: {total_amount} 元")
-            print(f"  - 会员价: {member_total_price/100.0:.2f} 元")
-
-            # 显示订单详情
-            self._show_order_detail(self.current_order)
-
-            # 获取可用券列表
-            self._load_available_coupons(order_id, cinema_data.get('cinemaid', ''))
-
-            # 发布订单创建事件（应用观察者模式）
-            if hasattr(self, 'order_subject'):
-                from patterns.order_observer import OrderStatus
-                self.order_subject.update_order_status(order_id, OrderStatus.CREATED, self.current_order)
-
-            # 发布全局事件
-            event_bus.order_created.emit(self.current_order)
-
-            return True
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print(f"[订单成功] 处理失败: {e}")
-            return False
-
     def _load_available_coupons(self, order_id: str, cinema_id: str):
-        """获取订单可用券列表 - 复用现有实现"""
+        """获取订单可用券列表 - 🔧 修复空值处理错误"""
         try:
             if not self.current_account or not order_id or not cinema_id:
-                print("[优惠券] 券列表加载失败：缺少必要参数")
+                print("[主窗口] 券列表加载失败：缺少必要参数")
                 self._show_coupon_error_message("参数不完整，无法加载券列表")
                 return
 
-            # 获取订单可用券
+            # 方法1：获取订单可用券（推荐，针对特定订单）
             from services.order_api import get_coupons_by_order
 
             coupon_params = {
@@ -4229,19 +3650,20 @@ class ModularCinemaMainWindow(QMainWindow):
                 'cardno': DataUtils.safe_get(self.current_account, 'cardno', '')
             }
 
-            print(f"[优惠券] 开始获取券列表，订单号: {order_id}")
+            print(f"[主窗口] 开始获取券列表，订单号: {order_id}")
 
             # 调用API获取券列表
             coupon_result = get_coupons_by_order(coupon_params)
 
-            # 检查API响应
+            # 🔧 修复：添加完整的空值检查
             if coupon_result is None:
-                print("[优惠券] 券列表API返回None，可能是网络异常")
+                print("[主窗口] 券列表API返回None，可能是网络异常或服务器无响应")
                 self._show_coupon_error_message("网络异常，无法获取券列表")
                 return
 
+            # 🔧 修复：检查coupon_result是否为字典类型
             if not isinstance(coupon_result, dict):
-                print(f"[优惠券] 券列表API返回格式错误，类型: {type(coupon_result)}")
+                print(f"[主窗口] 券列表API返回格式错误，类型: {type(coupon_result)}")
                 self._show_coupon_error_message("数据格式错误，无法解析券列表")
                 return
 
@@ -4251,24 +3673,27 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 成功获取券列表
                 result_data = coupon_result.get('resultData')
 
+                # 🔧 修复：检查result_data是否为None
                 if result_data is None:
-                    print("[优惠券] 券列表数据为空")
-                    self._show_coupon_list([])
+                    print("[主窗口] 券列表数据为空")
+                    self._show_coupon_list([])  # 显示空券列表
                     return
 
+                # 🔧 修复：确保result_data是字典类型
                 if not isinstance(result_data, dict):
-                    print(f"[优惠券] 券列表数据格式错误，类型: {type(result_data)}")
+                    print(f"[主窗口] 券列表数据格式错误，类型: {type(result_data)}")
                     self._show_coupon_error_message("券数据格式错误")
                     return
 
                 # 获取券列表
                 coupons = DataUtils.safe_get(result_data, 'vouchers', [])
 
+                # 🔧 修复：确保coupons是列表类型
                 if not isinstance(coupons, list):
-                    print(f"[优惠券] 券列表不是数组格式，类型: {type(coupons)}")
+                    print(f"[主窗口] 券列表不是数组格式，类型: {type(coupons)}")
                     coupons = []
 
-                print(f"[优惠券] 获取到 {len(coupons)} 张可用券")
+                print(f"[主窗口] 获取到 {len(coupons)} 张可用券")
 
                 # 显示券列表
                 self._show_coupon_list(coupons)
@@ -4276,17 +3701,17 @@ class ModularCinemaMainWindow(QMainWindow):
             else:
                 # API返回错误
                 error_desc = DataUtils.safe_get(coupon_result, 'resultDesc', '未知错误')
-                print(f"[优惠券] 券列表API返回错误: {error_desc}")
+                print(f"[主窗口] 券列表API返回错误: {error_desc}")
                 self._show_coupon_error_message(f"获取券列表失败: {error_desc}")
 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            print(f"[优惠券] 券列表加载异常: {e}")
+            print(f"[主窗口] 券列表加载异常: {e}")
             self._show_coupon_error_message("券列表加载异常，请重试")
 
     def _show_coupon_error_message(self, error_message: str):
-        """显示券列表错误信息"""
+        """显示券列表错误信息 - 🔧 新增辅助函数"""
         try:
             # 查找券列表组件
             coupon_list_widget = None
@@ -4299,38 +3724,39 @@ class ModularCinemaMainWindow(QMainWindow):
             if coupon_list_widget is not None:
                 coupon_list_widget.clear()
                 coupon_list_widget.addItem(f"❌ {error_message}")
-                print(f"[优惠券] 券列表错误信息已显示: {error_message}")
+                print(f"[主窗口] 券列表错误信息已显示: {error_message}")
             else:
-                print(f"[优惠券] 无法显示券列表错误信息: {error_message}")
+                print(f"[主窗口] 无法显示券列表错误信息: {error_message}")
 
         except Exception as e:
-            print(f"[优惠券] 显示券列表错误信息失败: {e}")
+            print(f"[主窗口] 显示券列表错误信息失败: {e}")
 
     def _show_coupon_list(self, coupons: list):
-        """显示券列表"""
+        """显示券列表 - 🔧 修复空值处理错误"""
         try:
-            # 确保coupons参数有效
+            # 🔧 修复：确保coupons参数不为None
             if coupons is None:
-                print("[优惠券] 券列表参数为None，使用空列表")
+                print("[主窗口] 券列表参数为None，使用空列表")
                 coupons = []
 
+            # 🔧 修复：确保coupons是列表类型
             if not isinstance(coupons, list):
-                print(f"[优惠券] 券列表参数类型错误: {type(coupons)}，使用空列表")
+                print(f"[主窗口] 券列表参数类型错误: {type(coupons)}，使用空列表")
                 coupons = []
 
-            print(f"[优惠券] 显示券列表: {len(coupons)} 张券")
+            print(f"[主窗口] 显示券列表: {len(coupons)} 张券")
 
-            # 保存券数据到实例变量
+            # 🆕 保存券数据到实例变量
             self.coupons_data = coupons
 
-            # 根据当前订单的座位数设置券选择数量限制
+            # 🆕 根据当前订单的座位数设置券选择数量限制
             if self.current_order and isinstance(self.current_order, dict):
                 seats = DataUtils.safe_get(self.current_order, 'seats', [])
                 if isinstance(seats, list):
                     seat_count = len(seats)
                 else:
                     seat_count = 1
-                self.max_coupon_select = max(1, seat_count)
+                self.max_coupon_select = max(1, seat_count)  # 至少允许选择1张券
             else:
                 self.max_coupon_select = 1
 
@@ -4355,15 +3781,15 @@ class ModularCinemaMainWindow(QMainWindow):
                         coupon_list_widget = child
                         break
 
-            # 处理券列表显示
+            # 修复：使用 is not None 而不是 bool() 检查
             if coupon_list_widget is not None:
-                print(f"[优惠券] 券列表组件有效，类型: {type(coupon_list_widget)}")
+                print(f"[主窗口] 券列表组件有效，类型: {type(coupon_list_widget)}")
 
-                # 设置券列表为多选模式
+                # 🆕 设置券列表为多选模式
                 from PyQt5.QtWidgets import QAbstractItemView
                 coupon_list_widget.setSelectionMode(QAbstractItemView.MultiSelection)
 
-                # 连接券选择事件
+                # 🆕 连接券选择事件
                 if hasattr(coupon_list_widget, 'itemSelectionChanged'):
                     # 先断开可能存在的连接，避免重复连接
                     try:
@@ -4371,8 +3797,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     except:
                         pass
                     # 连接新的事件处理器
-                    if hasattr(self, '_on_coupon_selection_changed'):
-                        coupon_list_widget.itemSelectionChanged.connect(self._on_coupon_selection_changed)
+                    coupon_list_widget.itemSelectionChanged.connect(self._on_coupon_selection_changed)
 
                 # 清空现有券列表
                 coupon_list_widget.clear()
@@ -4384,15 +3809,22 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 # 显示券列表
                 for i, coupon in enumerate(coupons):
-                    # 确保coupon是字典类型
+                    # 🔧 修复：确保coupon是字典类型
                     if not isinstance(coupon, dict):
-                        print(f"[优惠券] 跳过无效券数据: {coupon}")
+                        print(f"[主窗口] 跳过无效券数据: {coupon}")
                         continue
 
-                    # 解析券信息
+                    # 解析券信息 - 使用真实API的字段名称
+                    # 券名称：尝试多个字段
                     coupon_name = coupon.get('couponname') or coupon.get('voucherName') or DataUtils.safe_get(coupon, 'name', f'券{i+1}')
+
+                    # 有效期：尝试多个字段
                     expire_date = coupon.get('expireddate') or coupon.get('expiredDate') or DataUtils.safe_get(coupon, 'expireDate', '未知')
+
+                    # 券号：尝试多个字段
                     coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or DataUtils.safe_get(coupon, 'code', f'券号{i+1}')
+
+                    # 券类型：如果没有单独的类型字段，从券名称中推断
                     coupon_type = coupon.get('voucherType') or coupon.get('coupontype') or '优惠券'
 
                     # 如果券类型为空或者是数字，尝试从券名称推断
@@ -4410,20 +3842,22 @@ class ModularCinemaMainWindow(QMainWindow):
                     display_text = f"{coupon_type} | 有效期至 {expire_date} | 券号 {coupon_code}"
                     coupon_list_widget.addItem(display_text)
 
-                print(f"[优惠券] 券列表显示完成，共 {len(coupons)} 张券")
+                print(f"[主窗口] 券列表显示完成，共 {len(coupons)} 张券")
             else:
-                print("[优惠券] 未找到券列表组件")
+                # 不要递归调用，避免无限循环
+                # 可以在这里记录日志或者显示提示信息
+                print(f"[主窗口] 券列表显示被跳过，共 {len(coupons)} 张券未显示")
 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            print(f"[优惠券] 显示券列表异常: {e}")
+            print(f"[主窗口] 显示券列表异常: {e}")
+            # 尝试显示错误信息
+            self._show_coupon_error_message("券列表显示异常")
 
     def _on_coupon_selection_changed(self):
-        """券选择事件处理器 - 修复券信息获取和显示"""
+        """券选择事件处理器 - 🔧 修复空值处理错误"""
         try:
-            print(f"[券选择事件] 券选择事件被触发")
-
             # 获取券列表组件
             coupon_list_widget = None
             if hasattr(self, 'coupon_list'):
@@ -4432,17 +3866,17 @@ class ModularCinemaMainWindow(QMainWindow):
                 coupon_list_widget = self.tab_manager_widget.coupon_list
 
             if not coupon_list_widget:
-                print("[券选择事件] 找不到券列表组件")
+                print("[主窗口] 券选择事件：找不到券列表组件")
                 return
 
-            # 检查券数据是否存在
+            # 🔧 修复：检查券数据是否存在
             if not hasattr(self, 'coupons_data') or self.coupons_data is None:
-                print("[券选择事件] 券数据不存在")
+                print("[主窗口] 券选择事件：券数据不存在")
                 return
 
-            # 确保券数据是列表类型
+            # 🔧 修复：确保券数据是列表类型
             if not isinstance(self.coupons_data, list):
-                print(f"[券选择事件] 券数据类型错误: {type(self.coupons_data)}")
+                print(f"[主窗口] 券选择事件：券数据类型错误: {type(self.coupons_data)}")
                 return
 
             # 获取选中的券项目索引
@@ -4457,9 +3891,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     if row >= 0:
                         selected_indices.append(row)
 
-            print(f"[券选择事件] 选中券索引: {selected_indices}")
-
-            # 检查max_coupon_select属性
+            # 🔧 修复：检查max_coupon_select属性
             if not hasattr(self, 'max_coupon_select') or self.max_coupon_select is None:
                 self.max_coupon_select = 1
 
@@ -4482,45 +3914,59 @@ class ModularCinemaMainWindow(QMainWindow):
                 if 0 <= index < len(self.coupons_data):
                     coupon = self.coupons_data[index]
 
-                    # 确保coupon是字典类型
+                    # 🔧 修复：确保coupon是字典类型
                     if not isinstance(coupon, dict):
-                        print(f"[券选择事件] 跳过无效券数据: {coupon}")
+                        print(f"[主窗口] 券选择事件：跳过无效券数据: {coupon}")
                         continue
 
                     coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or DataUtils.safe_get(coupon, 'code', '')
                     if coupon_code:
                         selected_codes.append(coupon_code)
 
-            print(f"[券选择事件] 选中券号: {selected_codes}")
 
             # 验证必要参数
             if not self.current_order or not self.current_account:
-                print(f"[券选择事件] 缺少必要参数 - 订单: {bool(self.current_order)}, 账号: {bool(self.current_account)}")
                 return
 
             # 获取订单和账号信息
             order_id = self.current_order.get('orderno') or DataUtils.safe_get(self.current_order, 'order_id', '')
             account = self.current_account
 
-            # 获取影院信息
+            # 获取影院信息 - 🆕 修复影院信息获取逻辑
             cinema_data = None
-            if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'current_cinema_data'):
+
+            # 方法1: 从Tab管理器获取当前选中的影院
+            if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'cinema_combo'):
+                cinema_name = self.tab_manager_widget.cinema_combo.currentText()
+                if cinema_name and cinema_name not in ["加载中...", "请选择影院"]:
+                    cinema_data = self._get_cinema_info_by_name(cinema_name)
+
+            # 方法2: 从Tab管理器的current_cinema_data属性获取
+            if not cinema_data and hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'current_cinema_data'):
                 cinema_data = self.tab_manager_widget.current_cinema_data
 
             if not cinema_data:
-                print(f"[券选择事件] 缺少影院信息")
+                if hasattr(self, 'tab_manager_widget'):
+                    if hasattr(self.tab_manager_widget, 'cinema_combo'):
+                        current_text = self.tab_manager_widget.cinema_combo.currentText()
+                    else:
+                        pass
+                    if hasattr(self.tab_manager_widget, 'current_cinema_data'):
+                        pass
+                    else:
+                        pass
+                else:
+                    pass
                 return
 
             cinema_id = DataUtils.safe_get(cinema_data, 'cinemaid', '')
-            print(f"[券选择事件] 影院ID: {cinema_id}")
 
-            # 处理券选择
+            # 🆕 实时请求券抵扣信息
             if selected_codes and selected_codes[0]:  # 确保券号不为空
                 try:
                     couponcode = ','.join(selected_codes)
-                    print(f"[券选择事件] 开始验证券: {couponcode}")
 
-                    # 构建API参数
+                    # 构建API参数 - 完全按照原版格式
                     prepay_params = {
                         'orderno': order_id,
                         'couponcode': couponcode,
@@ -4535,32 +3981,31 @@ class ModularCinemaMainWindow(QMainWindow):
                         'source': '2'
                     }
 
+
                     # 调用券价格查询API
-                    from services.order_api import get_coupon_prepay_info
                     coupon_info = get_coupon_prepay_info(prepay_params)
 
                     if coupon_info.get('resultCode') == '0':
-                        # 保存券价格信息
+                        # 🆕 保存券价格信息
                         self.current_coupon_info = coupon_info
                         self.selected_coupons = selected_codes
-                        print(f"[券选择事件] 券验证成功，券数: {len(selected_codes)}")
+                        print(f"[券选择] 券数: {len(selected_codes)}/{self.max_coupon_select}")
 
-                        # 刷新订单详情显示，包含券抵扣信息
+                        # 🆕 刷新订单详情显示，包含券抵扣信息
                         self._update_order_detail_with_coupon_info()
 
                     else:
+                        pass
                         # 查询失败，清空选择
                         self.current_coupon_info = None
                         self.selected_coupons = []
                         error_desc = DataUtils.safe_get(coupon_info, 'resultDesc', '未知错误')
-                        print(f"[券选择事件] 券验证失败: {error_desc}")
-
-                        from services.ui_utils import MessageManager
                         MessageManager.show_warning(self, "选券失败", error_desc)
 
                         # 取消选择
                         for item in selected_items:
                             item.setSelected(False)
+
 
                 except Exception as e:
                     import traceback
@@ -4568,180 +4013,400 @@ class ModularCinemaMainWindow(QMainWindow):
 
                     self.current_coupon_info = None
                     self.selected_coupons = []
-                    print(f"[券选择事件] 券验证异常: {e}")
-
-                    from services.ui_utils import MessageManager
                     MessageManager.show_error(self, "选券异常", f"查询券价格信息失败: {e}")
 
                     # 取消选择
                     for item in selected_items:
                         item.setSelected(False)
             else:
+                pass
                 # 券号为空，清空券信息
-                print(f"[券选择事件] 清空券选择")
                 self.current_coupon_info = None
                 self.selected_coupons = []
 
-                # 刷新订单详情显示，移除券抵扣信息
+                # 🆕 刷新订单详情显示，移除券抵扣信息
                 self._update_order_detail_with_coupon_info()
 
         except Exception as e:
             import traceback
             traceback.print_exc()
-            print(f"[券选择事件] 券选择事件处理异常: {e}")
 
-    def _validate_order_data(self):
-        """验证订单数据"""
-        if not self.current_order:
-            QMessageBox.warning(self, "错误", "请先选择座位")
-            return False
-        
-        if not self.current_account:
-            QMessageBox.warning(self, "错误", "请先登录")
-            return False
-        
-        seats = DataUtils.safe_get(self.current_order, 'seats', [])
-        if not seats:
-            QMessageBox.warning(self, "错误", "请选择座位")
-            return False
-        
-        return True
-    
-    def _build_order_params(self):
-        """构建订单参数 - 修复后的版本"""
+    def _update_order_detail_with_coupon_info(self):
+        """🆕 更新订单详情显示，包含券抵扣信息 - 修复空行问题"""
         try:
-            cinema_data = self._get_current_cinema_data()
-            if not cinema_data:
-                QMessageBox.warning(self, "错误", "影院信息获取失败")
-                return None
-
-            # 确保current_order存在且包含必要信息
             if not self.current_order:
-                print("[订单参数] current_order为空")
-                return None
+                return
 
-            # 获取座位信息
-            seats = DataUtils.safe_get(self.current_order, 'seats', [])
-            if isinstance(seats, list) and len(seats) > 0:
-                # 检查seats是字符串列表还是对象列表
-                if isinstance(seats[0], str):
-                    # 如果是字符串列表（如["6排9座", "6排10座"]），提取座位号
-                    seat_ids = []
-                    for seat_str in seats:
-                        # 从"6排9座"中提取"9"
-                        import re
-                        match = re.search(r'(\d+)排(\d+)座', seat_str)
-                        if match:
-                            seat_ids.append(match.group(2))  # 提取座位号
-                        else:
-                            seat_ids.append(seat_str)  # 如果格式不匹配，直接使用
-                else:
-                    # 如果是对象列表，提取id字段
-                    seat_ids = [str(seat.get('id', '')) for seat in seats]
+            # 调试输出：打印券抵扣更新的订单数据
+            print(f"[调试-券抵扣更新] 开始更新订单详情")
+            print(f"[调试-券抵扣更新] current_order类型: {type(self.current_order)}")
+            print(f"[调试-券抵扣更新] current_order内容: {self.current_order}")
+            print(f"[调试-券抵扣更新] current_coupon_info: {getattr(self, 'current_coupon_info', None)}")
+
+            # 获取基础订单信息
+            order_detail = self.current_order
+
+            # 构建格式化的订单详情 - 使用列表收集信息，避免多余空行
+            info_lines = []
+
+            # 订单号
+            order_id = DataUtils.safe_get(order_detail, 'orderno', order_detail.get('order_id', 'N/A'))
+            info_lines.append(f"订单号: {order_id}")
+
+            # 影片信息
+            movie = DataUtils.safe_get(order_detail, 'movie', order_detail.get('film_name', 'N/A'))
+            info_lines.append(f"影片: {movie}")
+
+            # 时间信息
+            show_time = DataUtils.safe_get(order_detail, 'showTime', '')
+            if not show_time:
+                date = DataUtils.safe_get(order_detail, 'date', '')
+                session = DataUtils.safe_get(order_detail, 'session', '')
+                if date and session:
+                    show_time = f"{date} {session}"
+            info_lines.append(f"时间: {show_time}")
+
+            # 影厅信息
+            cinema = DataUtils.safe_get(order_detail, 'cinema', order_detail.get('cinema_name', 'N/A'))
+            hall = DataUtils.safe_get(order_detail, 'hall_name', '')
+            if hall:
+                info_lines.append(f"影厅: {hall}")
             else:
-                print("[订单参数] 座位信息为空")
-                return None
+                info_lines.append(f"影院: {cinema}")
 
-            # 构建订单参数
-            order_params = {
-                'userid': DataUtils.safe_get(self.current_account, 'userid', ''),
-                'cinemaid': DataUtils.safe_get(cinema_data, 'cinemaid', '') or DataUtils.safe_get(self.current_order, 'cinemaid', ''),
-                'CVersion': '3.9.12',
-                'OS': 'Windows',
-                'token': DataUtils.safe_get(self.current_account, 'token', ''),
-                'openid': DataUtils.safe_get(self.current_account, 'openid', ''),
-                'movieid': DataUtils.safe_get(self.current_order, 'movieid', ''),
-                'showid': DataUtils.safe_get(self.current_order, 'showid', ''),
-                'seatids': ','.join(seat_ids),
-                'totalprice': DataUtils.safe_get(self.current_order, 'totalprice', 0)
+            # 座位信息
+            seats = DataUtils.safe_get(order_detail, 'seats', [])
+            if isinstance(seats, list) and seats:
+                if len(seats) == 1:
+                    info_lines.append(f"座位: {seats[0]}")
+                else:
+                    seat_str = " ".join(seats)
+                    info_lines.append(f"座位: {seat_str}")
+            else:
+                info_lines.append(f"座位: {seats}")
+
+            # 🆕 票价和券抵扣信息
+            original_amount = DataUtils.safe_get(order_detail, 'amount', 0)
+            seat_count = DataUtils.safe_get(order_detail, 'seat_count', len(seats) if isinstance(seats, list) else 1)
+
+            # 显示原价
+            if seat_count > 1:
+                unit_price = original_amount / seat_count if seat_count > 0 else original_amount
+                info_lines.append(f"原价: {seat_count}张×¥{unit_price:.2f} = ¥{original_amount:.2f}")
+            else:
+                info_lines.append(f"原价: ¥{original_amount:.2f}")
+
+            # 🆕 券抵扣信息
+            if self.current_coupon_info and self.selected_coupons:
+                coupon_data = DataUtils.safe_get(self.current_coupon_info, 'resultData', {})
+
+                # 获取券抵扣金额（分）
+                discount_price_fen = int(DataUtils.safe_get(coupon_data, 'discountprice', '0'))
+                discount_price_yuan = discount_price_fen / 100.0
+
+                # 获取实付金额（分）
+                pay_amount_fen = int(DataUtils.safe_get(coupon_data, 'paymentAmount', '0'))
+
+                # 检查会员支付金额
+                has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
+                if has_member_card:
+                    mem_payment_fen = int(DataUtils.safe_get(coupon_data, 'mempaymentAmount', '0'))
+                    if mem_payment_fen != 0:
+                        pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
+
+                pay_amount_yuan = pay_amount_fen / 100.0
+
+                # 显示券信息
+                coupon_count = len(self.selected_coupons)
+                info_lines.append(f"使用券: {coupon_count}张")
+                info_lines.append(f"券抵扣: -¥{discount_price_yuan:.2f}")
+
+                # 显示实付金额
+                if pay_amount_yuan == 0:
+                    info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
+                else:
+                    final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
+                    if has_member_card and mem_payment_fen != 0:
+                        final_amount += " (会员价)"
+                    info_lines.append(final_amount)
+
+            else:
+                # 无券抵扣，显示原价
+                # 检查会员价格
+                has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
+                if has_member_card:
+                    mem_total_price = DataUtils.safe_get(order_detail, 'mem_totalprice', 0)
+                    if mem_total_price > 0:
+                        info_lines.append(f"实付金额: ¥{mem_total_price/100.0:.2f} (会员价)")
+                    else:
+                        info_lines.append(f"实付金额: ¥{original_amount:.2f}")
+                else:
+                    info_lines.append(f"实付金额: ¥{original_amount:.2f}")
+
+            # 状态信息
+            status = DataUtils.safe_get(order_detail, 'status', '待支付')
+            info_lines.append(f"状态: {status}")
+
+            # 🆕 密码策略信息 - 修复显示逻辑
+            enable_mempassword = None
+
+            # 方法1: 从api_data获取
+            api_data = DataUtils.safe_get(order_detail, 'api_data', {})
+            if api_data and isinstance(api_data, dict):
+                enable_mempassword = api_data.get('enable_mempassword')
+
+            # 方法2: 直接从order_detail获取（如果api_data就是订单详情）
+            if enable_mempassword is None:
+                enable_mempassword = order_detail.get('enable_mempassword')
+
+            # 显示密码策略
+            if enable_mempassword == '1':
+                info_lines.append("密码: 需要输入")
+            elif enable_mempassword == '0':
+                info_lines.append("密码: 无需输入")
+            else:
+                # 如果没有获取到策略，尝试从实例状态获取
+                if hasattr(self, 'member_password_policy') and self.member_password_policy:
+                    requires_password = DataUtils.safe_get(self.member_password_policy, 'requires_password', True)
+                    info_lines.append(f"密码: {'需要输入' if requires_password else '无需输入'}")
+                else:
+                    info_lines.append("密码: 检测中...")
+
+            # 🔧 修复：使用单个换行符连接，确保紧凑显示
+            details = "\n".join(info_lines)
+
+            # 设置文本内容
+            if hasattr(self, 'order_detail_text'):
+                self.order_detail_text.setPlainText(details)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+
+    def _create_coupon_list_area(self):
+        """创建券列表显示区域"""
+        try:
+            from PyQt5.QtWidgets import QScrollArea, QVBoxLayout, QWidget, QLabel
+            from PyQt5.QtCore import Qt
+
+            # 创建券列表滚动区域
+            self.coupon_scroll_area = QScrollArea()
+            self.coupon_scroll_area.setWidgetResizable(True)
+            self.coupon_scroll_area.setMaximumHeight(200)  # 限制高度
+
+            # 创建券列表容器
+            self.coupon_list_widget = QWidget()
+            self.coupon_list_layout = QVBoxLayout(self.coupon_list_widget)
+            self.coupon_list_layout.setContentsMargins(5, 5, 5, 5)
+            self.coupon_list_layout.setSpacing(2)
+
+            # 设置样式
+            self.coupon_scroll_area.setStyleSheet("""
+                QScrollArea {
+                    border: 1px solid #cccccc;
+                    border-radius: 3px;
+                    background-color: #ffffff;
+                }
+            """)
+
+            self.coupon_scroll_area.setWidget(self.coupon_list_widget)
+
+            # 添加到主布局（在订单详情下方）
+            # 尝试多种方式找到合适的布局
+            target_layout = None
+
+            if hasattr(self, 'right_layout'):
+                target_layout = self.right_layout
+            elif hasattr(self, 'main_layout'):
+                target_layout = self.main_layout
+            elif hasattr(self, 'layout'):
+                target_layout = self.layout()
+
+            if target_layout:
+                # 添加券列表标题
+                coupon_title = QLabel("可用券列表:")
+                coupon_title.setStyleSheet("font: bold 12px 'Microsoft YaHei'; color: #333333; margin-top: 10px;")
+                target_layout.addWidget(coupon_title)
+
+                # 添加券列表区域
+                target_layout.addWidget(self.coupon_scroll_area)
+                self.coupon_list_area = self.coupon_scroll_area
+
+            else:
+                pass
+                # 创建独立的券列表窗口
+                self.coupon_list_area = self.coupon_scroll_area
+                self.coupon_scroll_area.setWindowTitle("可用券列表")
+                self.coupon_scroll_area.resize(400, 300)
+                self.coupon_scroll_area.show()
+
+        except Exception as e:
+            pass
+
+    def _clear_coupon_list(self):
+        """清空券列表"""
+        try:
+            if hasattr(self, 'coupon_list_layout'):
+                # 清空所有券项目
+                while self.coupon_list_layout.count():
+                    child = self.coupon_list_layout.takeAt(0)
+                    if child.widget():
+                        child.widget().deleteLater()
+
+        except Exception as e:
+            pass
+
+    def _add_coupon_item(self, coupon_type: str, coupon_name: str, expire_date: str, coupon_code: str):
+        """添加券项目"""
+        try:
+            from PyQt5.QtWidgets import QLabel, QHBoxLayout, QWidget
+            from PyQt5.QtCore import Qt
+
+            # 创建券项目容器
+            coupon_item = QWidget()
+            coupon_layout = QHBoxLayout(coupon_item)
+            coupon_layout.setContentsMargins(5, 3, 5, 3)
+            coupon_layout.setSpacing(5)
+
+            # 券类型标签
+            type_label = QLabel(coupon_type)
+            type_label.setFixedWidth(50)
+            type_label.setStyleSheet("font: 10px 'Microsoft YaHei'; color: #666666;")
+
+            # 券信息标签
+            info_text = f"{coupon_name} 有效期至 {expire_date} | 券号 {coupon_code}"
+            info_label = QLabel(info_text)
+            info_label.setStyleSheet("font: 10px 'Microsoft YaHei'; color: #333333;")
+
+            # 添加到布局
+            coupon_layout.addWidget(type_label)
+            coupon_layout.addWidget(info_label)
+            coupon_layout.addStretch()
+
+            # 设置项目样式
+            coupon_item.setStyleSheet("""
+                QWidget {
+                    background-color: #f9f9f9;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 3px;
+                }
+                QWidget:hover {
+                    background-color: #f0f0f0;
+                }
+            """)
+
+            # 添加到券列表
+            if hasattr(self, 'coupon_list_layout'):
+                self.coupon_list_layout.addWidget(coupon_item)
+
+        except Exception as e:
+            pass
+
+    def detect_member_password_policy(self, order_detail: dict) -> bool:
+        """🆕 检测会员卡密码策略"""
+        try:
+            if not order_detail:
+                print("[密码策略] 订单详情为空，默认需要密码")
+                return True
+
+            # 从订单详情中获取密码策略字段
+            enable_mempassword = DataUtils.safe_get(order_detail, 'enable_mempassword', '1')
+
+            print(f"[密码策略] enable_mempassword: {enable_mempassword}")
+
+            # 更新实例状态
+            self.member_password_required = (enable_mempassword == '1')
+            self.member_password_policy = {
+                'enable_mempassword': enable_mempassword,
+                'mem_pay_only': DataUtils.safe_get(order_detail, 'memPayONLY', '0'),
+                'requires_password': self.member_password_required,
+                'source': 'order_detail_api'
             }
 
-            print(f"[订单参数] 构建完成:")
-            print(f"  - 影院ID: {order_params.get('cinemaid')}")
-            print(f"  - 电影ID: {order_params.get('movieid')}")
-            print(f"  - 场次ID: {order_params.get('showid')}")
-            print(f"  - 座位IDs: {order_params.get('seatids')}")
-            print(f"  - 总价: {order_params.get('totalprice')}")
+            if self.member_password_required:
+                print("[密码策略] ✅ 该影院需要会员卡密码")
+            else:
+                print("[密码策略] ❌ 该影院不需要会员卡密码")
 
-            return order_params
+            return self.member_password_required
 
         except Exception as e:
-            print(f"构建订单参数失败: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"[密码策略] 检测失败: {e}")
+            # 默认需要密码，确保安全
+            self.member_password_required = True
+            return True
+
+    def get_member_password_input(self) -> str:
+        """🆕 获取会员卡密码输入"""
+        try:
+            from PyQt5.QtWidgets import QInputDialog, QLineEdit
+
+            # 构建提示信息
+            policy_desc = "需要会员卡密码验证"
+            if hasattr(self, 'member_password_policy') and self.member_password_policy:
+                policy_desc = f"该影院{policy_desc}"
+
+            # 显示密码输入对话框
+            password, ok = QInputDialog.getText(
+                self,
+                "会员卡密码",
+                f"{policy_desc}\n请输入会员卡密码:",
+                QLineEdit.Password
+            )
+
+            if ok and password:
+                self.member_card_password = password
+                return password
+            else:
+                return None
+
+        except Exception as e:
+            print(f"[密码输入] 获取密码失败: {e}")
             return None
-    
-    def _submit_order_to_api(self, order_params):
-        """提交订单到API - 使用真实API调用"""
+
+    def validate_member_password_policy(self, order_id: str) -> dict:
+        """🆕 验证会员卡密码策略 - 使用修复后的智能降级逻辑"""
         try:
-            # 使用统一API客户端或现有的订单API
-            if hasattr(self, 'api_client'):
-                # 使用统一API客户端
-                result = self.api_client.create_order(order_params)
-            else:
-                # 使用现有的订单API
-                from services.order_api import create_order
-                result = create_order(order_params)
+            print(f"[支付-密码策略] 开始验证订单密码策略，订单号: {order_id}")
 
-            print(f"[API调用] 订单提交结果: {result}")
+            # 🆕 使用已修复的密码策略获取方法
+            policy_result = self.get_password_policy_from_order(order_id)
 
-            # 检查API响应
-            if result and result.get('resultCode') == '0':
-                print(f"[API调用] 订单提交成功")
-                return True
+            if policy_result.get('success'):
+                print(f"[支付-密码策略] ✅ 策略获取成功: {policy_result.get('description')}")
+                return {
+                    'success': True,
+                    'requires_password': DataUtils.safe_get(policy_result, 'requires_password', False),
+                    'policy': policy_result,
+                    'order_data': {}
+                }
             else:
-                error_msg = result.get('resultDesc', '未知错误') if result else '网络错误'
-                print(f"[API调用] 订单提交失败: {error_msg}")
-                return False
+                # 🆕 智能降级 - 不再返回错误，而是使用智能默认策略
+                print(f"[支付-密码策略] ⚠️ 策略获取失败，使用智能降级")
+                smart_policy = self._get_smart_default_password_policy()
+                print(f"[支付-密码策略] ✅ 智能降级成功: {smart_policy.get('description')}")
+
+                return {
+                    'success': True,
+                    'requires_password': DataUtils.safe_get(smart_policy, 'requires_password', False),
+                    'policy': smart_policy,
+                    'order_data': {}
+                }
 
         except Exception as e:
-            print(f"[API调用] 异常: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-    
-    def _handle_order_success(self):
-        """处理订单成功 - 应用设计模式"""
-        try:
-            # 显示成功消息
-            from services.ui_utils import MessageManager
-            MessageManager.show_success(self, "订单提交成功", "订单已成功提交，请及时支付", auto_close=True)
+            print(f"[支付-密码策略] ❌ 验证异常: {e}")
+            # 🆕 异常时也使用智能降级，确保支付流程不中断
+            smart_policy = self._get_smart_default_password_policy()
+            print(f"[支付-密码策略] ✅ 异常降级成功: {smart_policy.get('description')}")
 
-            # 应用观察者模式 - 通知订单状态变化
-            if hasattr(self, 'order_subject') and self.current_order:
-                from patterns.order_observer import OrderStatus
-                order_id = self.current_order.get('order_id', self.current_order.get('orderno', ''))
-                self.order_subject.update_order_status(order_id, OrderStatus.PAID, self.current_order)
+            return {
+                'success': True,
+                'requires_password': DataUtils.safe_get(smart_policy, 'requires_password', False),
+                'policy': smart_policy,
+                'order_data': {}
+            }
 
-            # 显示订单详情（不清理订单数据，用户可能需要支付）
-            if self.current_order:
-                self._show_order_detail(self.current_order)
 
-            # 刷新UI
-            self.update_ui_after_order()
-
-            print("[订单成功] 订单提交成功处理完成")
-
-        except Exception as e:
-            print(f"[订单成功] 处理异常: {e}")
-            # 即使处理过程中有异常，也要显示基本的成功消息
-            QMessageBox.information(self, "成功", "订单提交成功")
-    
-    def _handle_order_failure(self):
-        """处理订单失败"""
-        QMessageBox.warning(self, "失败", "订单提交失败，请重试")
-    
-    def _handle_order_exception(self, exception):
-        """处理订单异常"""
-        error_msg = f"订单处理异常: {str(exception)}"
-        print(error_msg)
-        QMessageBox.critical(self, "错误", "系统异常，请稍后重试")
-    
-    def update_ui_after_order(self):
-        """订单后更新UI"""
-        # 返回到影院选择或其他合适的界面
-        if hasattr(self, 'show_cinema_selection'):
-            self.show_cinema_selection()
 def main():
     """启动模块化应用程序"""
     app = QApplication(sys.argv)
