@@ -12,7 +12,6 @@ from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QApplication, QMessageBox, QPushButton
 )
 from ui.ui_component_factory import UIComponentFactory
-from utils.data_utils import DataUtils
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
 
 # 导入插件系统
@@ -3577,7 +3576,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     "sectionId": "11111",
                     "ls": "",
                     "rowIndex": seat.get('r', 1) - 1,  # 行索引从0开始
-                    "colIndex": DataUtils.safe_get(seat, 'c', 1) - 1,  # 列索引从0开始
+                    "colIndex": seat.get('c', 1) - 1,  # 列索引从0开始
                     "index": i + 1
                 }
                 seat_info_list.append(seat_info)
@@ -3589,22 +3588,22 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 基础参数
                 'groupid': '',
                 'cardno': 'undefined',  # 真实API使用undefined
-                'userid': DataUtils.safe_get(self.current_account, 'userid', ''),
-                'cinemaid': DataUtils.safe_get(cinema_data, 'cinemaid', ''),
+                'userid': self.current_account.get('userid', ''),
+                'cinemaid': cinema_data.get('cinemaid', ''),
                 'CVersion': '3.9.12',
                 'OS': 'Windows',
-                'token': DataUtils.safe_get(self.current_account, 'token', ''),
-                'openid': DataUtils.safe_get(self.current_account, 'openid', ''),
+                'token': self.current_account.get('token', ''),
+                'openid': self.current_account.get('openid', ''),
                 'source': '2',
 
                 # 订单相关参数
                 'oldOrderNo': '',
-                'showTime': f"{DataUtils.safe_get(session_data, 'show_date', '')} {DataUtils.safe_get(session_data, 'q', '')}",  # 真实格式
+                'showTime': f"{session_data.get('show_date', '')} {session_data.get('q', '')}",  # 真实格式
                 'eventCode': '',
-                'hallCode': DataUtils.safe_get(session_data, 'j', ''),
-                'showCode': DataUtils.safe_get(session_data, 'g', ''),
+                'hallCode': session_data.get('j', ''),
+                'showCode': session_data.get('g', ''),
                 'filmCode': 'null',  # 真实API使用null字符串
-                'filmNo': DataUtils.safe_get(session_data, 'h', ''),  # 使用h字段作为filmNo
+                'filmNo': session_data.get('h', ''),  # 使用h字段作为filmNo
                 'recvpPhone': 'undefined',
 
                 # 座位信息 - 使用真实API格式
@@ -3640,14 +3639,14 @@ class ModularCinemaMainWindow(QMainWindow):
             coupon_params = {
                 'orderno': order_id,
                 'cinemaid': cinema_id,
-                'userid': DataUtils.safe_get(self.current_account, 'userid', ''),
-                'openid': DataUtils.safe_get(self.current_account, 'openid', ''),
-                'token': DataUtils.safe_get(self.current_account, 'token', ''),
+                'userid': self.current_account.get('userid', ''),
+                'openid': self.current_account.get('openid', ''),
+                'token': self.current_account.get('token', ''),
                 'CVersion': '3.9.12',
                 'OS': 'Windows',
                 'source': '2',
                 'groupid': '',
-                'cardno': DataUtils.safe_get(self.current_account, 'cardno', '')
+                'cardno': self.current_account.get('cardno', '')
             }
 
             print(f"[主窗口] 开始获取券列表，订单号: {order_id}")
@@ -3686,7 +3685,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     return
 
                 # 获取券列表
-                coupons = DataUtils.safe_get(result_data, 'vouchers', [])
+                coupons = result_data.get('vouchers', [])
 
                 # 🔧 修复：确保coupons是列表类型
                 if not isinstance(coupons, list):
@@ -3700,7 +3699,7 @@ class ModularCinemaMainWindow(QMainWindow):
 
             else:
                 # API返回错误
-                error_desc = DataUtils.safe_get(coupon_result, 'resultDesc', '未知错误')
+                error_desc = coupon_result.get('resultDesc', '未知错误')
                 print(f"[主窗口] 券列表API返回错误: {error_desc}")
                 self._show_coupon_error_message(f"获取券列表失败: {error_desc}")
 
@@ -3751,7 +3750,7 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 🆕 根据当前订单的座位数设置券选择数量限制
             if self.current_order and isinstance(self.current_order, dict):
-                seats = DataUtils.safe_get(self.current_order, 'seats', [])
+                seats = self.current_order.get('seats', [])
                 if isinstance(seats, list):
                     seat_count = len(seats)
                 else:
@@ -3816,13 +3815,13 @@ class ModularCinemaMainWindow(QMainWindow):
 
                     # 解析券信息 - 使用真实API的字段名称
                     # 券名称：尝试多个字段
-                    coupon_name = coupon.get('couponname') or coupon.get('voucherName') or DataUtils.safe_get(coupon, 'name', f'券{i+1}')
+                    coupon_name = coupon.get('couponname') or coupon.get('voucherName') or coupon.get('name', f'券{i+1}')
 
                     # 有效期：尝试多个字段
-                    expire_date = coupon.get('expireddate') or coupon.get('expiredDate') or DataUtils.safe_get(coupon, 'expireDate', '未知')
+                    expire_date = coupon.get('expireddate') or coupon.get('expiredDate') or coupon.get('expireDate', '未知')
 
                     # 券号：尝试多个字段
-                    coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or DataUtils.safe_get(coupon, 'code', f'券号{i+1}')
+                    coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or coupon.get('code', f'券号{i+1}')
 
                     # 券类型：如果没有单独的类型字段，从券名称中推断
                     coupon_type = coupon.get('voucherType') or coupon.get('coupontype') or '优惠券'
@@ -3919,7 +3918,7 @@ class ModularCinemaMainWindow(QMainWindow):
                         print(f"[主窗口] 券选择事件：跳过无效券数据: {coupon}")
                         continue
 
-                    coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or DataUtils.safe_get(coupon, 'code', '')
+                    coupon_code = coupon.get('couponcode') or coupon.get('voucherCode') or coupon.get('code', '')
                     if coupon_code:
                         selected_codes.append(coupon_code)
 
@@ -3929,7 +3928,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 return
 
             # 获取订单和账号信息
-            order_id = self.current_order.get('orderno') or DataUtils.safe_get(self.current_order, 'order_id', '')
+            order_id = self.current_order.get('orderno') or self.current_order.get('order_id', '')
             account = self.current_account
 
             # 获取影院信息 - 🆕 修复影院信息获取逻辑
@@ -3959,7 +3958,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     pass
                 return
 
-            cinema_id = DataUtils.safe_get(cinema_data, 'cinemaid', '')
+            cinema_id = cinema_data.get('cinemaid', '')
 
             # 🆕 实时请求券抵扣信息
             if selected_codes and selected_codes[0]:  # 确保券号不为空
@@ -3972,7 +3971,7 @@ class ModularCinemaMainWindow(QMainWindow):
                         'couponcode': couponcode,
                         'groupid': '',
                         'cinemaid': cinema_id,
-                        'cardno': DataUtils.safe_get(account, 'cardno', ''),
+                        'cardno': account.get('cardno', ''),
                         'userid': account['userid'],
                         'openid': account['openid'],
                         'CVersion': '3.9.12',
@@ -3999,7 +3998,7 @@ class ModularCinemaMainWindow(QMainWindow):
                         # 查询失败，清空选择
                         self.current_coupon_info = None
                         self.selected_coupons = []
-                        error_desc = DataUtils.safe_get(coupon_info, 'resultDesc', '未知错误')
+                        error_desc = coupon_info.get('resultDesc', '未知错误')
                         MessageManager.show_warning(self, "选券失败", error_desc)
 
                         # 取消选择
@@ -4050,32 +4049,32 @@ class ModularCinemaMainWindow(QMainWindow):
             info_lines = []
 
             # 订单号
-            order_id = DataUtils.safe_get(order_detail, 'orderno', order_detail.get('order_id', 'N/A'))
+            order_id = order_detail.get('orderno', order_detail.get('order_id', 'N/A'))
             info_lines.append(f"订单号: {order_id}")
 
             # 影片信息
-            movie = DataUtils.safe_get(order_detail, 'movie', order_detail.get('film_name', 'N/A'))
+            movie = order_detail.get('movie', order_detail.get('film_name', 'N/A'))
             info_lines.append(f"影片: {movie}")
 
             # 时间信息
-            show_time = DataUtils.safe_get(order_detail, 'showTime', '')
+            show_time = order_detail.get('showTime', '')
             if not show_time:
-                date = DataUtils.safe_get(order_detail, 'date', '')
-                session = DataUtils.safe_get(order_detail, 'session', '')
+                date = order_detail.get('date', '')
+                session = order_detail.get('session', '')
                 if date and session:
                     show_time = f"{date} {session}"
             info_lines.append(f"时间: {show_time}")
 
             # 影厅信息
-            cinema = DataUtils.safe_get(order_detail, 'cinema', order_detail.get('cinema_name', 'N/A'))
-            hall = DataUtils.safe_get(order_detail, 'hall_name', '')
+            cinema = order_detail.get('cinema', order_detail.get('cinema_name', 'N/A'))
+            hall = order_detail.get('hall_name', '')
             if hall:
                 info_lines.append(f"影厅: {hall}")
             else:
                 info_lines.append(f"影院: {cinema}")
 
             # 座位信息
-            seats = DataUtils.safe_get(order_detail, 'seats', [])
+            seats = order_detail.get('seats', [])
             if isinstance(seats, list) and seats:
                 if len(seats) == 1:
                     info_lines.append(f"座位: {seats[0]}")
@@ -4086,8 +4085,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 info_lines.append(f"座位: {seats}")
 
             # 🆕 票价和券抵扣信息
-            original_amount = DataUtils.safe_get(order_detail, 'amount', 0)
-            seat_count = DataUtils.safe_get(order_detail, 'seat_count', len(seats) if isinstance(seats, list) else 1)
+            original_amount = order_detail.get('amount', 0)
+            seat_count = order_detail.get('seat_count', len(seats) if isinstance(seats, list) else 1)
 
             # 显示原价
             if seat_count > 1:
@@ -4098,19 +4097,19 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 🆕 券抵扣信息
             if self.current_coupon_info and self.selected_coupons:
-                coupon_data = DataUtils.safe_get(self.current_coupon_info, 'resultData', {})
+                coupon_data = self.current_coupon_info.get('resultData', {})
 
                 # 获取券抵扣金额（分）
-                discount_price_fen = int(DataUtils.safe_get(coupon_data, 'discountprice', '0'))
+                discount_price_fen = int(coupon_data.get('discountprice', '0'))
                 discount_price_yuan = discount_price_fen / 100.0
 
                 # 获取实付金额（分）
-                pay_amount_fen = int(DataUtils.safe_get(coupon_data, 'paymentAmount', '0'))
+                pay_amount_fen = int(coupon_data.get('paymentAmount', '0'))
 
                 # 检查会员支付金额
-                has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
+                has_member_card = self.member_info and self.member_info.get('has_member_card', False)
                 if has_member_card:
-                    mem_payment_fen = int(DataUtils.safe_get(coupon_data, 'mempaymentAmount', '0'))
+                    mem_payment_fen = int(coupon_data.get('mempaymentAmount', '0'))
                     if mem_payment_fen != 0:
                         pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
 
@@ -4133,9 +4132,9 @@ class ModularCinemaMainWindow(QMainWindow):
             else:
                 # 无券抵扣，显示原价
                 # 检查会员价格
-                has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
+                has_member_card = self.member_info and self.member_info.get('has_member_card', False)
                 if has_member_card:
-                    mem_total_price = DataUtils.safe_get(order_detail, 'mem_totalprice', 0)
+                    mem_total_price = order_detail.get('mem_totalprice', 0)
                     if mem_total_price > 0:
                         info_lines.append(f"实付金额: ¥{mem_total_price/100.0:.2f} (会员价)")
                     else:
@@ -4144,14 +4143,14 @@ class ModularCinemaMainWindow(QMainWindow):
                     info_lines.append(f"实付金额: ¥{original_amount:.2f}")
 
             # 状态信息
-            status = DataUtils.safe_get(order_detail, 'status', '待支付')
+            status = order_detail.get('status', '待支付')
             info_lines.append(f"状态: {status}")
 
             # 🆕 密码策略信息 - 修复显示逻辑
             enable_mempassword = None
 
             # 方法1: 从api_data获取
-            api_data = DataUtils.safe_get(order_detail, 'api_data', {})
+            api_data = order_detail.get('api_data', {})
             if api_data and isinstance(api_data, dict):
                 enable_mempassword = api_data.get('enable_mempassword')
 
@@ -4167,7 +4166,7 @@ class ModularCinemaMainWindow(QMainWindow):
             else:
                 # 如果没有获取到策略，尝试从实例状态获取
                 if hasattr(self, 'member_password_policy') and self.member_password_policy:
-                    requires_password = DataUtils.safe_get(self.member_password_policy, 'requires_password', True)
+                    requires_password = self.member_password_policy.get('requires_password', True)
                     info_lines.append(f"密码: {'需要输入' if requires_password else '无需输入'}")
                 else:
                     info_lines.append("密码: 检测中...")
@@ -4310,7 +4309,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 return True
 
             # 从订单详情中获取密码策略字段
-            enable_mempassword = DataUtils.safe_get(order_detail, 'enable_mempassword', '1')
+            enable_mempassword = order_detail.get('enable_mempassword', '1')
 
             print(f"[密码策略] enable_mempassword: {enable_mempassword}")
 
@@ -4318,7 +4317,7 @@ class ModularCinemaMainWindow(QMainWindow):
             self.member_password_required = (enable_mempassword == '1')
             self.member_password_policy = {
                 'enable_mempassword': enable_mempassword,
-                'mem_pay_only': DataUtils.safe_get(order_detail, 'memPayONLY', '0'),
+                'mem_pay_only': order_detail.get('memPayONLY', '0'),
                 'requires_password': self.member_password_required,
                 'source': 'order_detail_api'
             }
@@ -4376,7 +4375,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 print(f"[支付-密码策略] ✅ 策略获取成功: {policy_result.get('description')}")
                 return {
                     'success': True,
-                    'requires_password': DataUtils.safe_get(policy_result, 'requires_password', False),
+                    'requires_password': policy_result.get('requires_password', False),
                     'policy': policy_result,
                     'order_data': {}
                 }
@@ -4388,7 +4387,7 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 return {
                     'success': True,
-                    'requires_password': DataUtils.safe_get(smart_policy, 'requires_password', False),
+                    'requires_password': smart_policy.get('requires_password', False),
                     'policy': smart_policy,
                     'order_data': {}
                 }
@@ -4401,7 +4400,7 @@ class ModularCinemaMainWindow(QMainWindow):
 
             return {
                 'success': True,
-                'requires_password': DataUtils.safe_get(smart_policy, 'requires_password', False),
+                'requires_password': smart_policy.get('requires_password', False),
                 'policy': smart_policy,
                 'order_data': {}
             }
