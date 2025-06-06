@@ -11,7 +11,6 @@ from typing import Dict, List, Optional, Any
 from PyQt5.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QApplication, QMessageBox, QPushButton
 )
-from ui.ui_component_factory import UIComponentFactory
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
 
 # 导入插件系统
