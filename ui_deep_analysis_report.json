@@ -1,0 +1,231 @@
+{
+  "summary": {
+    "total_files_analyzed": 3,
+    "existing_files": 3
+  },
+  "file_analysis": {
+    "ui/components/auto_browser.py": {
+      "exists": true,
+      "classes": [
+        {
+          "name": "ParameterExtractor",
+          "line": 69,
+          "bases": []
+        },
+        {
+          "name": "AutoBrowserWidget",
+          "line": 158,
+          "bases": [
+            "QWidget"
+          ]
+        },
+        {
+          "name": "NetworkInterceptor",
+          "line": 39,
+          "bases": [
+            "QWebEngineUrlRequestInterceptor"
+          ]
+        },
+        {
+          "name": "NetworkInterceptor",
+          "line": 62,
+          "bases": []
+        }
+      ],
+      "functions": [],
+      "references": [
+        {
+          "file": "ui_component_deep_analyzer.py",
+          "pattern": "auto_browser",
+          "type": "reference"
+        },
+        {
+          "file": "ui\\components\\auto_browser.py",
+          "pattern": "ParameterExtractor",
+          "type": "reference"
+        },
+        {
+          "file": "ui\\dialogs\\auto_parameter_extractor.py",
+          "pattern": "auto_browser",
+          "type": "reference"
+        }
+      ],
+      "imports": [
+        {
+          "file": "ui_component_deep_analyzer.py",
+          "pattern": "auto_browser"
+        },
+        {
+          "file": "ui\\dialogs\\auto_parameter_extractor.py",
+          "pattern": "from ui.components.auto_browser import"
+        }
+      ],
+      "file_size": 18802,
+      "line_count": 479
+    },
+    "ui/dialogs/auto_parameter_extractor.py": {
+      "exists": true,
+      "classes": [
+        {
+          "name": "ParameterExtractorHelper",
+          "line": 31,
+          "bases": []
+        },
+        {
+          "name": "AutoParameterExtractor",
+          "line": 117,
+          "bases": [
+            "QDialog"
+          ]
+        }
+      ],
+      "functions": [],
+      "references": [
+        {
+          "file": "ui_component_deep_analyzer.py",
+          "pattern": "auto_parameter_extractor",
+          "type": "reference"
+        },
+        {
+          "file": "ui\\dialogs\\auto_parameter_extractor.py",
+          "pattern": "ParameterExtractorHelper",
+          "type": "reference"
+        },
+        {
+          "file": "ui\\widgets\\tab_manager_widget.py",
+          "pattern": "auto_parameter_extractor",
+          "type": "reference"
+        }
+      ],
+      "imports": [
+        {
+          "file": "ui_component_deep_analyzer.py",
+          "pattern": "auto_parameter_extractor"
+        },
+        {
+          "file": "ui\\widgets\\tab_manager_widget.py",
+          "pattern": "from ui.dialogs.auto_parameter_extractor import"
+        }
+      ],
+      "file_size": 49349,
+      "line_count": 1298
+    },
+    "ui/interfaces/plugin_interface.py": {
+      "exists": true,
+      "classes": [
+        {
+          "name": "IPluginInterface",
+          "line": 13,
+          "bases": []
+        },
+        {
+          "name": "IWidgetInterface",
+          "line": 41,
+          "bases": []
+        },
+        {
+          "name": "IServiceInterface",
+          "line": 57,
+          "bases": []
+        },
+        {
+          "name": "EventBus",
+          "line": 73,
+          "bases": [
+            "QObject"
+          ]
+        },
+        {
+          "name": "PluginManager",
+          "line": 118,
+          "bases": []
+        }
+      ],
+      "functions": [],
+      "references": [
+        {
+          "file": "main_modular.py",
+          "pattern": "plugin_interface",
+          "type": "reference"
+        },
+        {
+          "file": "ui_component_deep_analyzer.py",
+          "pattern": "plugin_interface",
+          "type": "reference"
+        },
+        {
+          "file": "ui\\interfaces\\plugin_interface.py",
+          "pattern": "IPluginInterface",
+          "type": "reference"
+        },
+        {
+          "file": "ui\\widgets\\account_widget.py",
+          "pattern": "plugin_interface",
+          "type": "reference"
+        },
+        {
+          "file": "ui\\widgets\\seat_order_widget.py",
+          "pattern": "plugin_interface",
+          "type": "reference"
+        },
+        {
+          "file": "ui\\widgets\\tab_manager_widget.py",
+          "pattern": "plugin_interface",
+          "type": "reference"
+        },
+        {
+          "file": "utils\\signals.py",
+          "pattern": "EventBus",
+          "type": "reference"
+        }
+      ],
+      "imports": [
+        {
+          "file": "main_modular.py",
+          "pattern": "from ui.interfaces.plugin_interface import"
+        },
+        {
+          "file": "ui_component_deep_analyzer.py",
+          "pattern": "plugin_interface"
+        },
+        {
+          "file": "ui\\widgets\\account_widget.py",
+          "pattern": "from ui.interfaces.plugin_interface import"
+        },
+        {
+          "file": "ui\\widgets\\seat_order_widget.py",
+          "pattern": "from ui.interfaces.plugin_interface import"
+        },
+        {
+          "file": "ui\\widgets\\tab_manager_widget.py",
+          "pattern": "from ui.interfaces.plugin_interface import"
+        }
+      ],
+      "file_size": 5638,
+      "line_count": 161
+    }
+  },
+  "cleanup_recommendations": [
+    {
+      "file": "ui/components/auto_browser.py",
+      "action": "keep_file",
+      "reason": "文件被多处引用，建议保留",
+      "risk_level": "high",
+      "estimated_lines_saved": 479
+    },
+    {
+      "file": "ui/dialogs/auto_parameter_extractor.py",
+      "action": "keep_file",
+      "reason": "文件被多处引用，建议保留",
+      "risk_level": "high",
+      "estimated_lines_saved": 1298
+    },
+    {
+      "file": "ui/interfaces/plugin_interface.py",
+      "action": "keep_file",
+      "reason": "文件被多处引用，建议保留",
+      "risk_level": "high",
+      "estimated_lines_saved": 161
+    }
+  ]
+}
