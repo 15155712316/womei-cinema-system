@@ -265,6 +265,27 @@ class ModularCinemaMainWindow(QMainWindow):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(10)
 
+        # 智能识别按钮
+        self.smart_recognition_btn = QPushButton("🤖 智能识别")
+        self.smart_recognition_btn.setFixedSize(100, 30)
+        self.smart_recognition_btn.setToolTip("从剪贴板智能识别订单信息并自动填充")
+        self.smart_recognition_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #9c27b0;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                font: 12px "Microsoft YaHei";
+            }
+            QPushButton:hover {
+                background-color: #7b1fa2;
+            }
+            QPushButton:pressed {
+                background-color: #4a148c;
+            }
+        """)
+        self.smart_recognition_btn.clicked.connect(self.show_smart_recognition)
+
         # 复制路径按钮
         self.copy_path_btn = QPushButton("复制路径")
         self.copy_path_btn.setFixedSize(80, 30)
@@ -306,6 +327,7 @@ class ModularCinemaMainWindow(QMainWindow):
         self.copy_image_btn.clicked.connect(self._on_copy_image)
 
         # 添加按钮到布局
+        button_layout.addWidget(self.smart_recognition_btn)
         button_layout.addWidget(self.copy_path_btn)
         button_layout.addWidget(self.copy_image_btn)
         button_layout.addStretch()  # 左对齐
@@ -456,6 +478,187 @@ class ModularCinemaMainWindow(QMainWindow):
                 clipboard.setPixmap(pixmap)
         except Exception as e:
             pass
+
+    def show_smart_recognition(self):
+        """显示智能识别对话框"""
+        try:
+            print("[智能识别] 🤖 启动智能识别功能")
+
+            # 导入智能识别模块
+            from services.smart_recognition import SmartOrderRecognition
+            from ui.dialogs.smart_recognition_dialog import SmartRecognitionDialog
+
+            # 创建智能识别服务
+            recognition_service = SmartOrderRecognition(main_window=self)
+
+            # 创建对话框
+            dialog = SmartRecognitionDialog(parent=self)
+
+            # 连接信号
+            dialog.recognition_confirmed.connect(self._on_recognition_confirmed)
+            dialog.recognition_cancelled.connect(self._on_recognition_cancelled)
+
+            # 显示进度
+            dialog.show()
+            dialog.show_progress("正在识别剪贴板内容...")
+
+            # 执行识别
+            order_info, match_result = recognition_service.recognize_and_match()
+
+            # 显示结果
+            dialog.show_recognition_result(order_info, match_result)
+
+            print("[智能识别] ✅ 智能识别对话框已显示")
+
+        except Exception as e:
+            print(f"[智能识别] ❌ 显示智能识别对话框失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "智能识别", f"智能识别功能启动失败: {str(e)}")
+
+    def _on_recognition_confirmed(self, result_data: dict):
+        """智能识别确认处理"""
+        try:
+            print("[智能识别] 📋 处理识别确认结果")
+
+            order_info = result_data.get('order_info')
+            match_result = result_data.get('match_result')
+            auto_fill = result_data.get('auto_fill', False)
+
+            if not order_info or not match_result:
+                print("[智能识别] ❌ 识别结果数据不完整")
+                return
+
+            # 执行自动填充
+            if auto_fill:
+                self._execute_auto_fill(order_info, match_result)
+            else:
+                self._execute_manual_fill(order_info, match_result)
+
+            print("[智能识别] ✅ 识别结果处理完成")
+
+        except Exception as e:
+            print(f"[智能识别] ❌ 处理识别确认失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _on_recognition_cancelled(self):
+        """智能识别取消处理"""
+        print("[智能识别] ❌ 用户取消智能识别")
+
+    def _execute_auto_fill(self, order_info, match_result):
+        """执行自动填充"""
+        try:
+            print("[智能识别] 🚀 执行自动填充")
+
+            # 1. 自动选择影院
+            if match_result.cinema_match:
+                self._auto_select_cinema(match_result.cinema_match)
+
+            # 2. 自动选择影片（需要等待影院选择完成）
+            if match_result.movie_match:
+                QTimer.singleShot(500, lambda: self._auto_select_movie(match_result.movie_match))
+
+            # 3. 自动选择场次（需要等待影片选择完成）
+            if match_result.session_match:
+                QTimer.singleShot(1000, lambda: self._auto_select_session(match_result.session_match))
+
+            # 4. 自动选择座位（需要等待场次选择完成）
+            if match_result.seat_matches:
+                QTimer.singleShot(1500, lambda: self._auto_select_seats(match_result.seat_matches))
+
+            # 显示成功消息
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.information(self, "智能识别", "自动填充完成！请检查选择结果。")
+
+        except Exception as e:
+            print(f"[智能识别] ❌ 自动填充失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _execute_manual_fill(self, order_info, match_result):
+        """执行手动填充"""
+        try:
+            print("[智能识别] ✋ 执行手动填充")
+
+            # 显示识别结果，让用户手动确认
+            from PyQt5.QtWidgets import QMessageBox
+
+            message = "识别结果：\n\n"
+            if match_result.cinema_match:
+                cinema_name = match_result.cinema_match.get('cinemaShortName', '未知')
+                message += f"影院: {cinema_name}\n"
+
+            if order_info.movie_name:
+                message += f"影片: {order_info.movie_name}\n"
+
+            if order_info.session_time:
+                message += f"场次: {order_info.session_time}\n"
+
+            if order_info.seats:
+                message += f"座位: {', '.join(order_info.seats)}\n"
+
+            message += "\n请手动确认并选择相应的选项。"
+
+            QMessageBox.information(self, "智能识别结果", message)
+
+        except Exception as e:
+            print(f"[智能识别] ❌ 手动填充失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _auto_select_cinema(self, cinema_data):
+        """自动选择影院"""
+        try:
+            print(f"[智能识别] 🏢 自动选择影院: {cinema_data.get('cinemaShortName', '未知')}")
+
+            # 发布影院选择事件
+            event_bus.cinema_selected.emit(cinema_data)
+
+            # 更新Tab管理器
+            if hasattr(self, 'tab_manager_widget'):
+                # 这里需要根据实际的Tab管理器接口来实现
+                pass
+
+        except Exception as e:
+            print(f"[智能识别] ❌ 自动选择影院失败: {e}")
+
+    def _auto_select_movie(self, movie_data):
+        """自动选择影片"""
+        try:
+            print(f"[智能识别] 🎬 自动选择影片: {movie_data.get('name', '未知')}")
+
+            # 这里需要根据实际的影片选择接口来实现
+            # 暂时只打印日志
+
+        except Exception as e:
+            print(f"[智能识别] ❌ 自动选择影片失败: {e}")
+
+    def _auto_select_session(self, session_data):
+        """自动选择场次"""
+        try:
+            print(f"[智能识别] ⏰ 自动选择场次: {session_data.get('time', '未知')}")
+
+            # 这里需要根据实际的场次选择接口来实现
+            # 暂时只打印日志
+
+        except Exception as e:
+            print(f"[智能识别] ❌ 自动选择场次失败: {e}")
+
+    def _auto_select_seats(self, seat_matches):
+        """自动选择座位"""
+        try:
+            print(f"[智能识别] 💺 自动选择座位: {len(seat_matches)}个座位")
+
+            # 这里需要根据实际的座位选择接口来实现
+            # 暂时只打印日志
+            for seat in seat_matches:
+                print(f"[智能识别] 座位: {seat.get('row')}排{seat.get('col')}座")
+
+        except Exception as e:
+            print(f"[智能识别] ❌ 自动选择座位失败: {e}")
 
     def _connect_signals(self):
         """连接信号槽"""
@@ -1073,25 +1276,67 @@ class ModularCinemaMainWindow(QMainWindow):
                 MessageManager.show_info(self, "支付取消", "用户取消密码输入")
                 return False
 
+            # 🆕 获取最新的会员信息 - 必须从API实时获取
+            print("[会员卡支付] 🔄 获取最新会员信息...")
+            member_result = self.get_member_info_enhanced()
+            if not member_result.get('success') or not member_result.get('is_member'):
+                error_msg = member_result.get('error', '无法获取会员信息')
+                print(f"[会员卡支付] ❌ 会员信息获取失败: {error_msg}")
+                MessageManager.show_error(self, "会员信息错误", f"无法获取会员信息: {error_msg}\n请重新登录")
+                return False
+
+            print(f"[会员卡支付] ✅ 会员信息获取成功，数据来源: {member_result.get('data_source', 'unknown')}")
+
+            # 🆕 构建完整的memberinfo JSON - 使用API最新数据
+            import json
+            memberinfo_json = json.dumps({
+                'cardno': member_result.get('cardno', ''),
+                'mobile': member_result.get('mobile', ''),
+                'memberId': member_result.get('memberId', ''),
+                'cardtype': member_result.get('cardtype', '0'),
+                'cardcinemaid': member_result.get('cardcinemaid', ''),
+                'balance': member_result.get('balance', 0) // 100  # 转换为元
+            })
+
+            # 🆕 获取当前订单的详细信息
+            order_details = self._get_current_order_details()
+
+            # 🆕 计算单座位会员价格（从总价格计算）
+            ticket_count = int(order_details.get('ticketcount', '1'))
+            if ticket_count <= 0:
+                MessageManager.show_error(self, "票数错误", "票数无效，请重试")
+                return False
+
+            single_seat_price = final_amount // ticket_count
+            print(f"[会员卡支付] 💰 单座位价格计算: {final_amount}分 ÷ {ticket_count}张 = {single_seat_price}分")
+
             # 构建会员卡支付参数
             pay_params = {
                 'orderno': self._payment_order_id,
                 'payprice': str(final_amount),
+                'totalprice': str(final_amount),  # 总价格
+                'price': str(single_seat_price),  # 🔧 修正：单座位会员价格
                 'discountprice': '0' if not has_coupon else coupon_result.get('coupon_info', {}).get('discountprice', '0'),
                 'couponcodes': couponcode,
                 'groupid': '',
                 'cinemaid': self._payment_cinema_id,
-                'cardno': self.current_account.get('cardno', ''),
+                'cardno': '',  # 设置为空，会员信息在memberinfo中
                 'userid': self.current_account['userid'],
                 'openid': self.current_account['openid'],
                 'CVersion': '3.9.12',
                 'OS': 'Windows',
                 'token': self.current_account['token'],
                 'source': '2',
-                'mempass': member_password  # 添加会员卡密码
+                'mempass': member_password,  # 会员卡密码
+                'memberinfo': memberinfo_json,  # 🔧 修正：使用API最新会员信息
+                'filmname': order_details.get('filmname', ''),  # 影片名称
+                'featureno': order_details.get('featureno', ''),  # 场次号
+                'ticketcount': order_details.get('ticketcount', '1'),  # 票数
+                'cinemaname': order_details.get('cinemaname', '')  # 影院名称
             }
 
             print(f"[会员卡支付] 调用会员卡支付接口，最终金额: {final_amount}分")
+            print(f"[会员卡支付] 会员信息: {memberinfo_json}")
 
             # 调用会员卡支付API
             pay_result = member_card_pay(pay_params)
@@ -1110,7 +1355,49 @@ class ModularCinemaMainWindow(QMainWindow):
 
         except Exception as e:
             print(f"[会员卡支付] 会员卡支付异常: {e}")
+            MessageManager.show_error(self, "支付异常", f"会员卡支付异常: {e}")
             return False
+
+    def _get_current_order_details(self):
+        """获取当前订单的详细信息"""
+        try:
+            # 从当前选择的数据中获取订单详情
+            order_details = {
+                'filmname': '',
+                'featureno': '',
+                'ticketcount': '1',
+                'cinemaname': ''
+            }
+
+            # 获取影片名称
+            if hasattr(self, 'current_movie') and self.current_movie:
+                order_details['filmname'] = self.current_movie.get('name', self.current_movie.get('filmName', ''))
+
+            # 获取场次号
+            if hasattr(self, 'current_session') and self.current_session:
+                order_details['featureno'] = self.current_session.get('featureno', '')
+
+            # 获取票数
+            if hasattr(self, '_payment_seat_count'):
+                order_details['ticketcount'] = str(self._payment_seat_count)
+
+            # 获取影院名称
+            if hasattr(self, 'current_cinema') and self.current_cinema:
+                order_details['cinemaname'] = self.current_cinema.get('cinemaShortName', '')
+
+            print(f"[订单详情] 获取到的订单详情: {order_details}")
+            return order_details
+
+        except Exception as e:
+            print(f"[订单详情] 获取订单详情失败: {e}")
+            return {
+                'filmname': '',
+                'featureno': '',
+                'ticketcount': '1',
+                'cinemaname': ''
+            }
+
+
 
     def _get_original_payment_amount(self):
         """获取原始支付金额"""

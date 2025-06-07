@@ -1,5 +1,0 @@
-requests>=2.25.0
-ttkbootstrap>=1.10.0
-PyQt5>=5.15.0
-Pillow>=8.0.0
-pywin32>=227 
