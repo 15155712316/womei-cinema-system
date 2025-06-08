@@ -58,5 +58,19 @@
     "updateTime": "2025-06-04 17:00:56",
     "auto_added": true,
     "api_verified": true
+  },
+  {
+    "cinemaid": "c71994bd3279",
+    "cinemaShortName": "1929电影公园",
+    "cityName": "深圳市",
+    "cinemaAddress": "龙华区民治大道牛栏前大厦世邦商城3楼1929电影公园",
+    "cinemaPhone": "",
+    "base_url": "lclc10.hxyswhcm.cn",
+    "limitTicketAmount": "6",
+    "cinemaState": 0,
+    "createTime": "2025-06-07 16:46:14",
+    "updateTime": "2025-06-07 16:46:14",
+    "auto_added": true,
+    "api_verified": true
   }
 ]

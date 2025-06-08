@@ -13,7 +13,11 @@ from PyQt5.QtWidgets import (
 )
 from ui.ui_component_factory import UIComponentFactory
 from utils.data_utils import DataUtils
-from api.cinema_api_client import get_api_client, APIException
+try:
+    from api.cinema_api_client import get_api_client, APIException
+except ImportError as e:
+    print(f"导入API客户端失败，使用简化版本: {e}")
+    from api.cinema_api_client_simple import get_api_client, APIException
 from patterns.order_observer import get_order_subject, setup_order_observers, OrderStatus
 from patterns.payment_strategy import get_payment_context, PaymentContext
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
@@ -59,6 +63,10 @@ from PyQt5.QtWidgets import QInputDialog, QLineEdit
 
 # 导入登录窗口
 from ui.login_window import LoginWindow
+
+# 🆕 导入定时验证服务
+from services.refresh_timer_service import refresh_timer_service
+from services.auth_error_handler import auth_error_handler
 
 
 class ModularCinemaMainWindow(QMainWindow):
@@ -392,6 +400,10 @@ class ModularCinemaMainWindow(QMainWindow):
         
         # 🆕 移除倒计时标签
         
+        # 🆕 按钮区域布局
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(8)
+
         # 一键支付按钮
         self.pay_button = ClassicButton("一键支付", "warning")
         self.pay_button.setMinimumHeight(35)
@@ -415,7 +427,37 @@ class ModularCinemaMainWindow(QMainWindow):
                 color: #999999;
             }
         """)
-        order_layout.addWidget(self.pay_button)
+        button_layout.addWidget(self.pay_button)
+
+        # 🆕 调试验证按钮
+        self.debug_auth_button = ClassicButton("🔍 调试验证", "info")
+        self.debug_auth_button.setMinimumHeight(35)
+        self.debug_auth_button.setFixedWidth(100)
+        self.debug_auth_button.setToolTip("手动触发用户验证逻辑，用于调试")
+        self.debug_auth_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196f3;
+                color: #ffffff;
+                font: bold 10px "Microsoft YaHei";
+                border: none;
+                padding: 8px;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #1976d2;
+            }
+            QPushButton:pressed {
+                background-color: #0d47a1;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #999999;
+            }
+        """)
+        button_layout.addWidget(self.debug_auth_button)
+
+        # 添加按钮布局到订单布局
+        order_layout.addLayout(button_layout)
         
         layout.addWidget(order_group, 55)  # 🔄 恢复为55%
         
@@ -679,7 +721,10 @@ class ModularCinemaMainWindow(QMainWindow):
         
         # 右栏支付按钮信号
         self.pay_button.clicked.connect(self._on_pay_button_clicked)
-        
+
+        # 🆕 调试验证按钮信号
+        self.debug_auth_button.clicked.connect(self._on_debug_auth_button_clicked)
+
         # 主窗口信号
         self.login_success.connect(self._on_main_login_success)
     
@@ -758,8 +803,11 @@ class ModularCinemaMainWindow(QMainWindow):
             
             # 🆕 延迟触发默认影院设置，确保所有组件都已初始化
             QTimer.singleShot(500, self._trigger_default_cinema_selection)
-            
-            
+
+            # 🆕 启动定时验证机制
+            QTimer.singleShot(1000, lambda: self._start_refresh_monitoring(self.current_user))
+
+
         except Exception as e:
             QMessageBox.critical(self, "显示主窗口错误", f"显示主窗口失败: {str(e)}")
             # 如果显示失败，重新启动登录
@@ -878,30 +926,307 @@ class ModularCinemaMainWindow(QMainWindow):
             pass
     
     def _restart_login(self):
-        """重新启动登录流程"""
+        """重新启动登录流程 - 增强错误处理和窗口管理"""
         try:
-            # 清理旧的登录窗口
+            print(f"[主窗口] 🔄 开始重启登录流程")
+
+            # 🆕 清理旧的登录窗口 - 增强清理逻辑
             if hasattr(self, 'login_window') and self.login_window:
+                try:
+                    # 断开信号连接，避免重复连接
+                    self.login_window.login_success.disconnect()
+                except:
+                    pass
+
                 self.login_window.close()
+                self.login_window.deleteLater()  # 🆕 确保窗口被正确删除
                 self.login_window = None
-            
-            # 延迟创建新的登录窗口
-            QTimer.singleShot(200, self._create_new_login_window)
-            
+                print(f"[主窗口] ✅ 旧登录窗口已清理")
+
+            # 🆕 确保主窗口完全隐藏
+            self.hide()
+
+            # 🆕 延迟创建新的登录窗口，确保旧窗口完全清理
+            QTimer.singleShot(300, self._create_new_login_window)
+
         except Exception as e:
+            print(f"[主窗口] ❌ 重启登录失败: {e}")
             QMessageBox.critical(self, "重启登录失败", f"无法重新启动登录: {str(e)}")
             QApplication.quit()
-    
+
     def _create_new_login_window(self):
-        """创建新的登录窗口"""
+        """创建新的登录窗口 - 增强窗口创建和显示逻辑"""
         try:
+            print(f"[主窗口] 🚀 创建新的登录窗口")
+
+            # 🆕 导入登录窗口类
+            from ui.login_window import LoginWindow
+
+            # 🔧 增强：确保主窗口完全隐藏并释放焦点
+            self.hide()
+            self.setWindowState(Qt.WindowMinimized)
+
+            # 创建新的登录窗口
             self.login_window = LoginWindow()
+
+            # 🆕 连接登录成功信号
             self.login_window.login_success.connect(self._on_user_login_success)
+
+            # 🔧 增强：设置窗口属性，确保正确显示和获得焦点
+            self.login_window.setWindowFlags(Qt.Window | Qt.WindowStaysOnTopHint)
+            self.login_window.setAttribute(Qt.WA_ShowWithoutActivating, False)  # 确保激活窗口
+
+            # 🔧 增强：居中显示登录窗口
+            self._center_login_window()
+
+            # 🆕 显示登录窗口并确保获得焦点
             self.login_window.show()
-            
+            self.login_window.raise_()
+            self.login_window.activateWindow()
+
+            # 🔧 增强：强制获得焦点
+            QApplication.setActiveWindow(self.login_window)
+
+            print(f"[主窗口] ✅ 新登录窗口已显示并获得焦点")
+
         except Exception as e:
+            print(f"[主窗口] ❌ 创建登录窗口失败: {e}")
+            import traceback
+            traceback.print_exc()
             QMessageBox.critical(self, "创建登录窗口失败", f"无法创建登录窗口: {str(e)}")
             QApplication.quit()
+
+    def _center_login_window(self):
+        """居中显示登录窗口"""
+        try:
+            if hasattr(self, 'login_window') and self.login_window:
+                # 获取屏幕几何信息
+                screen = QApplication.primaryScreen().geometry()
+
+                # 获取登录窗口大小
+                login_size = self.login_window.size()
+
+                # 计算居中位置
+                x = (screen.width() - login_size.width()) // 2
+                y = (screen.height() - login_size.height()) // 2
+
+                # 设置窗口位置
+                self.login_window.move(x, y)
+
+                print(f"[主窗口] 登录窗口已居中显示: ({x}, {y})")
+
+        except Exception as e:
+            print(f"[主窗口] 居中登录窗口失败: {e}")
+
+    # ===== 🆕 定时验证相关方法 =====
+
+    def _start_refresh_monitoring(self, user_info: dict):
+        """启动用户刷新时间监控"""
+        try:
+            print(f"[主窗口] 启动刷新监控服务: {user_info.get('phone', 'N/A')}")
+
+            # 连接刷新验证服务的信号
+            refresh_timer_service.auth_success.connect(self._on_refresh_auth_success)
+            refresh_timer_service.auth_failed.connect(self._on_refresh_auth_failed)
+
+            # 设置检查间隔为1分钟（测试用）
+            refresh_timer_service.set_check_interval(1)
+
+            # 开始监控
+            success = refresh_timer_service.start_monitoring(user_info)
+
+            if success:
+                print(f"[主窗口] 刷新监控服务启动成功")
+            else:
+                print(f"[主窗口] 刷新监控服务启动失败")
+
+        except Exception as e:
+            print(f"[主窗口] 启动刷新监控失败: {e}")
+
+    def _on_refresh_auth_success(self, user_info: dict):
+        """刷新验证成功处理"""
+        try:
+            print(f"[主窗口] 刷新验证成功: {user_info.get('phone', 'N/A')}")
+            # 更新本地用户信息
+            if self.current_user:
+                self.current_user.update(user_info)
+
+            # 可以在这里更新UI状态，比如显示最后刷新时间
+            # 例如：在状态栏显示最后验证时间
+
+        except Exception as e:
+            print(f"[主窗口] 刷新验证成功处理错误: {e}")
+
+    def _on_refresh_auth_failed(self, error_msg: str):
+        """刷新验证失败处理 - 使用统一错误处理"""
+        try:
+            print(f"[主窗口] 刷新验证失败: {error_msg}")
+
+            # 停止监控
+            refresh_timer_service.stop_monitoring()
+
+            # 清理当前用户信息
+            self.current_user = None
+            self.current_account = None
+
+            # 隐藏主窗口
+            self.hide()
+
+            # 🆕 使用统一的认证失败对话框处理
+            auth_error_handler.show_auth_failed_dialog(
+                self,
+                error_msg,
+                on_confirmed_callback=self._on_auth_dialog_confirmed
+            )
+
+        except Exception as e:
+            print(f"[主窗口] 刷新验证失败处理错误: {e}")
+            # 如果处理失败，直接退出应用
+            QApplication.quit()
+
+    def _on_auth_dialog_confirmed(self):
+        """认证失败对话框确认后的处理 - 增强登录重启逻辑"""
+        try:
+            print(f"[主窗口] 用户确认认证失败对话框，开始重启登录流程")
+
+            # 🔧 增强：确保主窗口完全隐藏
+            self.hide()
+
+            # 🔧 增强：清理所有相关状态
+            self.current_user = None
+            self.current_account = None
+
+            # 🔧 增强：停止所有可能的定时器和服务
+            try:
+                refresh_timer_service.stop_monitoring()
+            except:
+                pass
+
+            # 🆕 确保在对话框关闭后立即重启登录
+            QTimer.singleShot(200, self._restart_login)
+
+        except Exception as e:
+            print(f"[认证对话框] 处理对话框确认事件失败: {e}")
+            import traceback
+            traceback.print_exc()
+            # 备用方案：直接重启登录
+            self._restart_login()
+
+
+
+    def _on_debug_auth_button_clicked(self):
+        """调试验证按钮点击处理 - 手动触发验证逻辑，使用统一错误处理"""
+        try:
+            print(f"[调试验证] 🔍 手动触发用户验证逻辑")
+
+            # 检查当前用户状态
+            if not self.current_user:
+                QMessageBox.warning(self, "调试验证", "当前没有登录用户，无法执行验证")
+                return
+
+            phone = self.current_user.get('phone', '')
+            if not phone:
+                QMessageBox.warning(self, "调试验证", "当前用户信息不完整，缺少手机号")
+                return
+
+            print(f"[调试验证] 📱 当前用户: {phone}")
+
+            # 🆕 显示调试信息对话框
+            self._show_debug_auth_dialog()
+
+            # 🆕 直接使用auth_service进行验证，与定时验证完全一致
+            from services.auth_service import auth_service
+
+            print(f"[调试验证] 🔄 开始执行验证...")
+            success, message, user_info = auth_service.login(phone)
+
+            if success:
+                print(f"[调试验证] ✅ 验证成功 - 用户: {user_info.get('phone', 'N/A')}, 积分: {user_info.get('points', 0)}")
+
+                # 🆕 使用统一的认证成功处理（静默模式）
+                auth_error_handler.handle_auth_success(user_info, is_silent=True)
+
+                # 显示成功提示（仅调试时显示）
+                QMessageBox.information(
+                    self,
+                    "调试验证",
+                    f"✅ 验证成功！\n\n"
+                    f"用户: {user_info.get('phone', 'N/A')}\n"
+                    f"积分: {user_info.get('points', 0)}\n"
+                    f"状态: 正常"
+                )
+
+            else:
+                print(f"[调试验证] ❌ 验证失败: {message}")
+
+                # 🆕 使用统一的错误信息解析，但简化对话框处理
+                user_friendly_message = auth_error_handler.parse_error_message(message)
+
+                # 🔧 简化：直接显示错误信息，避免复杂的回调逻辑
+                QMessageBox.warning(
+                    self,
+                    "调试验证 - 认证失败",
+                    f"用户认证失败，需要重新登录\n\n"
+                    f"详细信息:\n{user_friendly_message}\n\n"
+                    f"💡 在正常情况下，这里会关闭主窗口并打开登录页面\n"
+                    f"由于这是调试模式，主窗口保持打开状态。"
+                )
+
+        except Exception as e:
+            print(f"[调试验证] ❌ 调试验证失败: {e}")
+            import traceback
+            traceback.print_exc()
+            QMessageBox.critical(self, "调试验证", f"调试验证执行失败: {str(e)}")
+
+    def _show_debug_auth_dialog(self):
+        """显示调试验证信息对话框"""
+        try:
+            from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QTextEdit, QPushButton
+
+            dialog = QDialog(self)
+            dialog.setWindowTitle("调试验证 - 实时日志")
+            dialog.setFixedSize(600, 400)
+
+            layout = QVBoxLayout(dialog)
+
+            # 说明标签
+            info_label = QLabel("正在执行用户验证逻辑，请查看控制台输出...")
+            info_label.setStyleSheet("font-weight: bold; color: #2196f3; padding: 10px;")
+            layout.addWidget(info_label)
+
+            # 用户信息显示
+            user_info = f"当前用户: {self.current_user.get('phone', 'N/A')}\n"
+            user_info += f"用户名: {self.current_user.get('username', 'N/A')}\n"
+            user_info += f"积分: {self.current_user.get('points', 'N/A')}"
+
+            user_label = QLabel(user_info)
+            user_label.setStyleSheet("background-color: #f5f5f5; padding: 10px; border-radius: 5px;")
+            layout.addWidget(user_label)
+
+            # 提示文本
+            tip_text = QTextEdit()
+            tip_text.setReadOnly(True)
+            tip_text.setPlainText(
+                "验证过程说明:\n\n"
+                "1. 检查验证服务运行状态\n"
+                "2. 调用登录API验证用户和机器码\n"
+                "3. 根据API响应处理验证结果\n"
+                "4. 如果验证失败，会显示错误信息并跳转登录\n\n"
+                "请观察控制台输出查看详细的验证过程..."
+            )
+            tip_text.setMaximumHeight(150)
+            layout.addWidget(tip_text)
+
+            # 关闭按钮
+            close_button = QPushButton("关闭")
+            close_button.clicked.connect(dialog.close)
+            layout.addWidget(close_button)
+
+            # 显示对话框（非模态）
+            dialog.show()
+
+        except Exception as e:
+            print(f"[调试验证] ❌ 显示调试对话框失败: {e}")
     
     # ===== 模块信号处理方法 =====
     
@@ -3248,13 +3573,26 @@ class ModularCinemaMainWindow(QMainWindow):
     def closeEvent(self, event):
         """窗口关闭事件"""
         try:
+            print("[主窗口] 窗口正在关闭，清理资源...")
+
+            # 🆕 停止刷新监控服务
+            refresh_timer_service.stop_monitoring()
+
             # 清理资源
             self.account_widget.cleanup()
             self.tab_manager_widget.cleanup()
+
+            # 关闭登录窗口（如果存在）
+            if hasattr(self, 'login_window') and self.login_window:
+                self.login_window.close()
+                self.login_window = None
+
             # 座位区域和右栏区域是直接创建的QWidget，不需要特殊清理
+            print("[主窗口] 资源清理完成")
             event.accept()
-            
+
         except Exception as e:
+            print(f"[主窗口] 关闭事件处理错误: {e}")
             event.accept()
 
     # ===== 🆕 增强支付系统核心方法 =====

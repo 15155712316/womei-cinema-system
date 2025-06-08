@@ -18,6 +18,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.auth_service import auth_service
 from services.ui_utils import MessageManager, UIConstants
+from services.auth_error_handler import auth_error_handler, AuthResult
 
 class LoginThread(QThread):
     """登录验证线程"""
@@ -372,77 +373,44 @@ class LoginWindow(QWidget):
     
     @pyqtSlot(bool, str, object)
     def on_login_result(self, success: bool, message: str, user_info: dict):
-        """处理登录结果"""
+        """处理登录结果 - 使用统一错误处理"""
         self.set_login_state(False)
-        
+
         if success:
             # 登录成功 - 保存登录历史
             phone = self.phone_input.text().strip()
             self.save_login_history(phone)
-            
+
+            # 🆕 使用统一的认证成功处理（非静默模式）
+            auth_error_handler.handle_auth_success(user_info, is_silent=False)
+
             # 只有登录成功需要弹窗提示
             if UIConstants.should_show_success_popup("login_success"):
                 user_name = user_info.get('username', '用户')
                 phone = user_info.get('phone', '')
                 points = user_info.get('points', 0)
-                
+
                 MessageManager.show_info(
-                    self, 
-                    "登录成功", 
+                    self,
+                    "登录成功",
                     f"欢迎回来，{user_name}！\n\n"
                     f"手机号: {phone}\n"
                     f"当前积分: {points}\n"
                     f"账号状态: 正常"
                 )
-            
+
             # 发送登录成功信号
             self.login_success.emit(user_info)
-            
+
             # 关闭登录窗口
             self.close()
         else:
-            # 登录失败 - 根据服务器返回的具体错误信息显示对应提示
-            user_friendly_message = self._get_user_friendly_error_message(message)
-            MessageManager.show_error(self, "登录失败", user_friendly_message)
+            # 🆕 登录失败 - 使用统一的错误处理
+            auth_error_handler.show_login_error(self, message)
             self.phone_input.clear()
             self.phone_input.setFocus()
 
-    def _get_user_friendly_error_message(self, server_message: str) -> str:
-        """将服务器错误信息转换为用户友好的提示信息"""
-        # 转换为小写便于匹配
-        message_lower = server_message.lower()
 
-        # 根据服务器返回的具体错误信息进行映射
-        if "not registered" in message_lower:
-            return "该手机号未注册\n\n请联系管理员添加账号"
-
-        elif "device not authorized" in message_lower:
-            return "设备未授权，机器码不匹配\n\n请联系管理员重新绑定设备"
-
-        elif "account disabled" in message_lower:
-            return "账号已被禁用\n\n请联系管理员启用账号"
-
-        elif "failed to bind device" in message_lower:
-            return "设备绑定失败\n\n请稍后重试或联系管理员"
-
-        elif "internal server error" in message_lower:
-            return "服务器内部错误\n\n请稍后重试或联系技术支持"
-
-        elif "database query error" in message_lower:
-            return "数据库查询错误\n\n请稍后重试或联系技术支持"
-
-        elif "无法连接到服务器" in server_message:
-            return "无法连接到服务器\n\n请检查网络连接"
-
-        elif "网络" in server_message or "network" in message_lower:
-            return "网络连接异常\n\n请检查网络连接后重试"
-
-        elif "timeout" in message_lower or "超时" in server_message:
-            return "连接超时\n\n请检查网络连接后重试"
-
-        else:
-            # 对于未知错误，显示原始信息但添加建议
-            return f"{server_message}\n\n如问题持续存在，请联系管理员"
 
     def set_login_state(self, is_logging: bool):
         """设置登录状态"""

@@ -28,6 +28,9 @@ from views.components.cinema_panel import CinemaPanel
 # 导入登录窗口
 from ui.login_window import LoginWindow
 
+# 导入刷新验证服务
+from services.refresh_timer_service import refresh_timer_service
+
 
 class MainWindow(QMainWindow):
     """主窗口 - 重构版本"""
@@ -498,28 +501,104 @@ class MainWindow(QMainWindow):
         """登录成功处理"""
         try:
             print(f"[主窗口] 用户登录成功: {user_info.get('phone', 'N/A')}")
-            
+
             # 关闭登录窗口
             if hasattr(self, 'login_window') and self.login_window:
                 self.login_window.close()
                 self.login_window = None
-            
+
             # 显示主窗口
             self.show()
             self.raise_()
             self.activateWindow()
             self._center_window()
-            
+
+            # 🆕 启动刷新验证服务
+            self._start_refresh_monitoring(user_info)
+
             # 发布登录成功事件
             self.login_success.emit(user_info)
             event_bus.user_login_success.emit(user_info)
-            
+
             # 启动数据加载
             QTimer.singleShot(500, self._start_data_loading)
-            
+
         except Exception as e:
             QMessageBox.critical(self, "登录处理错误", f"处理登录结果失败: {str(e)}")
-    
+
+    def _start_refresh_monitoring(self, user_info: dict):
+        """启动用户刷新时间监控"""
+        try:
+            print(f"[主窗口] 启动刷新监控服务: {user_info.get('phone', 'N/A')}")
+
+            # 连接刷新验证服务的信号
+            refresh_timer_service.auth_success.connect(self._on_refresh_auth_success)
+            refresh_timer_service.auth_failed.connect(self._on_refresh_auth_failed)
+
+            # 设置检查间隔为10分钟
+            refresh_timer_service.set_check_interval(10)
+
+            # 开始监控
+            success = refresh_timer_service.start_monitoring(user_info)
+
+            if success:
+                print(f"[主窗口] 刷新监控服务启动成功")
+            else:
+                print(f"[主窗口] 刷新监控服务启动失败")
+
+        except Exception as e:
+            print(f"[主窗口] 启动刷新监控失败: {e}")
+
+    def _on_refresh_auth_success(self, user_info: dict):
+        """刷新验证成功处理"""
+        try:
+            print(f"[主窗口] 刷新验证成功: {user_info.get('phone', 'N/A')}")
+            # 这里可以更新UI状态，比如显示最后刷新时间
+
+        except Exception as e:
+            print(f"[主窗口] 刷新验证成功处理错误: {e}")
+
+    def _on_refresh_auth_failed(self, error_msg: str):
+        """刷新验证失败处理 - 跳转到登录页面"""
+        try:
+            print(f"[主窗口] 刷新验证失败: {error_msg}")
+
+            # 停止刷新监控
+            refresh_timer_service.stop_monitoring()
+
+            # 显示错误消息
+            QMessageBox.warning(
+                self,
+                "登录状态失效",
+                f"登录状态已失效: {error_msg}\n\n将重新跳转到登录页面。"
+            )
+
+            # 隐藏主窗口
+            self.hide()
+
+            # 重新启动登录流程
+            QTimer.singleShot(500, self._restart_login_flow)
+
+        except Exception as e:
+            print(f"[主窗口] 刷新验证失败处理错误: {e}")
+
+    def _restart_login_flow(self):
+        """重新启动登录流程"""
+        try:
+            print("[主窗口] 重新启动登录流程")
+
+            # 清理旧的登录窗口
+            if hasattr(self, 'login_window') and self.login_window:
+                self.login_window.close()
+                self.login_window = None
+
+            # 启动新的登录流程
+            self._start_auth_flow()
+
+        except Exception as e:
+            print(f"[主窗口] 重新启动登录流程失败: {e}")
+            QMessageBox.critical(self, "重启登录失败", f"无法重新启动登录: {str(e)}")
+
     def _start_data_loading(self):
         """启动数据加载 - 优化版：先影院后账号"""
         try:
@@ -699,3 +778,25 @@ class MainWindow(QMainWindow):
     def _show_error_message(self, title: str, message: str):
         """显示错误消息"""
         QMessageBox.critical(self, title, message)
+
+    def closeEvent(self, event):
+        """窗口关闭事件处理"""
+        try:
+            print("[主窗口] 窗口正在关闭，清理资源...")
+
+            # 停止刷新监控服务
+            refresh_timer_service.stop_monitoring()
+
+            # 关闭登录窗口（如果存在）
+            if hasattr(self, 'login_window') and self.login_window:
+                self.login_window.close()
+                self.login_window = None
+
+            print("[主窗口] 资源清理完成")
+
+        except Exception as e:
+            print(f"[主窗口] 关闭事件处理错误: {e}")
+
+        # 接受关闭事件
+        event.accept()
+
