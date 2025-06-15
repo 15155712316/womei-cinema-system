@@ -265,14 +265,24 @@ class SeatMapPanel(QWidget):
         event_bus.seat_map_error.connect(self._on_seat_map_error)
     
     @event_handler("seat_map_loaded")
-    def update_seat_data(self, seat_data: dict):
-        """更新座位数据"""
+    def update_seat_data(self, seat_data: dict, session_info: dict = None):
+        """更新座位数据（修复session_info传递）"""
         try:
             print("[座位图面板] 开始更新座位数据")
-            
+
+            # 🔧 修复：保存session_info
+            if session_info:
+                self.session_info = session_info
+                print(f"[座位图面板] 🔧 已保存session_info")
+                print(f"  - 影院数据: {'存在' if session_info.get('cinema_data') else '缺失'}")
+                print(f"  - 账号数据: {'存在' if session_info.get('account') else '缺失'}")
+                print(f"  - 场次数据: {'存在' if session_info.get('session_data') else '缺失'}")
+            else:
+                print(f"[座位图面板] ⚠️ 警告: 未接收到session_info")
+
             # 解析座位数据
             seat_matrix = self._parse_seat_data(seat_data)
-            
+
             if seat_matrix:
                 self.seat_matrix = seat_matrix
                 self.hall_info = {
@@ -280,14 +290,14 @@ class SeatMapPanel(QWidget):
                     'screen_type': seat_data.get('screentype', ''),
                     'seat_count': seat_data.get('seatcount', 0)
                 }
-                
+
                 # 渲染座位图
                 self._render_seat_map()
-                
+
                 print(f"[座位图面板] 座位图更新成功: {self.hall_info['name']}")
             else:
                 self._show_error("座位数据解析失败")
-                
+
         except Exception as e:
             print(f"[座位图面板] 更新座位数据错误: {e}")
             self._show_error(f"更新座位数据失败: {str(e)}")
@@ -494,29 +504,54 @@ class SeatMapPanel(QWidget):
             print(f"[座位图面板] 清空选择错误: {e}")
     
     def submit_order(self):
-        """提交订单"""
+        """提交订单（修复影院数据传递问题）"""
         try:
             if not self.selected_seats:
+                print(f"[座位面板] 提交订单失败: 未选择座位")
                 return
-            
+
             # 构建选中座位数据
             selected_seat_data = []
             for row, col in self.selected_seats:
                 if (row, col) in self.seat_buttons:
                     button = self.seat_buttons[(row, col)]
                     selected_seat_data.append(button.seat_data)
-            
-            # 发送提交订单信号
+
+            print(f"[座位面板] 提交订单，选中座位: {[f'{row}-{col}' for row, col in self.selected_seats]}")
+
+            # 🔧 修复：构建完整的订单数据，包含session_info
             order_data = {
                 'seats': selected_seat_data,
                 'hall_info': self.hall_info,
+                'session_info': getattr(self, 'session_info', {}),  # 🆕 添加完整的session_info
                 'trigger_type': 'seat_map_panel'
             }
-            
+
+            # 🔧 验证关键数据
+            session_info = order_data.get('session_info', {})
+            cinema_data = session_info.get('cinema_data')
+            account = session_info.get('account')
+
+            print(f"[座位面板] 订单数据验证:")
+            print(f"  - 座位数量: {len(selected_seat_data)}")
+            print(f"  - 影院数据: {'存在' if cinema_data else '缺失'}")
+            print(f"  - 账号数据: {'存在' if account else '缺失'}")
+            print(f"  - 场次数据: {'存在' if session_info.get('session_data') else '缺失'}")
+
+            if not cinema_data:
+                print(f"[座位面板] ⚠️ 警告: 影院数据缺失，可能导致订单创建失败")
+
+            if not account:
+                print(f"[座位面板] ⚠️ 警告: 账号数据缺失，可能导致订单创建失败")
+
+            # 发送提交订单信号
             self.order_submitted.emit(order_data)
-            
+            print(f"[座位面板] 订单提交信号已发出")
+
         except Exception as e:
             print(f"[座位图面板] 提交订单错误: {e}")
+            import traceback
+            traceback.print_exc()
     
     def get_selected_seats(self) -> List[dict]:
         """获取选中的座位数据"""

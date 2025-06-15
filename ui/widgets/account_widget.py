@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QApplication, QMessageBox, QMenu, QAction
 )
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal, Qt, QTimer
 
 # 导入自定义组件
 from ui.widgets.classic_components import (
@@ -706,23 +706,16 @@ class AccountWidget(QWidget):
             # 🔧 更新账号表格显示
             self._update_account_table(accounts)
 
-            # 🔧 自动选择第一个账号
+            # 🔧 延迟自动选择第一个账号，确保信号连接完成
             if accounts and len(accounts) > 0:
                 first_account = accounts[0]
                 phone = first_account.get('phone', '')
 
                 if phone:
-                    print(f"[账号组件] 🎯 自动选择第一个账号: {phone}")
+                    print(f"[账号组件] 🎯 准备自动选择第一个账号: {phone}")
 
-                    # 选择第一行
-                    self.account_table.selectRow(0)
-                    self.current_account = first_account
-
-                    # 发出账号选择信号
-                    self.account_selected.emit(first_account)
-                    event_bus.account_changed.emit(first_account)
-
-                    print(f"[账号组件] ✅ 账号自动选择完成: {phone}")
+                    # 🔧 延迟500ms执行自动选择，确保主窗口信号连接完成
+                    QTimer.singleShot(500, lambda: self._auto_select_first_account(first_account, phone))
 
             # 发出刷新信号
             self.accounts_refreshed.emit(self.accounts_data)
@@ -831,6 +824,26 @@ class AccountWidget(QWidget):
             import traceback
             traceback.print_exc()
             return False
+
+    def _auto_select_first_account(self, first_account: Dict, phone: str):
+        """🔧 延迟自动选择第一个账号（修复信号时序问题）"""
+        try:
+            print(f"[账号组件] 🎯 自动选择第一个账号: {phone}")
+
+            # 选择第一行
+            self.account_table.selectRow(0)
+            self.current_account = first_account
+
+            # 🔧 发出账号选择信号（确保信号连接已完成）
+            self.account_selected.emit(first_account)
+            event_bus.account_changed.emit(first_account)
+
+            print(f"[账号组件] ✅ 账号自动选择完成: {phone}")
+
+        except Exception as e:
+            print(f"[账号组件] 自动选择账号错误: {e}")
+            import traceback
+            traceback.print_exc()
 
 
 # 为了兼容性，创建一个createItem方法

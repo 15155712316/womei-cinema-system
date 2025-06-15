@@ -2769,8 +2769,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 🆕 解析沃美座位数据 - room_seat字段
                 room_seat = seat_data.get('room_seat', [])
                 if room_seat:
-                    seat_matrix = self._parse_womei_room_seat(room_seat, hall_info)
-                    print(f"[主窗口] 沃美座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行")
+                    seat_matrix, area_data = self._parse_womei_room_seat(room_seat, hall_info)
+                    print(f"[主窗口] 沃美座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行, {len(area_data) if area_data else 0} 个区域")
                 else:
                     # 兼容旧格式
                     seats_array = seat_data.get('seats', [])
@@ -2796,11 +2796,23 @@ class ModularCinemaMainWindow(QMainWindow):
                         
                         # 创建新的座位图面板
                         seat_panel = SeatMapPanelPyQt5()
-                        seat_panel.update_seat_data(seat_matrix)
-                        
+
+                        # 🆕 使用多区域更新方法
+                        if 'area_data' in locals():
+                            seat_panel.update_seat_data_with_areas(seat_matrix, area_data)
+                        else:
+                            seat_panel.update_seat_data(seat_matrix)
+
+                        # 🔧 修复：保存完整的session_info到座位面板
+                        seat_panel.session_info = session_info
+                        print(f"[主窗口] 🔧 已将session_info保存到座位面板")
+                        print(f"  - 影院数据: {'存在' if session_info.get('cinema_data') else '缺失'}")
+                        print(f"  - 账号数据: {'存在' if session_info.get('account') else '缺失'}")
+                        print(f"  - 场次数据: {'存在' if session_info.get('session_data') else '缺失'}")
+
                         # 连接座位选择信号
                         seat_panel.seat_selected.connect(self._on_seat_map_selection_changed)
-                        
+
                         # 🆕 连接提交订单回调
                         seat_panel.set_on_submit_order(self._on_seat_panel_submit_order)
                         seat_panel.set_account_getter(lambda: self.current_account)
@@ -2838,8 +2850,8 @@ class ModularCinemaMainWindow(QMainWindow):
             traceback.print_exc()
             self._safe_update_seat_area("显示座位图异常\n\n请重新选择场次")
 
-    def _parse_womei_room_seat(self, room_seat: List[Dict], hall_info: dict) -> List[List[Dict]]:
-        """解析沃美room_seat数据为座位矩阵（增强调试功能）"""
+    def _parse_womei_room_seat(self, room_seat: List[Dict], hall_info: dict) -> tuple[List[List[Dict]], List[Dict]]:
+        """解析沃美room_seat数据为座位矩阵和区域数据（增强调试功能）"""
         try:
             print(f"[座位调试] ==================== 开始解析沃美座位数据 ====================")
             print(f"[座位调试] 原始数据区域数量: {len(room_seat)}")
@@ -2849,71 +2861,56 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[座位调试] 完整原始API响应数据:")
             print(json.dumps(room_seat, indent=2, ensure_ascii=False))
 
-            # 收集所有座位
+            # 收集所有座位和区域信息
             all_seats = []
+            area_data = []  # 🆕 收集区域信息
             max_row = 0
             max_col = 0
 
             for area_index, area in enumerate(room_seat):
                 area_name = area.get('area_name', '未知区域')
                 area_price = area.get('area_price', 0)
-                seats_dict = area.get('seats', {})
+                area_no = area.get('area_no', str(area_index + 1))
+                seats_data = area.get('seats', [])  # 🔧 修复：seats是列表，不是字典
 
                 print(f"[座位调试] 区域 {area_index + 1}: {area_name}, 价格: {area_price}元")
-                print(f"[座位调试] 区域座位行数: {len(seats_dict)}")
+                print(f"[座位调试] 区域座位数据类型: {type(seats_data)}")
+                print(f"[座位调试] 区域座位数据长度: {len(seats_data)}")
 
-                for row_key, row_data in seats_dict.items():
-                    row_num = row_data.get('row', int(row_key))
-                    seat_details = row_data.get('detail', [])
-                    print(f"[座位调试] 第{row_num}行: {len(seat_details)}个座位")
+                # 🆕 收集区域信息
+                area_info = {
+                    'area_no': area_no,
+                    'area_name': area_name,
+                    'area_price': area_price
+                }
+                area_data.append(area_info)
 
-                    for seat_detail in seat_details:
-                        # 🔧 沃美座位状态映射：数字状态转换为字符串状态（增强调试）
-                        seat_status = seat_detail.get('status', 0)
-                        seat_no = seat_detail.get('seat_no', '')
+                # 🔧 修复：根据实际数据结构处理座位数据
+                if isinstance(seats_data, dict):
+                    # 如果seats是字典格式（按行组织）
+                    print(f"[座位调试] 处理字典格式的座位数据")
+                    for row_key, row_data in seats_data.items():
+                        row_num = row_data.get('row', int(row_key))
+                        seat_details = row_data.get('detail', [])
+                        print(f"[座位调试] 第{row_num}行: {len(seat_details)}个座位")
 
-                        # 详细的状态映射调试
-                        if seat_status == 0:
-                            status = 'available'  # 可选
-                        elif seat_status == 1:
-                            status = 'sold'       # 已售
-                        elif seat_status == 2:
-                            status = 'locked'     # 锁定
-                        else:
-                            status = 'available'  # 默认可选
-                            print(f"[主窗口] ⚠️ 未知座位状态: {seat_no} status={seat_status}, 默认设为可选")
+                        for seat_detail in seat_details:
+                            seat = self._process_seat_detail(seat_detail, area_name, area_price, all_seats, row_num)
+                            if seat:
+                                max_row = max(max_row, seat['row'])
+                                max_col = max(max_col, seat['col'])
 
-                        # 🔧 打印前10个座位的详细信息示例
-                        if len(all_seats) < 10:
-                            row_info = seat_detail.get('row', row_num)
-                            col_info = seat_detail.get('col', 1)
-                            x_info = seat_detail.get('x', 1)
-                            y_info = seat_detail.get('y', row_num)
-                            type_info = seat_detail.get('type', 0)
-                            print(f"[座位调试] 座位 {len(all_seats) + 1}: {seat_no}")
-                            print(f"  - 位置: 第{row_info}行第{col_info}列 (x={x_info}, y={y_info})")
-                            print(f"  - 状态: {seat_status} → {status}")
-                            print(f"  - 类型: {type_info}, 价格: {area_price}元")
-
-                        # 沃美座位数据格式
-                        seat = {
-                            'seat_no': seat_detail.get('seat_no', ''),
-                            'row': int(seat_detail.get('row', row_num)),
-                            'col': int(seat_detail.get('col', 1)),
-                            'x': seat_detail.get('x', 1),
-                            'y': seat_detail.get('y', row_num),
-                            'type': seat_detail.get('type', 0),
-                            'status': status,  # 使用转换后的字符串状态
-                            'area_name': area_name,
-                            'area_price': area_price,
-                            'price': area_price,  # 添加价格字段
-                            'num': str(seat_detail.get('col', 1)),  # 添加座位号显示
-                            'original_status': seat_status  # 保存原始状态用于调试
-                        }
-
-                        all_seats.append(seat)
-                        max_row = max(max_row, seat['row'])
-                        max_col = max(max_col, seat['col'])
+                elif isinstance(seats_data, list):
+                    # 如果seats是列表格式（直接包含座位）
+                    print(f"[座位调试] 处理列表格式的座位数据")
+                    for seat_detail in seats_data:
+                        seat = self._process_seat_detail(seat_detail, area_name, area_price, all_seats)
+                        if seat:
+                            max_row = max(max_row, seat['row'])
+                            max_col = max(max_col, seat['col'])
+                else:
+                    print(f"[座位调试] ⚠️ 未知的座位数据格式: {type(seats_data)}")
+                    continue
 
             # 🔧 统计座位状态分布
             status_count = {'available': 0, 'sold': 0, 'locked': 0, 'other': 0}
@@ -2972,7 +2969,8 @@ class ModularCinemaMainWindow(QMainWindow):
             hall_info['name'] = hall_info.get('hall_name', '未知影厅')
 
             print(f"[主窗口] 沃美座位矩阵构建完成: {len(seat_matrix)} 行 x {max_col} 列")
-            return seat_matrix
+            print(f"[主窗口] 区域信息收集完成: {len(area_data)} 个区域")
+            return seat_matrix, area_data
 
         except Exception as e:
             print(f"[座位调试] ❌ 解析沃美座位数据失败: {e}")
@@ -2989,7 +2987,104 @@ class ModularCinemaMainWindow(QMainWindow):
 
             import traceback
             traceback.print_exc()
-            return []
+            return [], []
+
+    def _process_seat_detail(self, seat_detail: dict, area_name: str, area_price: float, all_seats: list, row_num: int = None):
+        """处理单个座位详情数据（增强版：包含状态验证）"""
+        try:
+            # 🔧 沃美座位状态映射：数字状态转换为字符串状态
+            seat_status = seat_detail.get('status', 0)
+            seat_no = seat_detail.get('seat_no', '')
+            seat_row = int(seat_detail.get('row', row_num or 1))
+            seat_col = int(seat_detail.get('col', 1))
+
+            # 🎯 特定座位验证：1排6座、1排7座
+            is_target_seat = (seat_row == 1 and seat_col in [6, 7])
+
+            if is_target_seat:
+                print(f"\n🎯 [座位状态验证] 发现目标座位: {seat_row}排{seat_col}座")
+                print(f"  座位编号: {seat_no}")
+                print(f"  原始状态码: {seat_status}")
+                print(f"  区域: {area_name}")
+                print(f"  完整数据: {seat_detail}")
+
+            # 详细的状态映射调试
+            if seat_status == 0:
+                status = 'available'  # 可选
+                status_desc = "可选"
+            elif seat_status == 1:
+                status = 'sold'       # 已售
+                status_desc = "已售"
+            elif seat_status == 2:
+                status = 'locked'     # 锁定
+                status_desc = "锁定"
+            else:
+                status = 'available'  # 默认可选
+                status_desc = f"未知状态({seat_status})->默认可选"
+                print(f"[主窗口] ⚠️ 未知座位状态: {seat_no} status={seat_status}, 默认设为可选")
+
+            # 🎯 目标座位状态验证
+            if is_target_seat:
+                print(f"  映射后状态: {status} ({status_desc})")
+
+                # 与预期状态对比
+                expected_status = "sold"  # 根据真实APP，这两个座位应该是已售
+                if status == expected_status:
+                    print(f"  ✅ 状态映射正确: {status} == {expected_status}")
+                else:
+                    print(f"  ❌ 状态映射不一致!")
+                    print(f"     系统状态: {status}")
+                    print(f"     预期状态: {expected_status}")
+                    print(f"     真实APP显示: 已售")
+
+                    # 🔧 状态不一致时的详细分析
+                    print(f"  🔍 状态不一致分析:")
+                    print(f"     API返回状态码: {seat_status}")
+                    print(f"     当前映射规则: 0=可选, 1=已售, 2=锁定")
+
+                    if seat_status == 1:
+                        print(f"     ⚠️ 状态码1应该映射为已售，但可能UI显示有问题")
+                    elif seat_status == 0:
+                        print(f"     ⚠️ API返回可选状态，但真实APP显示已售")
+                        print(f"     可能原因: API数据不同步或状态码定义不同")
+                    elif seat_status == 2:
+                        print(f"     ⚠️ API返回锁定状态，可能需要映射为已售")
+
+            # 🔧 打印前10个座位的详细信息示例
+            if len(all_seats) < 10:
+                row_info = seat_detail.get('row', row_num or 1)
+                col_info = seat_detail.get('col', 1)
+                x_info = seat_detail.get('x', 1)
+                y_info = seat_detail.get('y', row_num or 1)
+                type_info = seat_detail.get('type', 0)
+                print(f"[座位调试] 座位 {len(all_seats) + 1}: {seat_no}")
+                print(f"  - 位置: 第{row_info}行第{col_info}列 (x={x_info}, y={y_info})")
+                print(f"  - 状态: {seat_status} → {status}")
+                print(f"  - 类型: {type_info}, 价格: {area_price}元")
+
+            # 沃美座位数据格式
+            seat = {
+                'seat_no': seat_detail.get('seat_no', ''),
+                'row': seat_row,
+                'col': seat_col,
+                'x': seat_detail.get('x', 1),
+                'y': seat_detail.get('y', row_num or 1),
+                'type': seat_detail.get('type', 0),
+                'status': status,  # 使用转换后的字符串状态
+                'area_name': area_name,
+                'area_price': area_price,
+                'price': area_price,  # 添加价格字段
+                'num': str(seat_detail.get('col', 1)),  # 添加座位号显示
+                'original_status': seat_status,  # 保存原始状态用于调试
+                'is_target_seat': is_target_seat  # 🆕 标记是否为目标验证座位
+            }
+
+            all_seats.append(seat)
+            return seat
+
+        except Exception as e:
+            print(f"[座位调试] 处理座位详情错误: {e}")
+            return None
 
     def _parse_seats_array(self, seats_array: List[Dict], hall_info: dict) -> List[List[Dict]]:
         """解析seats数组为座位矩阵"""
@@ -3118,14 +3213,39 @@ class ModularCinemaMainWindow(QMainWindow):
             import traceback
             traceback.print_exc()
     
-    def _on_seat_panel_submit_order(self, selected_seats: List[Dict]):
-        """座位面板提交订单处理"""
+    def _on_seat_panel_submit_order(self, order_data):
+        """座位面板提交订单处理（修复影院数据传递问题）"""
         try:
-            print(f"[主窗口] 座位面板提交订单: {len(selected_seats)} 个座位")
-            
-            # 调用主要的订单提交方法
-            self.on_submit_order(selected_seats)
-            
+            # 🔧 修复：处理完整的订单数据
+            if isinstance(order_data, dict):
+                # 新格式：完整的订单数据
+                selected_seats = order_data.get('seats', [])
+                session_info = order_data.get('session_info', {})
+
+                print(f"[主窗口] 座位面板提交订单: {len(selected_seats)} 个座位")
+                print(f"[主窗口] 订单数据验证:")
+                print(f"  - 影院数据: {'存在' if session_info.get('cinema_data') else '缺失'}")
+                print(f"  - 账号数据: {'存在' if session_info.get('account') else '缺失'}")
+                print(f"  - 场次数据: {'存在' if session_info.get('session_data') else '缺失'}")
+
+                # 验证影院数据
+                cinema_data = session_info.get('cinema_data')
+                if not cinema_data:
+                    print(f"[订单参数] 缺少影院数据")
+                    from services.ui_utils import MessageManager
+                    MessageManager.show_error(self, "订单创建失败", "缺少影院数据，请重新选择影院和场次", auto_close=False)
+                    return
+                else:
+                    print(f"[订单参数] ✅ 影院数据验证通过: {cinema_data.get('cinemaShortName', 'N/A')}")
+
+                # 调用主要的订单提交方法
+                self.on_submit_order(selected_seats)
+
+            else:
+                # 兼容旧格式：只有座位数据
+                print(f"[主窗口] 座位面板提交订单（兼容模式）: {len(order_data)} 个座位")
+                self.on_submit_order(order_data)
+
         except Exception as e:
             import traceback
             traceback.print_exc()

@@ -14,14 +14,14 @@ from PyQt5.QtCore import Qt, pyqtSignal, QPoint
 from PyQt5.QtGui import QFont, QPalette, QMouseEvent
 
 class SeatMapPanelPyQt5(QWidget):
-    """座位面板 - PyQt5版本，模仿tkinter布局"""
-    
+    """座位面板 - PyQt5版本，模仿tkinter布局，支持多区域显示"""
+
     # 信号定义
     seat_selected = pyqtSignal(list)  # 选座变化信号
-    
+
     def __init__(self, parent=None, seat_data=None):
         super().__init__(parent)
-        
+
         # 数据
         self.seat_data = seat_data or []
         self.selected_seats: Set[Tuple[int, int]] = set()
@@ -29,7 +29,11 @@ class SeatMapPanelPyQt5(QWidget):
         self.account_getter = lambda: {}
         self.on_seat_selected = None
         self.on_submit_order = None
-        
+
+        # 🆕 多区域支持
+        self.area_data = []  # 存储区域信息
+        self.area_colors = self._init_area_colors()  # 区域颜色映射
+
         # UI组件
         self.seat_buttons: Dict[Tuple[int, int], QPushButton] = {}
 
@@ -40,7 +44,60 @@ class SeatMapPanelPyQt5(QWidget):
 
         self._init_ui()
         self._draw_seats()
-    
+
+    def _init_area_colors(self) -> Dict[str, str]:
+        """初始化区域颜色映射 - 柔和用户友好的色彩方案"""
+        return {
+            '默认区': '#F0F8FF',      # 淡蓝色 - 柔和清新
+            '前排区域': '#FFE4B5',    # 柔和金色 - 温暖舒适
+            '按摩区域': '#FFE4E1',    # 淡粉色 - 温和优雅
+            '中心区域': '#E6F3FF'     # 浅蓝色 - 宁静专业
+        }
+
+    def _get_area_border_color(self, area_name: str) -> str:
+        """根据区域名称获取边框颜色"""
+        return self.area_colors.get(area_name, '#CCCCCC')  # 默认灰色
+
+    def _update_area_info_display(self):
+        """更新区域信息显示"""
+        # 清空现有的区域信息标签
+        for label in self.area_info_labels.values():
+            label.deleteLater()
+        self.area_info_labels.clear()
+
+        # 收集区域信息
+        area_info = {}
+        for row in self.seat_data:
+            for seat in row:
+                if seat and seat.get('area_name'):
+                    area_name = seat.get('area_name', '')
+                    area_price = seat.get('area_price', 0)
+                    if area_name and area_name not in area_info:
+                        area_info[area_name] = area_price
+
+        # 创建区域信息标签
+        for area_name, area_price in area_info.items():
+            area_color = self._get_area_border_color(area_name)
+
+            # 创建区域信息标签 - 使用柔和的样式
+            area_label = QLabel(f"{area_name} {area_price}元")
+            area_label.setStyleSheet(f"""
+                QLabel {{
+                    background-color: {area_color};
+                    border: 1px solid #ddd;
+                    color: #555;
+                    font: bold 11px "Microsoft YaHei";
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    margin: 2px;
+                }}
+            """)
+
+            self.area_info_layout.addWidget(area_label)
+            self.area_info_labels[area_name] = area_label
+
+        print(f"[座位面板] 区域信息显示已更新: {list(area_info.keys())}")
+
     def _init_ui(self):
         """初始化用户界面"""
         layout = QVBoxLayout(self)
@@ -69,7 +126,13 @@ class SeatMapPanelPyQt5(QWidget):
 
         self.scroll_area.setWidget(self.seat_widget)
         layout.addWidget(self.scroll_area, 1)
-        
+
+        # 🆕 区域价格信息显示
+        self.area_info_layout = QHBoxLayout()
+        self.area_info_layout.setAlignment(Qt.AlignCenter)
+        self.area_info_labels = {}  # 存储区域信息标签
+        layout.addLayout(self.area_info_layout)
+
         # 🆕 简化底部信息区 - 完全移除选座信息区域，为座位图腾出更多空间
         bottom_layout = QVBoxLayout()
 
@@ -225,8 +288,17 @@ class SeatMapPanelPyQt5(QWidget):
 
                 seat_btn.setText(real_seat_num)
                 
-                # 设置样式
-                self._update_seat_button_style(seat_btn, status)
+                # 🆕 获取座位所属区域信息
+                area_name = seat.get('area_name', '')
+                area_price = seat.get('area_price', 0)
+
+                # 设置样式（包含区域边框）
+                self._update_seat_button_style(seat_btn, status, area_name)
+
+                # 🆕 保存区域信息到按钮
+                seat_btn.area_name = area_name
+                seat_btn.area_price = area_price
+                seat_btn.seat_data = seat
                 
                 # 设置点击事件
                 if status == "available":
@@ -249,61 +321,69 @@ class SeatMapPanelPyQt5(QWidget):
         
         print(f"[座位面板] 座位图绘制完成，共{len(self.seat_buttons)}个座位")
 
+        # 🆕 更新区域信息显示
+        self._update_area_info_display()
+
         # 初始化按钮文字
         self._update_submit_button_text()
     
-    def _update_seat_button_style(self, button: QPushButton, status: str):
-        """更新座位按钮样式 - 现代化设计"""
+    def _update_seat_button_style(self, button: QPushButton, status: str, area_name: str = ''):
+        """更新座位按钮样式 - 现代化设计，支持区域边框"""
+        # 🆕 获取区域边框颜色
+        area_border_color = self._get_area_border_color(area_name)
+
         if status == "available":
-            # 可选座位 - 清新的蓝色
-            button.setStyleSheet("""
-                QPushButton {
+            # 可选座位 - 清新的蓝色，外边框显示区域颜色（更精致的2px边框）
+            button.setStyleSheet(f"""
+                QPushButton {{
                     background-color: #e3f2fd;
-                    border: 2px solid #2196f3;
+                    border: 2px solid {area_border_color};
                     color: #1976d2;
                     font: bold 10px "Microsoft YaHei";
                     border-radius: 6px;
-                }
-                QPushButton:hover {
+                }}
+                QPushButton:hover {{
                     background-color: #bbdefb;
-                    border-color: #1976d2;
-                }
-                QPushButton:pressed {
+                    border: 2px solid {area_border_color};
+                }}
+                QPushButton:pressed {{
                     background-color: #90caf9;
-                }
+                    border: 2px solid {area_border_color};
+                }}
             """)
         elif status == "sold":
-            # 已售座位 - 温和的灰色
-            button.setStyleSheet("""
-                QPushButton {
+            # 已售座位 - 温和的灰色，外边框显示区域颜色（更精致的2px边框）
+            button.setStyleSheet(f"""
+                QPushButton {{
                     background-color: #f5f5f5;
-                    border: 2px solid #9e9e9e;
+                    border: 2px solid {area_border_color};
                     color: #757575;
                     font: 10px "Microsoft YaHei";
                     border-radius: 6px;
-                }
+                    opacity: 0.7;
+                }}
             """)
         elif status == "selected":
-            # 选中座位 - 鲜明的绿色
-            button.setStyleSheet("""
-                QPushButton {
+            # 选中座位 - 鲜明的绿色，外边框显示区域颜色（更精致的2px边框）
+            button.setStyleSheet(f"""
+                QPushButton {{
                     background-color: #4caf50;
-                    border: 2px solid #388e3c;
+                    border: 2px solid {area_border_color};
                     color: #fff;
                     font: bold 10px "Microsoft YaHei";
                     border-radius: 6px;
-                }
+                }}
             """)
         else:
-            # 其他状态 - 默认样式
-            button.setStyleSheet("""
-                QPushButton {
+            # 其他状态 - 默认样式，外边框显示区域颜色（更精致的2px边框）
+            button.setStyleSheet(f"""
+                QPushButton {{
                     background-color: #fafafa;
-                    border: 2px solid #e0e0e0;
+                    border: 2px solid {area_border_color};
                     color: #bdbdbd;
                     font: 10px "Microsoft YaHei";
                     border-radius: 6px;
-                }
+                }}
             """)
     
     def toggle_seat(self, r: int, c: int):
@@ -356,6 +436,37 @@ class SeatMapPanelPyQt5(QWidget):
         self.selected_seats.clear()
         self._draw_seats()
         print(f"[座位面板] 更新座位数据: {len(self.seat_data)} 行")
+
+    def update_seat_data_with_areas(self, seat_data: List[List], area_data: List[Dict] = None):
+        """更新座位数据并包含区域信息"""
+        self.seat_data = seat_data or []
+        self.area_data = area_data or []
+        self.selected_seats.clear()
+
+        # 🆕 如果提供了区域数据，确保座位数据包含区域信息
+        if self.area_data:
+            self._enrich_seat_data_with_area_info()
+
+        self._draw_seats()
+        print(f"[座位面板] 更新座位数据（含区域信息): {len(self.seat_data)} 行, {len(self.area_data)} 个区域")
+
+    def _enrich_seat_data_with_area_info(self):
+        """为座位数据补充区域信息"""
+        # 创建区域映射
+        area_map = {}
+        for area in self.area_data:
+            area_name = area.get('area_name', '')
+            area_price = area.get('area_price', 0)
+            area_map[area_name] = area_price
+
+        # 为座位数据补充区域信息
+        for row in self.seat_data:
+            for seat in row:
+                if seat and not seat.get('area_name'):
+                    # 如果座位没有区域信息，尝试从区域数据中匹配
+                    # 这里可以根据实际需求实现匹配逻辑
+                    seat['area_name'] = '默认区'  # 默认区域
+                    seat['area_price'] = area_map.get('默认区', 0)
     
     def update_seats(self, seat_data: List[List]):
         """更新座位数据（兼容原接口）"""
@@ -408,17 +519,46 @@ class SeatMapPanelPyQt5(QWidget):
         self._priceinfo = priceinfo
     
     def _on_submit_order_click(self):
-        """提交订单按钮点击事件"""
+        """提交订单按钮点击事件（修复影院数据传递问题）"""
         if not self.selected_seats:
             from PyQt5.QtWidgets import QMessageBox
             QMessageBox.warning(self, "提交订单", "请先选择座位")
             return
-        
-        if self.on_submit_order:
-            selected_seat_objects = self.get_selected_seat_objects()
-            self.on_submit_order(selected_seat_objects)
-        
+
         print(f"[座位面板] 提交订单，选中座位: {self.get_selected_seats()}")
+
+        # 🔧 修复：构建完整的订单数据，包含session_info
+        selected_seat_objects = self.get_selected_seat_objects()
+
+        # 构建完整的订单数据
+        order_data = {
+            'seats': selected_seat_objects,
+            'session_info': getattr(self, 'session_info', {}),  # 🆕 添加完整的session_info
+            'trigger_type': 'seat_map_panel_pyqt5'
+        }
+
+        # 🔧 验证关键数据
+        session_info = order_data.get('session_info', {})
+        cinema_data = session_info.get('cinema_data')
+        account = session_info.get('account')
+
+        print(f"[座位面板] 订单数据验证:")
+        print(f"  - 座位数量: {len(selected_seat_objects)}")
+        print(f"  - 影院数据: {'存在' if cinema_data else '缺失'}")
+        print(f"  - 账号数据: {'存在' if account else '缺失'}")
+        print(f"  - 场次数据: {'存在' if session_info.get('session_data') else '缺失'}")
+
+        if not cinema_data:
+            print(f"[座位面板] ⚠️ 警告: 影院数据缺失，可能导致订单创建失败")
+
+        if not account:
+            print(f"[座位面板] ⚠️ 警告: 账号数据缺失，可能导致订单创建失败")
+
+        # 调用回调函数，传递完整的订单数据
+        if self.on_submit_order:
+            self.on_submit_order(order_data)  # 🔧 传递完整的订单数据而不只是座位数据
+
+        print(f"[座位面板] 订单提交回调已调用")
     
     def clear_selection(self):
         """清空选择"""
