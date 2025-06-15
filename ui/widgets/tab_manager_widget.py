@@ -38,21 +38,37 @@ class TabManagerWidget(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
+
         # 初始化状态
         self.current_account = None
         self.cinemas_data = []
         self.current_points = 0
-        
+
+        # 🆕 六级联动状态变量（移除系统选择）
+        self.current_city = None            # 当前城市
+        self.current_cinema_data = None     # 当前影院数据
+        self.current_movie = None           # 当前电影
+        self.current_date = None            # 当前日期
+        self.current_session = None         # 当前场次
+
+        # 🆕 六级联动数据缓存（移除系统列表）
+        self.cities_data = []               # 城市列表
+        self.movies_data = []               # 电影列表
+        self.dates_data = []                # 日期列表
+        self.sessions_data = []             # 场次列表
+
+        # 🆕 API实例
+        self.api_instance = None
+
         # 添加数据缓存
         self.order_data_cache = []
-        
+
         # 实现IWidgetInterface接口
         self._widget_interface = IWidgetInterface()
-        
+
         # 初始化界面
         self.initialize()
-        
+
         # 连接全局事件
         self._connect_global_events()
     
@@ -60,7 +76,10 @@ class TabManagerWidget(QWidget):
         """初始化组件"""
         self._setup_ui()
         self._connect_signals()
-        
+
+        # 🆕 UI创建完成后初始化沃美联动（移除系统选择）
+        self._init_cascade()
+
         # 加载示例数据
         self._load_sample_data()
     
@@ -132,16 +151,35 @@ class TabManagerWidget(QWidget):
         layout.addWidget(coupon_group, 60)  # 从45改为60
     
     def _build_cinema_select(self, parent_group):
-        """构建影院选择区域"""
+        """构建七级联动选择区域：系统→城市→影院→电影→日期→场次→座位"""
         layout = QVBoxLayout(parent_group)
-        layout.setContentsMargins(0, 20, 10, 10)  # 🆕 左边距改为0，让下拉框与账号信息对齐
-        layout.setSpacing(5)  # 🆕 减少垂直间距，让整体更紧密
-        
+        layout.setContentsMargins(0, 20, 10, 10)
+        layout.setSpacing(5)
+
         # 当前账号显示
         self.current_account_label = ClassicLabel("当前账号: 未选择", "info")
         layout.addWidget(self.current_account_label)
-        
-        # 影院选择 - 🆕 简化布局，与账号信息区域左边缘对齐
+
+
+
+        # 🆕 第二级：城市选择
+        city_layout = QHBoxLayout()
+        city_layout.setContentsMargins(0, 0, 0, 0)
+        city_label = ClassicLabel("城市:")
+        city_label.setFixedWidth(30)
+        city_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        city_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
+        self.city_combo = ClassicComboBox()
+        self.city_combo.addItem("加载中...")
+        self.city_combo.setFixedWidth(320)
+        self.city_combo.setEnabled(True)  # 启用城市选择
+        city_layout.addWidget(city_label)
+        city_layout.addSpacing(5)
+        city_layout.addWidget(self.city_combo)
+        city_layout.addStretch()
+        layout.addLayout(city_layout)
+
+        # 第三级：影院选择
         cinema_layout = QHBoxLayout()
         cinema_layout.setContentsMargins(0, 0, 0, 0)
         cinema_label = ClassicLabel("影院:")
@@ -149,16 +187,16 @@ class TabManagerWidget(QWidget):
         cinema_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         cinema_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
         self.cinema_combo = ClassicComboBox()
-        self.cinema_combo.addItem("加载中...")
-        # 🆕 设置下拉框宽度
+        self.cinema_combo.addItem("请先选择城市")
         self.cinema_combo.setFixedWidth(320)
+        self.cinema_combo.setEnabled(False)
         cinema_layout.addWidget(cinema_label)
         cinema_layout.addSpacing(5)
         cinema_layout.addWidget(self.cinema_combo)
         cinema_layout.addStretch()
         layout.addLayout(cinema_layout)
         
-        # 影片选择 - 🆕 简化布局，与账号信息区域左边缘对齐
+        # 第四级：影片选择
         movie_layout = QHBoxLayout()
         movie_layout.setContentsMargins(0, 0, 0, 0)
         movie_label = ClassicLabel("影片:")
@@ -167,15 +205,15 @@ class TabManagerWidget(QWidget):
         movie_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
         self.movie_combo = ClassicComboBox()
         self.movie_combo.addItems(["请先选择影院"])
-        # 🆕 设置下拉框宽度
         self.movie_combo.setFixedWidth(320)
+        self.movie_combo.setEnabled(False)
         movie_layout.addWidget(movie_label)
         movie_layout.addSpacing(5)
         movie_layout.addWidget(self.movie_combo)
         movie_layout.addStretch()
         layout.addLayout(movie_layout)
-        
-        # 日期选择 - 🆕 简化布局，与账号信息区域左边缘对齐
+
+        # 第五级：日期选择
         date_layout = QHBoxLayout()
         date_layout.setContentsMargins(0, 0, 0, 0)
         date_label = ClassicLabel("日期:")
@@ -184,15 +222,15 @@ class TabManagerWidget(QWidget):
         date_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
         self.date_combo = ClassicComboBox()
         self.date_combo.addItems(["请先选择影片"])
-        # 🆕 设置下拉框宽度
         self.date_combo.setFixedWidth(320)
+        self.date_combo.setEnabled(False)
         date_layout.addWidget(date_label)
         date_layout.addSpacing(5)
         date_layout.addWidget(self.date_combo)
         date_layout.addStretch()
         layout.addLayout(date_layout)
-        
-        # 场次选择 - 🆕 简化布局，与账号信息区域左边缘对齐
+
+        # 第六级：场次选择
         session_layout = QHBoxLayout()
         session_layout.setContentsMargins(0, 0, 0, 0)
         session_label = ClassicLabel("场次:")
@@ -201,8 +239,8 @@ class TabManagerWidget(QWidget):
         session_label.setStyleSheet("QLabel { color: #333333; font: 12px 'Microsoft YaHei'; background: transparent; }")
         self.session_combo = ClassicComboBox()
         self.session_combo.addItems(["请先选择日期"])
-        # 🆕 设置下拉框宽度
         self.session_combo.setFixedWidth(320)
+        self.session_combo.setEnabled(False)
         session_layout.addWidget(session_label)
         session_layout.addSpacing(5)
         session_layout.addWidget(self.session_combo)
@@ -461,9 +499,9 @@ class TabManagerWidget(QWidget):
                 except:
                     pass
 
-                info_text = (f"当前账号：{account['userid']}\n"
-                           f"影院：{cinema_name}\n"
-                           f"余额：{account.get('balance', 0)}  积分：{account.get('score', 0)}")
+                # 适配沃美简化账号格式
+                phone = account.get('phone', '未知账号')
+                info_text = f"当前账号：{phone}\n影院：{cinema_name}"
                 self.bind_account_info.setText(info_text)
                 self.bind_account_info.setStyleSheet("QLabel { color: blue; background-color: #fff; padding: 10px; border: 1px solid #ddd; }")
             else:
@@ -487,9 +525,9 @@ class TabManagerWidget(QWidget):
                 except:
                     pass
 
-                info_text = (f"当前账号：{account['userid']}\n"
-                           f"影院：{cinema_name}\n"
-                           f"余额：{account.get('balance', 0)}  积分：{account.get('score', 0)}")
+                # 适配沃美简化账号格式
+                phone = account.get('phone', '未知账号')
+                info_text = f"当前账号：{phone}\n影院：{cinema_name}"
                 self.exchange_account_info.setText(info_text)
                 self.exchange_account_info.setStyleSheet("QLabel { color: blue; background-color: #fff; padding: 10px; border: 1px solid #ddd; }")
             else:
@@ -1324,37 +1362,56 @@ class TabManagerWidget(QWidget):
             self.cinema_stats_label.setText(f"统计信息获取失败: {str(e)}")
     
     def _load_sample_data(self):
-        """加载真实影院数据"""
+        """初始化下拉框状态（完全移除本地数据依赖）"""
         try:
-            # 从影院管理器加载真实数据
-            from services.cinema_manager import cinema_manager
-            cinemas = cinema_manager.load_cinema_list()
-            
-            self.cinema_combo.clear()
-            self.cinemas_data = cinemas  # 保存完整的影院数据
-            
-            if cinemas:
-                print(f"[Tab管理器] 加载了 {len(cinemas)} 个真实影院")
-                for cinema in cinemas:
-                    cinema_name = cinema.get('cinemaShortName', '未知影院')
-                    self.cinema_combo.addItem(cinema_name)
-            else:
-                print("[Tab管理器] 未找到影院数据，加载示例数据")
-                self.cinema_combo.addItems([
-                    "华夏优加金太都会",
-                    "深影国际影城(佐伦虹湾购物中心店)",
-                    "深圳万友影城BCMall店"
-                ])
-                
+            print("[Tab管理器] 🚫 已移除本地影院文件依赖")
+            print("[Tab管理器] 🔄 沃美系统：所有数据通过API动态获取")
+
+            # 清理并初始化所有下拉框为默认状态
+            self._reset_all_combos_to_default()
+
+            # 沃美系统使用六级联动，城市数据在_init_cascade中通过API加载
+            print("[Tab管理器] 下拉框初始化完成，准备通过API加载城市数据")
+
         except Exception as e:
-            print(f"[Tab管理器] 加载影院数据错误: {e}")
-            # 加载示例数据作为后备
-            self.cinema_combo.clear()
-            self.cinema_combo.addItems([
-                "华夏优加金太都会", 
-                "深影国际影城(佐伦虹湾购物中心店)",
-                "深圳万友影城BCMall店"
-            ])
+            print(f"[Tab管理器] 初始化下拉框错误: {e}")
+            # 确保下拉框至少有默认状态
+            self._reset_all_combos_to_default()
+
+    def _reset_all_combos_to_default(self):
+        """重置所有下拉框到默认状态（不重置城市下拉框）"""
+        try:
+            # 🔧 不重置城市下拉框，因为城市数据是通过API加载的
+            # 城市下拉框由_init_cascade方法管理，不在这里重置
+
+            # 影院下拉框
+            if hasattr(self, 'cinema_combo'):
+                self.cinema_combo.clear()
+                self.cinema_combo.addItem("请先选择城市")
+                self.cinema_combo.setEnabled(False)
+
+            # 电影下拉框
+            if hasattr(self, 'movie_combo'):
+                self.movie_combo.clear()
+                self.movie_combo.addItem("请先选择影院")
+                self.movie_combo.setEnabled(False)
+
+            # 日期下拉框
+            if hasattr(self, 'date_combo'):
+                self.date_combo.clear()
+                self.date_combo.addItem("请先选择影片")
+                self.date_combo.setEnabled(False)
+
+            # 场次下拉框
+            if hasattr(self, 'session_combo'):
+                self.session_combo.clear()
+                self.session_combo.addItem("请先选择日期")
+                self.session_combo.setEnabled(False)
+
+            print("[Tab管理器] 所有下拉框已重置为默认状态（保留城市数据）")
+
+        except Exception as e:
+            print(f"[Tab管理器] 重置下拉框错误: {e}")
     
 
     
@@ -1494,14 +1551,16 @@ class TabManagerWidget(QWidget):
             if hasattr(self, 'tab_widget'):
                 self.tab_widget.currentChanged.connect(self._on_tab_changed)
 
-            # 出票Tab信号 - 检查组件是否存在再连接
+            # 🆕 六级联动信号连接（移除系统选择）
+            if hasattr(self, 'city_combo'):
+                self.city_combo.currentTextChanged.connect(self._on_city_changed)
             if hasattr(self, 'cinema_combo'):
                 self.cinema_combo.currentTextChanged.connect(self._on_cinema_changed)
             if hasattr(self, 'movie_combo'):
                 self.movie_combo.currentTextChanged.connect(self._on_movie_changed)
             if hasattr(self, 'date_combo'):
                 self.date_combo.currentTextChanged.connect(self._on_date_changed)
-            if hasattr(self, 'session_combo'):  # 🆕 添加场次选择信号连接
+            if hasattr(self, 'session_combo'):
                 self.session_combo.currentTextChanged.connect(self._on_session_changed)
             if hasattr(self, 'submit_order_btn'):
                 self.submit_order_btn.clicked.connect(self._on_submit_order)
@@ -1563,35 +1622,38 @@ class TabManagerWidget(QWidget):
         event_bus.account_changed.connect(self._on_account_changed)
     
     def _on_account_changed(self, account_data: dict):
-        """账号切换处理"""
+        """账号切换处理（适配沃美简化账号格式）"""
         try:
             self.current_account = account_data
-            userid = account_data.get("userid", "未知账号")
-            balance = account_data.get("balance", 0)
-            
+
+            # 沃美系统简化账号格式：只需要token和phone两个字段
+            phone = account_data.get("phone", "未知账号")  # 使用phone作为用户标识
+            token = account_data.get("token", "")
+
             # 更新各Tab页面的账号显示
             if hasattr(self, 'current_account_label'):
-                account_info = f"当前账号: {userid} (余额:{balance})"
+                account_info = f"当前账号: {phone}"  # 简化显示，不显示余额
                 self.current_account_label.setText(account_info)
-            
-            # 更新绑券界面
+
+            # 更新绑券界面（如果需要）
             self.update_bind_account_info()
-            
-            # 更新兑换券界面
+
+            # 更新兑换券界面（如果需要）
             self.update_exchange_account_info()
-            
-            # 更新积分显示
-            self.current_points = account_data.get("score", 0)
-            
-            print(f"[Tab管理器] 账号切换: {userid}")
-            
+
+            # 沃美系统不需要积分信息
+            self.current_points = 0
+
+            print(f"[Tab管理器] 沃美账号切换: {phone}")
+            print(f"[Tab管理器] Token: {token[:20]}...{token[-10:] if len(token) > 30 else token}")
+
         except Exception as e:
             print(f"[Tab管理器] 账号切换错误: {e}")
     
     def _on_cinema_changed(self, cinema_text: str):
-        """影院选择变化处理 - 加载真实影片数据"""
+        """影院选择变化处理 - 使用沃美电影服务加载电影数据"""
         try:
-            if not cinema_text or cinema_text == "加载中...":
+            if not cinema_text or cinema_text in ["加载中...", "请选择影院", "加载失败"]:
                 return
 
             print(f"[Tab管理器] 影院切换: {cinema_text}")
@@ -1604,21 +1666,18 @@ class TabManagerWidget(QWidget):
                 self.submit_order_btn.setEnabled(False)
                 print(f"[Tab管理器] 影院切换，选座按钮已禁用")
 
-            # 清空下级选择
-            self.movie_combo.clear()
-            self.date_combo.clear()
-            self.session_combo.clear()
-            
-            self.movie_combo.addItem("加载影片中...")
-            self.date_combo.addItem("请先选择影片")
-            self.session_combo.addItem("请先选择日期")
-            
-            # 查找选中的影院数据
+            # 重置下级联动状态
+            self._reset_cascade_from_level(3)  # 重置电影及以下级别
+
+            # 查找选中的影院数据（确保使用沃美数据格式）
             selected_cinema = None
             if hasattr(self, 'cinemas_data') and self.cinemas_data:
                 for cinema in self.cinemas_data:
-                    if cinema.get('cinemaShortName') == cinema_text:
+                    # 沃美系统使用cinema_name字段
+                    cinema_name = cinema.get('cinema_name', '')
+                    if cinema_name == cinema_text:
                         selected_cinema = cinema
+                        print(f"[Tab管理器] 找到沃美影院: {cinema_name} (ID: {cinema.get('cinema_id')})")
                         break
 
             if not selected_cinema:
@@ -1627,69 +1686,167 @@ class TabManagerWidget(QWidget):
                 self.movie_combo.addItem("影院数据错误")
                 return
 
-            # 🆕 保存当前影院数据 - 修复券选择功能需要的影院信息
+            # 保存当前影院数据（确保使用沃美格式）
             self.current_cinema_data = selected_cinema
-            print(f"[Tab管理器] 保存当前影院数据: {selected_cinema.get('cinemaShortName')} (ID: {selected_cinema.get('cinemaid')})")
+            cinema_id = selected_cinema.get('cinema_id')  # 沃美系统使用cinema_id
+            cinema_name = selected_cinema.get('cinema_name')  # 沃美系统使用cinema_name
+            print(f"[Tab管理器] 保存当前沃美影院数据: {cinema_name} (ID: {cinema_id})")
 
-            # 🆕 发出影院选择信号 - 传递影院数据对象
+            # 发出影院选择信号
             self.cinema_selected.emit(cinema_text)
 
-            # 🆕 发布全局影院选择事件 - 传递完整影院数据
+            # 发布全局影院选择事件
+            from utils.signals import event_bus
             event_bus.cinema_selected.emit(selected_cinema)
 
-            # 🆕 检查影院是否有关联账号
-            if not self._check_cinema_has_accounts(selected_cinema.get('cinemaid')):
-                # 显示友好提示
-                self.movie_combo.clear()
-                self.movie_combo.addItem("无登录账号 请尽快添加账号")
-                self.date_combo.clear()
-                self.date_combo.addItem("请先添加账号")
-                self.session_combo.clear()
-                self.session_combo.addItem("请先添加账号")
-
-                # 🆕 显示提示对话框
-                QMessageBox.information(
-                    self,
-                    "影院无账号",
-                    f"影院 {selected_cinema.get('cinemaShortName', '未知')} 还没有关联的账号。\n\n"
-                    f"请在账号Tab页面为该影院添加账号后再使用。"
-                )
-                return
-
-            # 🆕 延迟检查账号状态，等待账号组件处理完影院切换
-            QTimer.singleShot(200, lambda: self._check_and_load_movies(selected_cinema))
+            # 直接加载电影数据（沃美系统不需要账号验证）
+            self._load_movies_for_cinema_womei(selected_cinema)
                 
         except Exception as e:
             print(f"[Tab管理器] 影院选择错误: {e}")
-            self.movie_combo.clear()
-            self.movie_combo.addItem("加载失败")
+            self._set_movie_combo_error("影院选择失败")
 
-    def _check_cinema_has_accounts(self, cinema_id: str) -> bool:
-        """🆕 检查指定影院是否有关联的账号"""
+    def _load_movies_for_cinema_womei(self, cinema_data):
+        """使用沃美电影服务为指定影院加载电影数据（增强调试功能）"""
         try:
-            import json
-            import os
+            print(f"[电影调试] ==================== 开始加载影院电影列表 ====================")
 
-            # 加载账号数据
-            accounts_file = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'accounts.json')
+            # 设置加载状态
+            self.movie_combo.clear()
+            self.movie_combo.addItem("加载电影中...")
+            self.movie_combo.setEnabled(False)
 
-            if not os.path.exists(accounts_file):
-                print(f"[Tab管理器] 账号文件不存在: {accounts_file}")
-                return False
+            # 获取沃美影院ID和名称
+            cinema_id = cinema_data.get('cinema_id')  # 沃美系统使用cinema_id
+            cinema_name = cinema_data.get('cinema_name')  # 沃美系统使用cinema_name
 
-            with open(accounts_file, "r", encoding="utf-8") as f:
-                accounts = json.load(f)
+            print(f"[电影调试] 影院信息:")
+            print(f"  - 影院名称: {cinema_name}")
+            print(f"  - 影院ID: {cinema_id}")
 
-            # 检查是否有该影院的账号
-            cinema_accounts = [acc for acc in accounts if acc.get('cinemaid') == cinema_id]
+            if not cinema_id:
+                print(f"[电影调试] ❌ 影院ID缺失: {cinema_data}")
+                self._set_movie_combo_error("影院ID缺失")
+                return
 
-            print(f"[Tab管理器] 影院 {cinema_id} 的账号数量: {len(cinema_accounts)}")
+            # 获取沃美电影服务实例
+            from services.womei_film_service import get_womei_film_service
 
-            return len(cinema_accounts) > 0
+            # 使用当前账号的token或默认token
+            token = "47794858a832916d8eda012e7cabd269"  # 默认token
+            if hasattr(self, 'current_account') and self.current_account:
+                account_token = self.current_account.get('token')
+                if account_token:
+                    token = account_token
+                    print(f"[Tab管理器] 使用当前账号token: {token[:20]}...")
+                else:
+                    print(f"[Tab管理器] 当前账号无token，使用默认token")
+            else:
+                print(f"[Tab管理器] 无当前账号，使用默认token")
+
+            film_service = get_womei_film_service(token)
+
+            # 🔧 详细的电影API调用调试
+            print(f"[电影调试] 调用电影API: get_movies(cinema_id={cinema_id})")
+            movies_result = film_service.get_movies(cinema_id)
+
+            # 🔧 详细的响应调试
+            print(f"[电影调试] API响应结果:")
+            print(f"  - success: {movies_result.get('success')}")
+            print(f"  - total: {movies_result.get('total', 'N/A')}")
+            print(f"  - error: {movies_result.get('error', 'N/A')}")
+
+            if movies_result.get('success'):
+                movies = movies_result.get('movies', [])
+                print(f"[电影调试] ✅ 成功获取电影数据:")
+                print(f"  - 电影数量: {len(movies)}")
+
+                # 🔧 显示前3部电影的详细信息
+                for i, movie in enumerate(movies[:3]):
+                    movie_name = movie.get('name', '未知电影')
+                    movie_id = movie.get('movie_id', 'N/A')  # 修复：沃美API使用movie_id字段
+                    print(f"  - 电影 {i+1}: {movie_name} (ID: {movie_id})")
+
+                if len(movies) > 3:
+                    print(f"  - ... 还有 {len(movies) - 3} 部电影")
+
+                if movies:
+                    self._update_movie_combo_womei(movies)
+                    print(f"[电影调试] ✅ 电影下拉框更新完成")
+
+                    # 🔧 自动选择第一个电影
+                    if len(movies) > 0:
+                        first_movie = movies[0]
+                        movie_name = first_movie.get('name', '未知电影')  # 修复字段名
+                        print(f"[电影调试] 🎯 自动选择第一个电影: {movie_name}")
+
+                        # 延迟选择，确保下拉框已更新
+                        QTimer.singleShot(100, lambda: self._auto_select_first_movie(movie_name))
+                else:
+                    print(f"[电影调试] ❌ 该影院暂无电影")
+                    self._set_movie_combo_error("该影院暂无电影")
+            else:
+                error = movies_result.get('error', '未知错误')
+                print(f"[电影调试] ❌ 获取电影失败: {error}")
+                self._set_movie_combo_error(f"获取电影失败: {error}")
 
         except Exception as e:
-            print(f"[Tab管理器] 检查影院账号错误: {e}")
-            return False
+            print(f"[Tab管理器] 加载沃美电影数据错误: {e}")
+            import traceback
+            traceback.print_exc()
+            self._set_movie_combo_error("加载电影异常")
+
+    def _update_movie_combo_womei(self, movies):
+        """更新电影下拉框（沃美数据格式，增强调试功能）"""
+        try:
+            print(f"[电影调试] 开始更新电影下拉框...")
+
+            # 清空并设置默认选项
+            self.movie_combo.clear()
+            self.movie_combo.addItem("请选择电影")
+
+            # 保存电影数据
+            self.current_movies = movies
+            print(f"[电影调试] 保存电影数据: {len(movies)} 部电影")
+
+            # 添加电影到下拉框
+            for i, movie in enumerate(movies):
+                movie_name = movie.get('name', '未知电影')
+                movie_id = movie.get('movie_id', 'N/A')  # 修复：沃美API使用movie_id字段
+                self.movie_combo.addItem(movie_name)
+
+                # 只显示前3部电影的详细信息
+                if i < 3:
+                    print(f"[电影调试] 添加电影 {i+1}: {movie_name} (ID: {movie_id})")
+
+            # 🔧 确保下拉框启用状态正确
+            self.movie_combo.setEnabled(True)
+            print(f"[电影调试] ✅ 电影下拉框更新完成:")
+            print(f"  - 总电影数: {len(movies)}")
+            print(f"  - 下拉框项目数: {self.movie_combo.count()}")
+            print(f"  - 启用状态: {self.movie_combo.isEnabled()}")
+
+        except Exception as e:
+            print(f"[电影调试] ❌ 更新电影下拉框失败: {e}")
+            import traceback
+            traceback.print_exc()
+            self._set_movie_combo_error("更新电影列表失败")
+
+    def _set_movie_combo_error(self, error_msg):
+        """设置电影下拉框错误状态"""
+        self.movie_combo.clear()
+        self.movie_combo.addItem(error_msg)
+        self.movie_combo.setEnabled(True)
+
+    def _check_cinema_has_accounts(self, cinema_id: str) -> bool:
+        """简化的账号检查（总是返回True）"""
+        try:
+            print(f"[Tab管理器] 简化账号检查，不再关联影院")
+            return True  # 总是返回True，不再检查影院关联
+
+        except Exception as e:
+            print(f"[Tab管理器] 账号检查错误: {e}")
+            return True  # 即使出错也返回True
 
     def _check_and_load_movies(self, selected_cinema):
         """检查账号状态并加载影片数据"""
@@ -1909,171 +2066,315 @@ class TabManagerWidget(QWidget):
             self.movie_combo.addItem("加载失败")
 
     def _on_movie_changed(self, movie_text: str):
-        """影片选择变化处理"""
+        """电影选择变化处理 - 使用沃美电影服务获取场次数据"""
         try:
-            if not movie_text or movie_text in ["请先选择影院", "正在加载影片...", "暂无影片", "加载失败"]:
+            if not movie_text or movie_text in ["请选择电影", "加载电影中...", "该影院暂无电影", "加载失败"]:
                 return
 
-            # 🆕 添加账号状态检查，避免循环错误
-            if not self.current_account:
-                # 静默返回，不输出错误日志
-                return
+            print(f"[Tab管理器] 电影切换: {movie_text}")
 
-            print(f"[Tab管理器] 影片切换: {movie_text}")
-
-            # 🆕 重置券列表
+            # 重置券列表
             self.reset_coupon_lists()
 
-            # 🆕 禁用选座按钮 - 影片切换时
+            # 禁用选座按钮
             if hasattr(self, 'submit_order_btn'):
                 self.submit_order_btn.setEnabled(False)
-                print(f"[Tab管理器] 影片切换，选座按钮已禁用")
+                print(f"[Tab管理器] 电影切换，选座按钮已禁用")
 
-            # 获取选中的影片详细数据
+            # 重置下级联动状态
+            self._reset_cascade_from_level(4)  # 重置日期及以下级别
+
+            # 获取选中的电影数据
             selected_movie = None
             if hasattr(self, 'current_movies') and self.current_movies:
-                movie_index = self.movie_combo.currentIndex()
+                movie_index = self.movie_combo.currentIndex() - 1  # 减去"请选择电影"选项
                 if 0 <= movie_index < len(self.current_movies):
                     selected_movie = self.current_movies[movie_index]
-            
+
             if not selected_movie:
-                print(f"[Tab管理器] 未找到影片数据: {movie_text}")
+                print(f"[Tab管理器] 未找到电影数据: {movie_text}")
+                self._set_date_combo_error("未找到电影数据")
                 return
-            
-            # 清空日期和场次选择
-            self.date_combo.clear()
-            self.session_combo.clear()
-            
-            # 添加默认选项
-            self.date_combo.addItem("请选择日期")
-            self.session_combo.addItem("请先选择日期")
-            
-            # 从影片排期数据中提取日期列表
-            dates = []
-            plans = selected_movie.get('plans', [])
-            
-            if not plans:
-                print(f"[Tab管理器] 影片排期数据未加载")
-                self.date_combo.addItem("暂无排期")
-                return
-            
-            # 收集所有日期
-            for plan in plans:
-                show_date = plan.get('k', '')  # 场次时间字段
-                if show_date:
-                    # 提取日期部分
-                    date_part = show_date.split(' ')[0] if ' ' in show_date else show_date
-                    if date_part and date_part not in dates:
-                        dates.append(date_part)
-            
-            # 排序日期
-            dates.sort()
-            
-            # 添加到下拉框
-            if dates:
-                for date in dates:
-                    self.date_combo.addItem(date)
-                print(f"[Tab管理器] 加载日期: {len(dates)} 个")
-                
-                # 🆕 自动选择第一个日期，触发四级联动
-                if len(dates) > 0:
-                    QTimer.singleShot(100, lambda: self.date_combo.setCurrentIndex(1))  # 索引1是第一个日期（索引0是"请选择日期"）
-                    print(f"[Tab管理器] 自动选择第一个日期: {dates[0]}")
-            else:
-                self.date_combo.addItem("暂无日期")
-            
-            # 保存当前影片数据
+
+            # 保存当前电影数据
             self.current_movie_data = selected_movie
+            movie_id = selected_movie.get('movie_id') or selected_movie.get('id')
+
+            print(f"[Tab管理器] 🎬 开始获取电影场次: {movie_text} (ID: {movie_id})")
+
+            # 获取沃美影院ID
+            cinema_id = None
+            if hasattr(self, 'current_cinema_data') and self.current_cinema_data:
+                cinema_id = self.current_cinema_data.get('cinema_id')  # 沃美系统使用cinema_id
+
+            if not cinema_id or not movie_id:
+                print(f"[Tab管理器] 缺少必要参数: cinema_id={cinema_id}, movie_id={movie_id}")
+                self._set_date_combo_error("参数缺失")
+                return
+
+            # 设置加载状态
+            self.date_combo.clear()
+            self.date_combo.addItem("加载日期中...")
+            self.date_combo.setEnabled(False)
+
+            # 获取沃美电影服务实例
+            from services.womei_film_service import get_womei_film_service
+            film_service = get_womei_film_service("47794858a832916d8eda012e7cabd269")
+
+            # 调用场次API
+            shows_result = film_service.get_shows(cinema_id, str(movie_id))
+
+            if shows_result.get('success'):
+                shows_data = shows_result.get('shows', {})  # 沃美返回按日期分组的字典
+                total_shows = shows_result.get('total', 0)
+                print(f"[Tab管理器] ✅ 成功获取 {total_shows} 个场次")
+
+                if shows_data and isinstance(shows_data, dict):
+                    # 从按日期分组的数据中提取有效日期
+                    valid_dates = []
+                    for date, date_data in shows_data.items():
+                        schedules = date_data.get('schedules', [])
+                        if schedules:  # 只添加有场次的日期
+                            valid_dates.append(date)
+
+                    if valid_dates:
+                        sorted_dates = sorted(valid_dates)
+                        self._update_date_combo_womei_new(shows_data, sorted_dates)
+
+                        # 🔧 自动选择第一个日期
+                        if len(sorted_dates) > 0:
+                            first_date = sorted_dates[0]
+                            print(f"[Tab管理器] 🎯 自动选择第一个日期: {first_date}")
+
+                            # 延迟选择，确保下拉框已更新
+                            QTimer.singleShot(100, lambda: self._auto_select_first_date(first_date))
+                    else:
+                        self._set_date_combo_error("该电影暂无场次")
+                else:
+                    self._set_date_combo_error("该电影暂无场次")
+            else:
+                error = shows_result.get('error', '未知错误')
+                print(f"[Tab管理器] ❌ 获取场次失败: {error}")
+                self._set_date_combo_error(f"获取场次失败: {error}")
             
         except Exception as e:
-            print(f"[Tab管理器] 影片选择错误: {e}")
+            print(f"[Tab管理器] 电影选择错误: {e}")
+            import traceback
+            traceback.print_exc()
+            self._set_date_combo_error("电影选择异常")
+
+    def _update_date_combo_womei_new(self, shows_data, valid_dates):
+        """更新日期下拉框（沃美按日期分组的数据格式）"""
+        try:
+            # 保存完整的场次数据（按日期分组）
+            self.current_shows_data = shows_data
+
+            # 更新日期下拉框
+            self.date_combo.clear()
+            self.date_combo.addItem("请选择日期")
+
+            for date in valid_dates:
+                self.date_combo.addItem(date)
+
+            self.date_combo.setEnabled(True)
+            print(f"[Tab管理器] 日期下拉框已更新，共 {len(valid_dates)} 个有效日期")
+
+        except Exception as e:
+            print(f"[Tab管理器] 更新日期下拉框失败: {e}")
+            self._set_date_combo_error("更新日期列表失败")
+
+    def _update_date_combo_womei(self, shows):
+        """更新日期下拉框（沃美场次数据格式）- 兼容旧版本"""
+        try:
+            # 保存场次数据
+            self.current_shows_data = shows
+
+            # 提取所有日期
+            dates = set()
+            for show in shows:
+                show_date = show.get('show_date', '')
+                if show_date:
+                    dates.add(show_date)
+
+            # 排序日期
+            sorted_dates = sorted(list(dates))
+
+            # 更新日期下拉框
+            self.date_combo.clear()
+            self.date_combo.addItem("请选择日期")
+
+            for date in sorted_dates:
+                self.date_combo.addItem(date)
+
+            self.date_combo.setEnabled(True)
+            print(f"[Tab管理器] 日期下拉框已更新，共 {len(sorted_dates)} 个日期")
+
+        except Exception as e:
+            print(f"[Tab管理器] 更新日期下拉框失败: {e}")
+            self._set_date_combo_error("更新日期列表失败")
+
+    def _set_date_combo_error(self, error_msg):
+        """设置日期下拉框错误状态"""
+        self.date_combo.clear()
+        self.date_combo.addItem(error_msg)
+        self.date_combo.setEnabled(True)
+
+        # 同时重置场次下拉框
+        self.session_combo.clear()
+        self.session_combo.addItem("请先选择日期")
+        self.session_combo.setEnabled(True)
 
     def _on_date_changed(self, date_text: str):
-        """日期选择变化处理"""
+        """日期选择变化处理 - 筛选指定日期的场次"""
         try:
-            if not date_text or date_text in ["请选择日期", "正在加载日期...", "暂无排期", "暂无日期"]:
+            if not date_text or date_text in ["请选择日期", "加载日期中...", "该电影暂无场次", "获取场次失败"]:
                 return
-            
-            # 🆕 添加数据状态检查，避免循环错误
-            if not hasattr(self, 'current_movie_data') or not self.current_movie_data:
-                # 静默返回，不输出错误日志
+
+            # 检查场次数据是否存在
+            if not hasattr(self, 'current_shows_data') or not self.current_shows_data:
+                print(f"[Tab管理器] 场次数据未加载")
+                self._set_session_combo_error("场次数据未加载")
                 return
-                
+
             print(f"[Tab管理器] 日期切换: {date_text}")
 
-            # 🆕 重置券列表
+            # 重置券列表
             self.reset_coupon_lists()
 
-            # 🆕 禁用选座按钮 - 日期切换时
+            # 禁用选座按钮
             if hasattr(self, 'submit_order_btn'):
                 self.submit_order_btn.setEnabled(False)
                 print(f"[Tab管理器] 日期切换，选座按钮已禁用")
 
-            # 清空场次选择
-            self.session_combo.clear()
-            self.session_combo.addItem("请选择场次")
-            
-            # 从当前影片的排期中筛选指定日期的场次
-            plans = self.current_movie_data.get('plans', [])
-            if not plans:
-                self.session_combo.addItem("暂无场次")
-                return
-            
-            # 筛选匹配日期的场次
+            # 重置下级联动状态
+            self._reset_cascade_from_level(5)  # 重置场次及以下级别
+
+            # 从按日期分组的数据中筛选指定日期的场次
             matching_sessions = []
-            for plan in plans:
-                show_time = plan.get('k', '')  # 完整的场次时间
-                if show_time:
-                    # 提取日期部分进行匹配
-                    date_part = show_time.split(' ')[0] if ' ' in show_time else show_time
-                    if date_part == date_text:
-                        matching_sessions.append(plan)
-            
-            # 添加场次到下拉框
-            if matching_sessions:
-                for session in matching_sessions:
-                    session_text = self._format_session_text(session)
-                    self.session_combo.addItem(session_text)
-                print(f"[Tab管理器] 加载场次: {len(matching_sessions)} 个")
-                
-                # 保存当前日期的场次数据
-                self.current_date_sessions = matching_sessions
-                
-                # 🆕 自动选择第一个场次，完成四级联动
-                if len(matching_sessions) > 0:
-                    QTimer.singleShot(100, lambda: self.session_combo.setCurrentIndex(1))  # 索引1是第一个场次（索引0是"请选择场次"）
-                    print(f"[Tab管理器] 自动选择第一个场次")
+
+            if isinstance(self.current_shows_data, dict):
+                # 新格式：按日期分组的数据
+                date_data = self.current_shows_data.get(date_text, {})
+                schedules = date_data.get('schedules', [])
+                matching_sessions = schedules
+                print(f"[Tab管理器] 从分组数据筛选日期 {date_text}: {len(matching_sessions)} 个场次")
             else:
-                self.session_combo.addItem("暂无场次")
-                self.current_date_sessions = []
+                # 旧格式：场次数组（兼容性处理）
+                for show in self.current_shows_data:
+                    show_date = show.get('show_date', '')
+                    if show_date == date_text:
+                        matching_sessions.append(show)
+                print(f"[Tab管理器] 从数组数据筛选日期 {date_text}: {len(matching_sessions)} 个场次")
+
+            # 更新场次下拉框
+            if matching_sessions:
+                self._update_session_combo_womei(matching_sessions)
+                print(f"[Tab管理器] ✅ 筛选到 {len(matching_sessions)} 个场次")
+            else:
+                self._set_session_combo_error("该日期暂无场次")
+                print(f"[Tab管理器] ❌ 该日期无场次: {date_text}")
             
         except Exception as e:
             print(f"[Tab管理器] 日期选择错误: {e}")
+            import traceback
+            traceback.print_exc()
+            self._set_session_combo_error("日期选择异常")
+
+    def _update_session_combo_womei(self, sessions):
+        """更新场次下拉框（沃美场次数据格式）"""
+        try:
+            # 保存当前日期的场次数据
+            self.current_date_sessions = sessions
+
+            # 更新场次下拉框
+            self.session_combo.clear()
+            self.session_combo.addItem("请选择场次")
+
+            for session in sessions:
+                session_text = self._format_session_text_womei(session)
+                self.session_combo.addItem(session_text)
+
+            self.session_combo.setEnabled(True)
+            print(f"[Tab管理器] 场次下拉框已更新，共 {len(sessions)} 个场次")
+
+            # 🔧 自动选择第一个场次
+            if len(sessions) > 0:
+                first_session = sessions[0]
+                session_text = self._format_session_text_womei(first_session)
+                print(f"[Tab管理器] 🎯 自动选择第一个场次: {session_text}")
+
+                # 延迟选择，确保下拉框已更新
+                QTimer.singleShot(100, lambda: self._auto_select_first_session(session_text))
+
+        except Exception as e:
+            print(f"[Tab管理器] 更新场次下拉框失败: {e}")
+            self._set_session_combo_error("更新场次列表失败")
+
+    def _format_session_text_womei(self, session):
+        """格式化沃美场次显示文本"""
+        try:
+            show_time = session.get('show_time', '')
+            hall_name = session.get('hall_name', '')
+            selling_price = session.get('selling_price', 0)  # 沃美使用selling_price字段
+            show_type = session.get('show_type', '')
+            language = session.get('language', '')
+
+            # 构建显示文本
+            parts = []
+            if show_time:
+                parts.append(show_time)
+            if hall_name:
+                parts.append(hall_name)
+            if show_type:
+                parts.append(show_type)
+            if language:
+                parts.append(language)
+            if selling_price:
+                parts.append(f"¥{selling_price}")
+
+            # 格式化显示文本
+            if parts:
+                return " ".join(parts)
+            else:
+                return "场次信息"
+
+        except Exception as e:
+            print(f"[Tab管理器] 格式化场次文本失败: {e}")
+            return "场次信息错误"
+
+    def _set_session_combo_error(self, error_msg):
+        """设置场次下拉框错误状态"""
+        self.session_combo.clear()
+        self.session_combo.addItem(error_msg)
+        self.session_combo.setEnabled(True)
 
     def _on_session_changed(self, session_text: str):
-        """场次选择变化处理 - 触发座位图加载"""
+        """场次选择变化处理 - 使用沃美电影服务获取座位图"""
         try:
-            if not session_text or session_text in ["请先选择日期", "加载场次中...", "暂无场次", "加载失败", "请选择场次"]:
+            if not session_text or session_text in ["请选择场次", "该日期暂无场次", "更新场次列表失败", "日期选择异常"]:
                 return
-                
-            # 🆕 添加数据状态检查，避免循环错误
-            if not hasattr(self, 'current_date_sessions') or not self.current_date_sessions:
-                # 静默返回，不输出错误日志
-                return
-                
-            print(f"[Tab管理器] 场次切换: {session_text}")
 
-            # 🆕 重置券列表
+            # 检查场次数据是否存在
+            if not hasattr(self, 'current_date_sessions') or not self.current_date_sessions:
+                print(f"[Tab管理器] 场次数据未加载")
+                return
+
+            print(f"[Tab管理器] 🎬 场次切换: {session_text}")
+
+            # 重置券列表
             self.reset_coupon_lists()
 
-            # 获取选中的场次详细数据
+            # 获取选中的场次数据
             selected_session = None
             session_index = self.session_combo.currentIndex() - 1  # 减去"请选择场次"选项
+            print(f"[Tab管理器] 🔍 场次索引: {session_index}, 总场次数: {len(self.current_date_sessions)}")
+
             if 0 <= session_index < len(self.current_date_sessions):
                 selected_session = self.current_date_sessions[session_index]
-            
+                print(f"[Tab管理器] ✅ 找到场次数据: {selected_session}")
+
             if not selected_session:
-                print(f"[Tab管理器] 未找到场次数据: {session_text}")
+                print(f"[Tab管理器] ❌ 未找到场次数据: {session_text}")
                 return
             
             # 🆕 保存当前场次数据供订单创建使用
@@ -2086,34 +2387,66 @@ class TabManagerWidget(QWidget):
             date_text = self.date_combo.currentText() if hasattr(self, 'date_combo') else ""
             
             # 🆕 查找影院详细数据 - 修复逻辑
+            print(f"[Tab管理器] 🔍 查找影院数据:")
+            print(f"  - 目标影院名: {cinema_text}")
+            print(f"  - cinemas_data存在: {hasattr(self, 'cinemas_data')}")
+            print(f"  - cinemas_data长度: {len(self.cinemas_data) if hasattr(self, 'cinemas_data') and self.cinemas_data else 0}")
+
             cinema_data = None
             if hasattr(self, 'cinemas_data') and self.cinemas_data:
-                for cinema in self.cinemas_data:
-                    if cinema.get('cinemaShortName') == cinema_text:
+                print(f"[Tab管理器] 🔍 在影院列表中查找:")
+                for i, cinema in enumerate(self.cinemas_data):
+                    cinema_name = cinema.get('cinema_name')  # 沃美系统字段
+                    cinema_short_name = cinema.get('cinemaShortName')  # 华联系统字段
+                    print(f"  影院 {i+1}: cinema_name='{cinema_name}', cinemaShortName='{cinema_short_name}'")
+
+                    # 同时检查两种字段名
+                    if cinema_name == cinema_text or cinema_short_name == cinema_text:
                         cinema_data = cinema
-                        print(f"[Tab管理器] 找到影院数据: {cinema.get('cinemaShortName')} -> base_url: {cinema.get('base_url')}")
+                        print(f"[Tab管理器] ✅ 找到影院数据: {cinema_name or cinema_short_name}")
+                        print(f"  - cinema_id: {cinema.get('cinema_id')}")
+                        print(f"  - cinemaid: {cinema.get('cinemaid')}")
+                        print(f"  - base_url: {cinema.get('base_url')}")
                         break
-                        
+
             if not cinema_data:
-                print(f"[Tab管理器] 未找到影院数据: {cinema_text}")
-                print(f"[Tab管理器] 可用影院列表: {[c.get('cinemaShortName') for c in self.cinemas_data] if hasattr(self, 'cinemas_data') else '无数据'}")
-                
+                print(f"[Tab管理器] ❌ 未找到影院数据: {cinema_text}")
+                print(f"[Tab管理器] 可用影院列表:")
+                if hasattr(self, 'cinemas_data') and self.cinemas_data:
+                    for i, c in enumerate(self.cinemas_data):
+                        print(f"  {i+1}. cinema_name: '{c.get('cinema_name')}', cinemaShortName: '{c.get('cinemaShortName')}'")
+                else:
+                    print(f"  无数据")
+
                 # 🆕 尝试从影院管理器重新加载数据
                 try:
+                    print(f"[Tab管理器] 🔄 尝试重新加载影院数据...")
                     from services.cinema_manager import cinema_manager
                     cinemas = cinema_manager.load_cinema_list()
                     self.cinemas_data = cinemas
-                    
+                    print(f"[Tab管理器] 重新加载了 {len(cinemas)} 个影院")
+
                     # 重新查找
                     for cinema in cinemas:
-                        if cinema.get('cinemaShortName') == cinema_text:
+                        cinema_name = cinema.get('cinema_name')
+                        cinema_short_name = cinema.get('cinemaShortName')
+                        if cinema_name == cinema_text or cinema_short_name == cinema_text:
                             cinema_data = cinema
-                            print(f"[Tab管理器] 重新加载后找到影院数据: {cinema.get('cinemaShortName')} -> base_url: {cinema.get('base_url')}")
+                            print(f"[Tab管理器] ✅ 重新加载后找到影院数据: {cinema_name or cinema_short_name}")
                             break
                 except Exception as reload_error:
-                    print(f"[Tab管理器] 重新加载影院数据失败: {reload_error}")
+                    print(f"[Tab管理器] ❌ 重新加载影院数据失败: {reload_error}")
             
             # 构建场次信息对象
+            print(f"[Tab管理器] 📋 构建session_info:")
+            print(f"  - selected_session: {selected_session}")
+            print(f"  - cinema_text: {cinema_text}")
+            print(f"  - movie_text: {movie_text}")
+            print(f"  - date_text: {date_text}")
+            print(f"  - session_text: {session_text}")
+            print(f"  - current_account: {bool(self.current_account)}")
+            print(f"  - cinema_data: {cinema_data}")
+
             session_info = {
                 'session_data': selected_session,
                 'cinema_name': cinema_text,
@@ -2123,20 +2456,122 @@ class TabManagerWidget(QWidget):
                 'account': self.current_account,
                 'cinema_data': cinema_data  # 🆕 确保传递完整的影院数据
             }
-            
-            print(f"[Tab管理器] 发出场次选择信号: {session_text}")
-            print(f"[Tab管理器] 影院数据验证: {cinema_data.get('base_url') if cinema_data else 'None'}")
+
+            print(f"[Tab管理器] 🚀 发出场次选择信号: {session_text}")
+            print(f"[Tab管理器] 📋 session_info完整内容: {session_info}")
+            print(f"[Tab管理器] 🔍 影院数据验证: {cinema_data.get('base_url') if cinema_data else 'None'}")
 
             # 🆕 启用选座按钮 - 当用户选择完场次后
             if hasattr(self, 'submit_order_btn'):
                 self.submit_order_btn.setEnabled(True)
                 print(f"[Tab管理器] 选座按钮已启用")
 
-            # 发出场次选择信号，让主窗口处理座位图加载
-            self.session_selected.emit(session_info)
-            
+            # 保存当前场次数据
+            self.current_session_data = selected_session
+
+            # 获取必要参数
+            cinema_id = None
+            hall_id = selected_session.get('hall_id')
+            schedule_id = selected_session.get('schedule_id') or selected_session.get('id')
+
+            if hasattr(self, 'current_cinema_data') and self.current_cinema_data:
+                cinema_id = self.current_cinema_data.get('cinema_id')  # 沃美系统使用cinema_id
+
+            if not all([cinema_id, hall_id, schedule_id]):
+                print(f"[Tab管理器] 缺少座位图参数: cinema_id={cinema_id}, hall_id={hall_id}, schedule_id={schedule_id}")
+                return
+
+            print(f"[Tab管理器] 🎯 开始获取座位图:")
+            print(f"  - 影院ID: {cinema_id}")
+            print(f"  - 影厅ID: {hall_id}")
+            print(f"  - 场次ID: {schedule_id}")
+
+            # 调用沃美座位图API
+            self._load_seat_map_womei(cinema_id, hall_id, schedule_id, selected_session)
+
         except Exception as e:
             print(f"[Tab管理器] 场次选择错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _load_seat_map_womei(self, cinema_id, hall_id, schedule_id, session_data):
+        """使用沃美电影服务获取座位图"""
+        try:
+            print(f"[Tab管理器] 🪑 开始获取沃美座位图")
+
+            # 获取沃美电影服务实例
+            from services.womei_film_service import get_womei_film_service
+            film_service = get_womei_film_service("47794858a832916d8eda012e7cabd269")
+
+            # 调用座位图API
+            hall_result = film_service.get_hall_info(cinema_id, hall_id, schedule_id)
+
+            if hall_result.get('success'):
+                hall_info = hall_result.get('hall_info', {})
+                print(f"[Tab管理器] ✅ 成功获取座位图数据")
+
+                # 构建正确的session_info对象（主窗口期望的格式）
+                print(f"[Tab管理器] 📋 构建session_info对象:")
+                print(f"  - session_data: {session_data}")
+                print(f"  - current_account: {bool(self.current_account)}")
+                print(f"  - current_cinema_data: {bool(hasattr(self, 'current_cinema_data'))}")
+
+                # 获取影院数据
+                cinema_data = None
+                if hasattr(self, 'current_cinema_data') and self.current_cinema_data:
+                    cinema_data = self.current_cinema_data.copy()
+                    # 确保包含主窗口需要的字段
+                    if 'cinemaid' not in cinema_data and 'cinema_id' in cinema_data:
+                        cinema_data['cinemaid'] = cinema_data['cinema_id']
+                    if 'cinemaShortName' not in cinema_data and 'cinema_name' in cinema_data:
+                        cinema_data['cinemaShortName'] = cinema_data['cinema_name']
+                    print(f"  - 使用current_cinema_data: {cinema_data}")
+                else:
+                    print(f"  - current_cinema_data不存在，尝试构建...")
+                    # 尝试从当前选择构建影院数据
+                    cinema_text = self.cinema_combo.currentText() if hasattr(self, 'cinema_combo') else ""
+                    if cinema_text and hasattr(self, 'cinemas_data') and self.cinemas_data:
+                        for cinema in self.cinemas_data:
+                            if (cinema.get('cinema_name') == cinema_text or
+                                cinema.get('cinemaShortName') == cinema_text):
+                                cinema_data = cinema.copy()
+                                # 确保包含主窗口需要的字段
+                                if 'cinemaid' not in cinema_data and 'cinema_id' in cinema_data:
+                                    cinema_data['cinemaid'] = cinema_data['cinema_id']
+                                if 'cinemaShortName' not in cinema_data and 'cinema_name' in cinema_data:
+                                    cinema_data['cinemaShortName'] = cinema_data['cinema_name']
+                                print(f"  - 从cinemas_data找到: {cinema_data}")
+                                break
+
+                # 构建主窗口期望的session_info格式
+                session_info = {
+                    'session_data': session_data,
+                    'account': self.current_account,
+                    'cinema_data': cinema_data,
+                    'hall_info': hall_info,  # 额外添加座位图数据
+                    'session_text': self._format_session_text_womei(session_data)
+                }
+
+                print(f"[Tab管理器] 📋 最终session_info:")
+                print(f"  - session_data: {bool(session_info.get('session_data'))}")
+                print(f"  - account: {bool(session_info.get('account'))}")
+                print(f"  - cinema_data: {bool(session_info.get('cinema_data'))}")
+                print(f"  - hall_info: {bool(session_info.get('hall_info'))}")
+
+                # 发出座位图加载信号
+                self.session_selected.emit(session_info)
+
+                # 启用选座按钮
+                if hasattr(self, 'submit_order_btn'):
+                    self.submit_order_btn.setEnabled(True)
+                    print(f"[Tab管理器] 座位图加载完成，选座按钮已启用")
+
+            else:
+                error = hall_result.get('error', '未知错误')
+                print(f"[Tab管理器] ❌ 获取座位图失败: {error}")
+
+        except Exception as e:
+            print(f"[Tab管理器] 获取沃美座位图异常: {e}")
             import traceback
             traceback.print_exc()
     
@@ -3118,4 +3553,400 @@ class TabManagerWidget(QWidget):
             print(f"[Tab管理器] 格式化场次错误: {e}")
             print(f"[Tab管理器] 原始场次数据: {session}")
             return "场次信息错误"
- 
+
+    # 🆕 ========== 六级联动方法（移除系统选择）==========
+
+    def _init_cascade(self):
+        """初始化联动（直接从城市开始）"""
+        try:
+            print("[Tab管理器] 🚀 初始化沃美影院联动系统")
+
+            # 直接加载沃美系统的城市列表
+            self._load_cities_for_womei()
+
+            print(f"[Tab管理器] ✅ 沃美影院联动初始化完成")
+
+        except Exception as e:
+            print(f"[Tab管理器] ❌ 联动初始化失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _load_cities_for_womei(self):
+        """加载沃美系统的城市列表"""
+        try:
+            print("[城市调试] ==================== 开始加载沃美城市列表 ====================")
+
+            # 更新城市下拉框状态
+            if hasattr(self, 'city_combo'):
+                self.city_combo.clear()
+                self.city_combo.addItem("加载中...")
+                self.city_combo.setEnabled(True)  # 保持启用状态
+
+            # 使用沃美电影服务获取城市列表
+            from services.womei_film_service import get_womei_film_service
+
+            # 🔧 获取当前账号token或使用默认token
+            token = "47794858a832916d8eda012e7cabd269"  # 默认token
+            if hasattr(self, 'current_account') and self.current_account:
+                account_token = self.current_account.get('token')
+                if account_token:
+                    token = account_token
+                    print(f"[城市调试] 使用当前账号token: {token[:20]}...")
+                else:
+                    print(f"[城市调试] 当前账号无token，使用默认token")
+            else:
+                print(f"[城市调试] 无当前账号，使用默认token: {token[:20]}...")
+
+            # 🔧 详细的API调用调试
+            print(f"[城市调试] 创建沃美电影服务实例...")
+            film_service = get_womei_film_service(token)
+
+            print(f"[城市调试] 调用城市API: get_cities()")
+            cities_result = film_service.get_cities()
+
+            # 🔧 详细的响应调试
+            print(f"[城市调试] API响应结果:")
+            print(f"  - success: {cities_result.get('success')}")
+            print(f"  - total: {cities_result.get('total', 'N/A')}")
+            print(f"  - error: {cities_result.get('error', 'N/A')}")
+
+            if cities_result.get('success'):
+                cities = cities_result.get('cities', [])
+                print(f"[城市调试] ✅ 成功获取城市数据:")
+                print(f"  - 城市数量: {len(cities)}")
+
+                # 🔧 显示前5个城市的详细信息
+                for i, city in enumerate(cities[:5]):
+                    city_name = city.get('city_name', '未知城市')
+                    city_id = city.get('city_id', 'N/A')
+                    cinemas_count = len(city.get('cinemas', []))
+                    print(f"  - 城市 {i+1}: {city_name} (ID: {city_id}, 影院数: {cinemas_count})")
+
+                if len(cities) > 5:
+                    print(f"  - ... 还有 {len(cities) - 5} 个城市")
+
+                # 保存数据并更新下拉框
+                self.cities_data = cities
+                self._update_city_combo()
+                print(f"[城市调试] ✅ 城市下拉框更新完成")
+
+                # 🚫 移除自动选择第一个城市的机制
+                if len(cities) > 0:
+                    first_city = cities[0]
+                    city_name = first_city.get('city_name', '未知城市')
+                    print(f"[城市调试] 🚫 已移除自动选择城市机制，城市列表已加载，等待用户手动选择")
+                    print(f"[城市调试] 第一个城市: {city_name}（用户可手动选择）")
+
+            else:
+                error = cities_result.get('error', '未知错误')
+                print(f"[城市调试] ❌ 加载城市失败: {error}")
+                if hasattr(self, 'city_combo'):
+                    self.city_combo.clear()
+                    self.city_combo.addItem("加载失败")
+
+        except Exception as e:
+            print(f"[城市调试] ❌ 加载沃美城市列表异常: {e}")
+            import traceback
+            traceback.print_exc()
+            if hasattr(self, 'city_combo'):
+                self.city_combo.clear()
+                self.city_combo.addItem("加载失败")
+
+    def _auto_select_first_city(self, city_name: str):
+        """自动选择第一个城市"""
+        try:
+            if hasattr(self, 'city_combo') and self.city_combo.count() > 1:
+                # 查找城市在下拉框中的索引
+                for i in range(self.city_combo.count()):
+                    if self.city_combo.itemText(i) == city_name:
+                        self.city_combo.setCurrentIndex(i)
+                        print(f"[城市调试] ✅ 自动选择城市完成: {city_name}")
+                        break
+        except Exception as e:
+            print(f"[城市调试] 自动选择城市失败: {e}")
+
+    def _on_city_changed(self, city_name: str):
+        """城市选择变化处理"""
+        try:
+            if city_name in ["加载中...", "请选择城市", "加载失败"] or not city_name:
+                self._reset_cascade_from_level(2)  # 重置从影院开始的所有级别
+                return
+
+            # 查找对应的城市
+            selected_city = None
+            for city in self.cities_data:
+                if city.get('city_name') == city_name:  # 沃美系统使用city_name字段
+                    selected_city = city
+                    break
+
+            if not selected_city:
+                print(f"[Tab管理器] 未找到城市: {city_name}")
+                return
+
+            self.current_city = selected_city
+            print(f"[Tab管理器] 🏙️ 城市选择: {city_name} (ID: {selected_city.get('city_id')})")
+
+            # 重置下级选择
+            self._reset_cascade_from_level(2)
+
+            # 加载影院列表
+            self._load_cinemas_for_city(selected_city)
+
+        except Exception as e:
+            print(f"[Tab管理器] 城市选择处理失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _reset_cascade_from_level(self, level: int):
+        """从指定级别开始重置联动选择"""
+        try:
+            if level <= 1:  # 重置城市及以下
+                if hasattr(self, 'city_combo'):
+                    self.city_combo.clear()
+                    self.city_combo.addItem("请选择城市")
+                    self.city_combo.setEnabled(True)
+                self.current_city = None
+                self.cities_data = []
+
+            if level <= 2:  # 重置影院及以下
+                if hasattr(self, 'cinema_combo'):
+                    self.cinema_combo.clear()
+                    self.cinema_combo.addItem("请先选择城市")
+                    self.cinema_combo.setEnabled(False)
+                self.current_cinema_data = None
+                self.cinemas_data = []
+
+            if level <= 3:  # 重置电影及以下
+                if hasattr(self, 'movie_combo'):
+                    self.movie_combo.clear()
+                    self.movie_combo.addItem("请先选择影院")
+                    self.movie_combo.setEnabled(False)
+                self.current_movie = None
+                self.movies_data = []
+
+            if level <= 4:  # 重置日期及以下
+                if hasattr(self, 'date_combo'):
+                    self.date_combo.clear()
+                    self.date_combo.addItem("请先选择影片")
+                    self.date_combo.setEnabled(False)
+                self.current_date = None
+                self.dates_data = []
+
+            if level <= 5:  # 重置场次及以下
+                if hasattr(self, 'session_combo'):
+                    self.session_combo.clear()
+                    self.session_combo.addItem("请先选择日期")
+                    self.session_combo.setEnabled(False)
+                self.current_session = None
+                self.sessions_data = []
+
+            # 禁用选座按钮
+            if hasattr(self, 'submit_order_btn'):
+                self.submit_order_btn.setEnabled(False)
+
+        except Exception as e:
+            print(f"[Tab管理器] 重置联动失败: {e}")
+
+
+
+    def _update_city_combo(self):
+        """更新城市下拉框（修复信号冲突问题）"""
+        try:
+            print(f"[城市调试] 开始更新城市下拉框...")
+
+            if not hasattr(self, 'city_combo'):
+                print(f"[城市调试] ❌ 未找到city_combo属性")
+                return
+
+            # 🔧 暂时断开信号连接，防止更新过程中触发信号
+            self.city_combo.currentTextChanged.disconnect()
+
+            # 清空并重新填充城市下拉框
+            self.city_combo.clear()
+            self.city_combo.addItem("请选择城市")
+
+            # 添加城市数据
+            for city in self.cities_data:
+                city_name = city.get('city_name', '未知城市')  # 沃美系统使用city_name字段
+                self.city_combo.addItem(city_name)
+
+            # 启用下拉框并重新连接信号
+            self.city_combo.setEnabled(True)
+            self.city_combo.currentTextChanged.connect(self._on_city_changed)
+
+            print(f"[Tab管理器] 城市下拉框已更新，共 {len(self.cities_data)} 个城市")
+
+        except Exception as e:
+            print(f"[Tab管理器] 更新城市下拉框失败: {e}")
+
+            # 确保信号重新连接
+            try:
+                self.city_combo.currentTextChanged.connect(self._on_city_changed)
+            except:
+                pass
+
+    def _load_cinemas_for_city(self, city_data):
+        """为指定城市加载影院列表 - 完全通过沃美API动态获取"""
+        try:
+            city_name = city_data.get('city_name', '未知城市')
+            city_id = city_data.get('city_id', '')
+            print(f"[影院调试] ==================== 开始加载城市影院列表 ====================")
+            print(f"[影院调试] 城市: {city_name} (ID: {city_id})")
+
+            # 更新影院下拉框状态
+            if hasattr(self, 'cinema_combo'):
+                self.cinema_combo.clear()
+                self.cinema_combo.addItem("加载中...")
+                self.cinema_combo.setEnabled(False)
+
+            # 🔧 完全移除对本地cinema_info.json的依赖，直接使用城市数据中的影院信息
+            cinemas = city_data.get('cinemas', [])
+            print(f"[影院调试] 城市数据中的影院数量: {len(cinemas)}")
+
+            if cinemas:
+                # 🔧 显示前3个影院的详细信息
+                print(f"[影院调试] ✅ 从城市数据获取影院列表:")
+                for i, cinema in enumerate(cinemas[:3]):
+                    cinema_name = cinema.get('cinema_name', '未知影院')
+                    cinema_id = cinema.get('cinema_id', 'N/A')
+                    print(f"  - 影院 {i+1}: {cinema_name} (ID: {cinema_id})")
+
+                if len(cinemas) > 3:
+                    print(f"  - ... 还有 {len(cinemas) - 3} 个影院")
+
+                # 使用城市数据中的影院列表
+                self.cinemas_data = cinemas
+                self._update_cinema_combo()
+                print(f"[影院调试] ✅ 影院下拉框更新完成，共 {len(cinemas)} 个影院")
+
+                # 🚫 移除自动选择第一个影院的机制
+                if len(cinemas) > 0:
+                    first_cinema = cinemas[0]
+                    cinema_name = first_cinema.get('cinema_name', '未知影院')
+                    print(f"[影院调试] 🚫 已移除自动选择影院机制，影院列表已加载，等待用户手动选择")
+                    print(f"[影院调试] 第一个影院: {cinema_name}（用户可手动选择）")
+            else:
+                # 如果城市数据中没有影院，尝试调用影院API
+                print(f"[Tab管理器] 城市数据中无影院，尝试调用影院API")
+
+                from services.womei_film_service import get_womei_film_service
+                film_service = get_womei_film_service("47794858a832916d8eda012e7cabd269")
+
+                # 获取所有影院，然后筛选该城市的影院
+                cinemas_result = film_service.get_cinemas()
+
+                if cinemas_result.get('success'):
+                    all_cinemas = cinemas_result.get('cinemas', [])
+                    city_id = city_data.get('city_id')
+
+                    # 筛选该城市的影院
+                    city_cinemas = []
+                    for cinema in all_cinemas:
+                        if cinema.get('city_id') == city_id:
+                            city_cinemas.append(cinema)
+
+                    if city_cinemas:
+                        self.cinemas_data = city_cinemas
+                        self._update_cinema_combo()
+                        print(f"[Tab管理器] ✅ API筛选到 {len(city_cinemas)} 个影院")
+                    else:
+                        print(f"[Tab管理器] ❌ 该城市无影院")
+                        self._set_cinema_combo_error("该城市暂无影院")
+                else:
+                    error = cinemas_result.get('error', '未知错误')
+                    print(f"[Tab管理器] ❌ 影院API失败: {error}")
+                    self._set_cinema_combo_error(f"加载影院失败: {error}")
+
+        except Exception as e:
+            print(f"[Tab管理器] 加载影院列表失败: {e}")
+            import traceback
+            traceback.print_exc()
+            self._set_cinema_combo_error("加载影院异常")
+
+    def _auto_select_first_cinema(self, cinema_name: str):
+        """自动选择第一个影院"""
+        try:
+            if hasattr(self, 'cinema_combo') and self.cinema_combo.count() > 1:
+                # 查找影院在下拉框中的索引
+                for i in range(self.cinema_combo.count()):
+                    if self.cinema_combo.itemText(i) == cinema_name:
+                        self.cinema_combo.setCurrentIndex(i)
+                        print(f"[Tab管理器] ✅ 自动选择影院完成: {cinema_name}")
+                        break
+        except Exception as e:
+            print(f"[Tab管理器] 自动选择影院失败: {e}")
+
+    def _auto_select_first_movie(self, movie_name: str):
+        """自动选择第一个电影"""
+        try:
+            if hasattr(self, 'movie_combo') and self.movie_combo.count() > 1:
+                # 查找电影在下拉框中的索引
+                for i in range(self.movie_combo.count()):
+                    if self.movie_combo.itemText(i) == movie_name:
+                        self.movie_combo.setCurrentIndex(i)
+                        print(f"[Tab管理器] ✅ 自动选择电影完成: {movie_name}")
+                        break
+        except Exception as e:
+            print(f"[Tab管理器] 自动选择电影失败: {e}")
+
+    def _auto_select_first_date(self, date_text: str):
+        """自动选择第一个日期"""
+        try:
+            if hasattr(self, 'date_combo') and self.date_combo.count() > 1:
+                # 查找日期在下拉框中的索引
+                for i in range(self.date_combo.count()):
+                    if self.date_combo.itemText(i) == date_text:
+                        self.date_combo.setCurrentIndex(i)
+                        print(f"[Tab管理器] ✅ 自动选择日期完成: {date_text}")
+                        break
+        except Exception as e:
+            print(f"[Tab管理器] 自动选择日期失败: {e}")
+
+    def _auto_select_first_session(self, session_text: str):
+        """自动选择第一个场次"""
+        try:
+            if hasattr(self, 'session_combo') and self.session_combo.count() > 1:
+                # 查找场次在下拉框中的索引
+                for i in range(self.session_combo.count()):
+                    if self.session_combo.itemText(i) == session_text:
+                        self.session_combo.setCurrentIndex(i)
+                        print(f"[Tab管理器] ✅ 自动选择场次完成: {session_text}")
+                        break
+        except Exception as e:
+            print(f"[Tab管理器] 自动选择场次失败: {e}")
+
+    def _set_cinema_combo_error(self, error_msg):
+        """设置影院下拉框错误状态"""
+        if hasattr(self, 'cinema_combo'):
+            self.cinema_combo.clear()
+            self.cinema_combo.addItem(error_msg)
+            self.cinema_combo.setEnabled(True)
+
+        # 同时重置下级联动
+        self._reset_cascade_from_level(3)
+
+    def _update_cinema_combo(self):
+        """更新影院下拉框（沃美数据格式）"""
+        try:
+            if not hasattr(self, 'cinema_combo'):
+                return
+
+            self.cinema_combo.clear()
+            self.cinema_combo.addItem("请选择影院")
+
+            for cinema in self.cinemas_data:
+                # 沃美系统使用cinema_name字段
+                cinema_name = cinema.get('cinema_name', '未知影院')
+                self.cinema_combo.addItem(cinema_name)
+
+            self.cinema_combo.setEnabled(True)
+            print(f"[Tab管理器] 影院下拉框已更新，共 {len(self.cinemas_data)} 个沃美影院")
+
+            # 显示影院详情用于调试
+            if self.cinemas_data:
+                first_cinema = self.cinemas_data[0]
+                print(f"[Tab管理器] 第一个影院示例: {first_cinema.get('cinema_name')} (ID: {first_cinema.get('cinema_id')})")
+
+        except Exception as e:
+            print(f"[Tab管理器] 更新影院下拉框失败: {e}")
+            self._set_cinema_combo_error("更新影院列表失败")

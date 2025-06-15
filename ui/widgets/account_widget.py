@@ -274,7 +274,7 @@ class AccountWidget(QWidget):
                         # 发布全局事件
                         event_bus.account_changed.emit(account_data)
                         
-                        print(f"[账号组件] 选择账号: {account_data.get('userid', 'N/A')}")
+                        print(f"[账号组件] 选择账号: {account_data.get('phone', 'N/A')}")
         
         except Exception as e:
             print(f"[账号组件] 选择处理错误: {e}")
@@ -559,7 +559,7 @@ class AccountWidget(QWidget):
                     self.current_account = selected_account
 
                     # 找到该账号在表格中的行号并选择
-                    selected_row = self._find_account_row(selected_account.get('userid', ''))
+                    selected_row = self._find_account_row(selected_account.get('phone', ''))
                     if selected_row >= 0:
                         self.account_table.selectRow(selected_row)
 
@@ -567,7 +567,7 @@ class AccountWidget(QWidget):
                     self.account_selected.emit(selected_account)
                     event_bus.account_changed.emit(selected_account)
 
-                    print(f"[账号组件] 自动选择账号: {selected_account.get('userid', 'N/A')}")
+                    print(f"[账号组件] 自动选择账号: {selected_account.get('phone', 'N/A')}")
                 else:
                     print(f"[账号组件] 影院 {cinema_name} 没有关联账号")
             
@@ -611,15 +611,15 @@ class AccountWidget(QWidget):
             print(f"[账号组件] 查找主账号错误: {e}")
             return None
 
-    def _find_account_row(self, userid: str) -> int:
-        """查找账号在表格中的行号"""
+    def _find_account_row(self, phone: str) -> int:
+        """查找账号在表格中的行号（适配沃美账号格式）"""
         try:
             for row in range(self.account_table.rowCount()):
                 item = self.account_table.item(row, 0)
                 if item:
                     # 获取存储的账号数据来比较
                     account_data = item.data(Qt.UserRole)
-                    if account_data and account_data.get('userid') == userid:
+                    if account_data and account_data.get('phone') == phone:
                         return row
             return -1
         except Exception as e:
@@ -665,76 +665,95 @@ class AccountWidget(QWidget):
             print(f"[账号组件] 过滤账号错误: {e}")
     
     def _set_default_cinema(self):
-        """设置默认影院 - 🆕 程序启动时自动选择第一个影院"""
+        """移除默认影院设置 - 不再自动选择影院"""
         try:
-            from services.cinema_manager import cinema_manager
-            cinemas = cinema_manager.load_cinema_list()
-            
-            if cinemas:
-                first_cinema = cinemas[0]
-                cinema_id = first_cinema.get('cinemaid', '')
-                
-                if cinema_id:
-                    self.current_cinema_id = cinema_id
-                    self._filter_accounts_by_cinema(cinema_id)
-                    print(f"[账号组件] 默认选择影院: {first_cinema.get('cinemaShortName', 'N/A')} ({cinema_id})")
-                    
+            print(f"[账号组件] 🚫 已移除自动选择默认影院，显示所有账号")
+
+            # 不再自动选择影院，直接显示所有账号
+            self.current_cinema_id = None
+            self._load_all_accounts()
+
         except Exception as e:
-            print(f"[账号组件] 设置默认影院错误: {e}")
+            print(f"[账号组件] 初始化账号列表错误: {e}")
+
+    def _load_all_accounts(self):
+        """加载所有账号（不按影院过滤）"""
+        try:
+            # 直接加载所有账号，不进行影院过滤
+            self.refresh_accounts()
+            print(f"[账号组件] 已加载所有账号，等待用户选择")
+        except Exception as e:
+            print(f"[账号组件] 加载所有账号错误: {e}")
     
     def refresh_accounts(self):
-        """刷新账号列表"""
+        """刷新账号列表（适配沃美简化账号格式）"""
         try:
             accounts_file = "data/accounts.json"
-            
+
             if not os.path.exists(accounts_file):
                 self.account_table.setRowCount(0)
                 print(f"[账号组件] 账号文件不存在: {accounts_file}")
                 return
-            
+
             with open(accounts_file, 'r', encoding='utf-8') as f:
                 accounts = json.load(f)
-            
-            # 🆕 保存所有账号数据到缓存
+
+            # 🔧 沃美系统：直接使用所有账号，不进行影院过滤
             self.all_accounts_data = accounts
+            self.accounts_data = accounts  # 直接显示所有账号
             print(f"[账号组件] 成功加载 {len(accounts)} 个账号")
-            
-            # 🆕 如果没有设置当前影院，则设置默认影院
-            if not self.current_cinema_id:
-                self._set_default_cinema()
-            else:
-                # 根据当前影院过滤账号
-                self._filter_accounts_by_cinema(self.current_cinema_id)
-            
+
+            # 🔧 更新账号表格显示
+            self._update_account_table(accounts)
+
+            # 🔧 自动选择第一个账号
+            if accounts and len(accounts) > 0:
+                first_account = accounts[0]
+                phone = first_account.get('phone', '')
+
+                if phone:
+                    print(f"[账号组件] 🎯 自动选择第一个账号: {phone}")
+
+                    # 选择第一行
+                    self.account_table.selectRow(0)
+                    self.current_account = first_account
+
+                    # 发出账号选择信号
+                    self.account_selected.emit(first_account)
+                    event_bus.account_changed.emit(first_account)
+
+                    print(f"[账号组件] ✅ 账号自动选择完成: {phone}")
+
             # 发出刷新信号
             self.accounts_refreshed.emit(self.accounts_data)
-            
+
         except Exception as e:
             QMessageBox.warning(self, "数据加载失败", f"刷新账号列表失败: {str(e)}")
             print(f"[账号组件] 刷新错误: {e}")
     
     def _update_account_table(self, accounts: List[Dict]):
-        """更新账号表格"""
+        """更新账号表格（适配沃美简化账号格式）"""
         try:
             self.account_table.setRowCount(len(accounts))
-            
+
             for i, account in enumerate(accounts):
-                userid = account.get("userid", "")
+                # 🔧 适配沃美账号格式：使用phone字段而不是userid字段
+                phone = account.get("phone", "")
                 balance = account.get("balance", 0)
                 points = account.get("points", account.get("score", 0))  # 兼容points和score字段
 
-                # 🆕 不改变样式，保持原有显示
-                display_userid = userid
+                # 显示手机号作为账号标识
+                display_phone = phone if phone else "未知账号"
 
-                # 🆕 只设置三列：账号、余额、积分
-                self.account_table.setItem(i, 0, self.account_table.__class__.createItem(display_userid))
+                # 设置三列：账号(手机号)、余额、积分
+                self.account_table.setItem(i, 0, self.account_table.__class__.createItem(display_phone))
                 self.account_table.setItem(i, 1, self.account_table.__class__.createItem(str(balance)))
                 self.account_table.setItem(i, 2, self.account_table.__class__.createItem(str(points)))
 
                 # 保存完整账号信息到第一列的数据中
                 account_item = self.account_table.item(i, 0)
                 account_item.setData(Qt.UserRole, account)
-                
+
         except Exception as e:
             print(f"[账号组件] 更新表格错误: {e}")
     
@@ -776,14 +795,14 @@ class AccountWidget(QWidget):
         self.account_table.clearSelection()
         self.current_account = None
     
-    def select_account_by_id(self, userid: str) -> bool:
-        """🔧 根据用户ID选择账号 - 修复事件触发"""
+    def select_account_by_id(self, phone: str) -> bool:
+        """🔧 根据手机号选择账号 - 适配沃美账号格式"""
         try:
-            print(f"[账号组件] 🎯 尝试选择账号: {userid}")
+            print(f"[账号组件] 🎯 尝试选择账号: {phone}")
 
             for i in range(self.account_table.rowCount()):
                 item = self.account_table.item(i, 0)
-                if item and item.text() == userid:
+                if item and item.text() == phone:
                     print(f"[账号组件] ✅ 找到账号，选择第{i}行")
 
                     # 选择表格行
@@ -798,13 +817,13 @@ class AccountWidget(QWidget):
                         self.account_selected.emit(account_data)
                         event_bus.account_changed.emit(account_data)
 
-                        print(f"[账号组件] ✅ 账号选择完成: {userid}")
+                        print(f"[账号组件] ✅ 账号选择完成: {phone}")
                         return True
                     else:
-                        print(f"[账号组件] ⚠️ 账号数据为空: {userid}")
+                        print(f"[账号组件] ⚠️ 账号数据为空: {phone}")
                         return False
 
-            print(f"[账号组件] ❌ 未找到账号: {userid}")
+            print(f"[账号组件] ❌ 未找到账号: {phone}")
             return False
 
         except Exception as e:

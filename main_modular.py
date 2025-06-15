@@ -51,7 +51,7 @@ from services.order_api import (
 
 # 影院和账号管理
 from services.cinema_manager import CinemaManager
-from services.film_service import get_films, normalize_film_data, get_plan_seat_info
+from services.womei_film_service import get_womei_film_service
 from services.member_service import MemberService
 from services.account_api import get_account_list, save_account, delete_account
 
@@ -87,6 +87,8 @@ class ModularCinemaMainWindow(QMainWindow):
         self.auth_service = AuthService()
         self.cinema_manager = CinemaManager()
         self.member_service = MemberService()
+        # 初始化沃美电影服务
+        self.film_service = get_womei_film_service()
 
         # 🆕 初始化订单详情管理器
         from modules.order_display import OrderDetailManager
@@ -141,8 +143,25 @@ class ModularCinemaMainWindow(QMainWindow):
         # 🆕 初始化增强支付系统
         self._init_enhanced_payment_system()
 
-        # 启动用户认证检查
-        QTimer.singleShot(100, self._start_auth_check)
+        # 🔧 调试模式：临时禁用登录验证
+        DEBUG_SKIP_LOGIN = True  # 设置为False可恢复登录验证
+
+        if DEBUG_SKIP_LOGIN:
+            print("🚧 [调试模式] 跳过登录验证，直接进入主界面")
+            # 🔧 调试模式：加载实际账号数据
+            self.current_user = self._load_actual_account()
+            if not self.current_user:
+                # 如果没有找到实际账号，使用备用账号
+                self.current_user = {
+                    'phone': '15155712316',                      # 实际手机号
+                    'token': '47794858a832916d8eda012e7cabd269',  # 实际token
+                    'debug_mode': True                           # 调试标识
+                }
+            # 直接显示主窗口
+            QTimer.singleShot(100, self._show_main_window_after_debug_login)
+        else:
+            # 启动用户认证检查
+            QTimer.singleShot(100, self._start_auth_check)
 
     def _init_enhanced_payment_system(self):
         """🆕 初始化增强支付系统"""
@@ -812,87 +831,126 @@ class ModularCinemaMainWindow(QMainWindow):
             QMessageBox.critical(self, "显示主窗口错误", f"显示主窗口失败: {str(e)}")
             # 如果显示失败，重新启动登录
             self._restart_login()
-    
-    def _trigger_default_cinema_selection(self):
-        """智能默认选择：影院 → 账号 - 避免等待账号选择"""
+
+    def _show_main_window_after_debug_login(self):
+        """🔧 调试模式：跳过登录直接显示主窗口"""
         try:
-            # 第一步：获取影院列表
-            from services.cinema_manager import cinema_manager
-            cinemas = cinema_manager.load_cinema_list()
+            print("🚧 [调试模式] 开始显示主窗口（跳过登录）")
 
-            if not cinemas:
-                return
+            # 🔧 更新窗口标题显示调试模式
+            self.setWindowTitle("柴犬影院下单系统 - 模块化版本 [🚧 调试模式 - 已跳过登录]")
 
-            # 第二步：自动选择第一个影院
-            first_cinema = cinemas[0]
-            cinema_name = first_cinema.get('cinemaShortName', '')
-            cinema_id = first_cinema.get('cinemaid', '')
+            # 显示主窗口
+            self.show()
 
-            print(f"[主窗口] 📍 步骤1: 自动选择默认影院: {cinema_name} ({cinema_id})")
+            # 将窗口提到前台并激活
+            self.raise_()
+            self.activateWindow()
 
-            # 更新Tab管理器的影院数据
-            if hasattr(self.tab_manager_widget, 'update_cinema_list'):
-                self.tab_manager_widget.update_cinema_list(cinemas)
+            # 居中显示窗口
+            self.center_window()
 
-            # 发布影院选择事件
-            event_bus.cinema_selected.emit(first_cinema)
+            # 发出登录成功信号（使用模拟用户信息）
+            self.login_success.emit(self.current_user)
 
-            # 第三步：延迟选择该影院的关联账号
-            QTimer.singleShot(200, lambda: self._auto_select_cinema_account(first_cinema))
+            # 发布全局登录成功事件
+            event_bus.user_login_success.emit(self.current_user)
 
-            # 第四步：延迟更新Tab管理器界面
-            QTimer.singleShot(400, lambda: self._update_tab_cinema_selection(cinema_name))
+            print("🚧 [调试模式] 主窗口显示完成")
+            print("🚧 [调试模式] 模拟用户信息:", self.current_user)
+
+            # 🔧 调试模式：使用加载的实际账号数据
+            debug_account = self.current_user.copy()
+            print(f"🚧 [调试模式] 准备发送账号信息: {debug_account}")
+
+            # 延迟发送账号信息，确保TabManagerWidget已初始化
+            QTimer.singleShot(1000, lambda: self._send_debug_account_info(debug_account))
+
+            # 延迟触发默认影院设置，确保所有组件都已初始化
+            QTimer.singleShot(1500, self._trigger_default_cinema_selection)
+
+            # 🔧 调试模式不启动定时验证机制
+            print("🚧 [调试模式] 跳过定时验证机制")
 
         except Exception as e:
+            QMessageBox.critical(self, "调试模式错误", f"调试模式显示主窗口失败: {str(e)}")
+            print(f"🚧 [调试模式] 显示主窗口失败: {e}")
+
+    def _load_actual_account(self):
+        """加载简化的账号数据（只包含phone和token）"""
+        try:
+            import json
+            import os
+
+            accounts_file = os.path.join(os.path.dirname(__file__), 'data', 'accounts.json')
+
+            if not os.path.exists(accounts_file):
+                print(f"🚧 [调试模式] 账号文件不存在: {accounts_file}")
+                return None
+
+            with open(accounts_file, "r", encoding="utf-8") as f:
+                accounts = json.load(f)
+
+            # 直接使用第一个账号，不进行任何筛选
+            if accounts and len(accounts) > 0:
+                first_account = accounts[0]
+
+                print(f"🚧 [调试模式] 加载账号: {first_account.get('phone')}")
+                print(f"🚧 [调试模式] Token: {first_account.get('token', '')[:20]}...")
+
+                return {
+                    'phone': first_account.get('phone'),
+                    'token': first_account.get('token'),
+                    'debug_mode': True
+                }
+            else:
+                print(f"🚧 [调试模式] 账号文件为空")
+                return None
+
+        except Exception as e:
+            print(f"🚧 [调试模式] 加载账号数据失败: {e}")
+            return None
+
+    def _send_debug_account_info(self, debug_account):
+        """发送调试模式的账号信息"""
+        try:
+            print(f"🚧 [调试模式] 发送账号信息到TabManagerWidget: {debug_account}")
+
+            # 通过事件总线发送账号变更事件
+            event_bus.account_changed.emit(debug_account)
+
+            print(f"🚧 [调试模式] 账号信息已发送")
+
+        except Exception as e:
+            print(f"🚧 [调试模式] 发送账号信息失败: {e}")
+
+    def _trigger_default_cinema_selection(self):
+        """移除本地影院文件加载 - 影院通过API动态获取"""
+        try:
+            print(f"[主窗口] 🚫 已移除本地影院文件加载，影院将通过API动态获取")
+            print(f"[主窗口] 🔄 沃美系统：城市选择后将通过API加载影院列表")
+
+            # 不再加载本地影院文件，影院数据完全通过API获取
+            # 沃美系统的流程：用户选择城市 → API获取该城市的影院列表
+
+        except Exception as e:
+            print(f"[主窗口] 初始化失败: {e}")
             import traceback
             traceback.print_exc()
 
     def _auto_select_cinema_account(self, cinema_info):
-        """自动选择影院关联的主账号"""
+        """简化的账号选择（不再关联影院）"""
         try:
-            cinema_name = cinema_info.get('cinemaShortName', '')
-            cinema_id = cinema_info.get('cinemaid', '')
+            print(f"[主窗口] 🎯 使用默认账号（不关联影院）")
 
-
-            # 获取账号列表 - 修复account_manager引用
-            if hasattr(self, 'account_widget') and hasattr(self.account_widget, 'load_account_list'):
-                all_accounts = self.account_widget.load_account_list()
+            # 直接使用已加载的账号，不进行影院关联
+            if hasattr(self, 'current_user') and self.current_user:
+                print(f"[主窗口] ✅ 使用当前账号: {self.current_user.get('phone')}")
             else:
-                return
-
-            if not all_accounts:
-                return
-
-            # 过滤该影院的关联账号
-            cinema_accounts = []
-            for account in all_accounts:
-                account_cinema_id = account.get('cinemaid', '')
-                if account_cinema_id == cinema_id:
-                    cinema_accounts.append(account)
-
-            # 选择账号
-            if cinema_accounts:
-                # 有关联账号，选择第一个
-                first_account = cinema_accounts[0]
-                userid = first_account.get('userid', first_account.get('phone', ''))
-            else:
-                pass
-                # 没有关联账号，选择第一个可用账号
-                first_account = all_accounts[0]
-                userid = first_account.get('userid', first_account.get('phone', ''))
-
-            # 设置当前账号
-            self.set_current_account(first_account)
-
-            # 发布账号选择事件
-            event_bus.account_changed.emit(first_account)
-
-            # 更新账号组件显示
-            if hasattr(self, 'account_widget'):
-                self.account_widget.set_current_account(first_account)
-
+                print(f"[主窗口] ⚠️ 当前账号未设置")
 
         except Exception as e:
+            print(f"[主窗口] 账号选择失败: {e}")
             import traceback
             traceback.print_exc()
     
@@ -2357,16 +2415,8 @@ class ModularCinemaMainWindow(QMainWindow):
     def _get_cinema_info_by_name(self, cinema_name):
         """根据名称获取影院信息 - 增强版本"""
         try:
-            # 方法1: 从cinema_manager获取数据 - 🆕 修复方法名
-            cinemas = self.cinema_manager.load_cinema_list()  # 使用正确的方法名
-            if cinemas:
-                print(f"[主窗口] cinema_manager获取到 {len(cinemas)} 个影院")
-                for cinema in cinemas:
-                    cinema_short_name = cinema.get('cinemaShortName', '')
-                    cinema_name_field = cinema.get('name', '')
-                    
-                    if cinema_short_name == cinema_name or cinema_name_field == cinema_name:
-                        return cinema
+            # 🚫 移除本地影院管理器调用
+            print(f"[主窗口] 🚫 已移除本地影院文件加载，从API数据中查找影院")
             
             # 方法2: 从Tab管理器的影院数据获取
             if hasattr(self, 'tab_manager_widget') and hasattr(self.tab_manager_widget, 'cinemas_data'):
@@ -2377,14 +2427,8 @@ class ModularCinemaMainWindow(QMainWindow):
                     if cinema_short_name == cinema_name or cinema_name_field == cinema_name:
                         return cinema
             
-            # 方法3: 尝试重新加载影院数据
-            cinemas = self.cinema_manager.load_cinema_list()
-            self.tab_manager_widget.cinemas_data = cinemas
-            
-            for cinema in cinemas:
-                cinema_short_name = cinema.get('cinemaShortName', '')
-                if cinema_short_name == cinema_name:
-                    return cinema
+            # 🚫 移除本地影院文件重新加载逻辑
+            print(f"[主窗口] 💡 提示：请通过城市选择重新加载影院数据")
             
             return None
             
@@ -2396,41 +2440,50 @@ class ModularCinemaMainWindow(QMainWindow):
     def _load_movies_for_cinema(self, cinema_info):
         """为指定影院加载电影列表"""
         try:
-            # 使用film_service函数获取电影
+            # 使用沃美电影服务获取电影
             if self.current_account:
-                base_url = cinema_info.get('base_url', '')
-                cinemaid = cinema_info.get('cinemaid', '')
-                userid = self.current_account.get('userid', '')
-                openid = self.current_account.get('openid', '')
+                cinema_id = cinema_info.get('cinemaid', '')
                 token = self.current_account.get('token', '')
-                
-                if all([base_url, cinemaid, userid]):
-                    # 调用get_films函数
-                    raw_data = get_films(base_url, cinemaid, openid, userid, token)
-                    normalized_data = normalize_film_data(raw_data)
-                    
-                    movies = normalized_data.get('films', [])
-                    if movies and hasattr(self.tab_manager_widget, 'movie_combo'):
-                        self.tab_manager_widget.movie_combo.clear()
-                        for movie in movies:
-                            self.tab_manager_widget.movie_combo.addItem(movie.get('name', ''))
+
+                if cinema_id:
+                    # 设置token并获取电影列表
+                    self.film_service.set_token(token)
+                    movies_result = self.film_service.get_movies(cinema_id)
+
+                    if movies_result.get('success'):
+                        movies = movies_result.get('movies', [])
+                        if movies and hasattr(self.tab_manager_widget, 'movie_combo'):
+                            self.tab_manager_widget.movie_combo.clear()
+                            for movie in movies:
+                                movie_name = movie.get('name', '')
+                                self.tab_manager_widget.movie_combo.addItem(movie_name)
+                            print(f"[主窗口] 成功加载 {len(movies)} 部电影")
+                        else:
+                            print("[主窗口] 未获取到电影数据")
                     else:
-                        pass
+                        error = movies_result.get('error', '未知错误')
+                        print(f"[主窗口] 获取电影失败: {error}")
+                        self._load_default_movies()
                 else:
-                    pass
+                    print("[主窗口] 缺少影院ID")
+                    self._load_default_movies()
             else:
-                pass
-                    
+                print("[主窗口] 当前账号为空")
+                self._load_default_movies()
+
         except Exception as e:
-            pass
-            # 如果API调用失败，使用默认电影列表
-            if hasattr(self.tab_manager_widget, 'movie_combo'):
-                self.tab_manager_widget.movie_combo.clear()
-                self.tab_manager_widget.movie_combo.addItems([
-                    "阿凡达：水之道",
-                    "流浪地球2",
-                    "满江红"
-                ])
+            print(f"[主窗口] 加载电影异常: {e}")
+            self._load_default_movies()
+
+    def _load_default_movies(self):
+        """加载默认电影列表"""
+        if hasattr(self.tab_manager_widget, 'movie_combo'):
+            self.tab_manager_widget.movie_combo.clear()
+            self.tab_manager_widget.movie_combo.addItems([
+                "名侦探柯南：独眼的残像",
+                "海王2：失落的王国",
+                "阿凡达：水之道"
+            ])
     
     def _show_order_detail(self, order_detail):
         """🆕 显示订单详情 - 使用统一的订单详情管理器"""
@@ -2504,21 +2557,55 @@ class ModularCinemaMainWindow(QMainWindow):
     def _on_session_selected(self, session_info: dict):
         """场次选择处理 - 加载座位图"""
         try:
-            # print(f"[主窗口] 收到场次选择信号: {session_info.get('session_text', 'N/A')}")
-            # print("[主窗口333] 收到场次选择信号")
-            
+            print(f"[主窗口] 🎬 收到场次选择信号")
+            print(f"[主窗口] 📋 session_info类型: {type(session_info)}")
+            print(f"[主窗口] 📋 session_info键: {list(session_info.keys()) if isinstance(session_info, dict) else 'N/A'}")
+
             # 验证必要信息
             session_data = session_info.get('session_data')
             account = session_info.get('account')
             cinema_data = session_info.get('cinema_data')
-            
-            if not all([session_data, account, cinema_data]):
+
+            print(f"[主窗口] 🔍 参数验证:")
+            print(f"  - session_data: {type(session_data)} - {bool(session_data)}")
+            print(f"  - account: {type(account)} - {bool(account)}")
+            print(f"  - cinema_data: {type(cinema_data)} - {bool(cinema_data)}")
+
+            if session_data:
+                print(f"[主窗口] 📋 session_data内容: {session_data}")
+            if account:
+                print(f"[主窗口] 📋 account内容: {account}")
+            if cinema_data:
+                print(f"[主窗口] 📋 cinema_data内容: {cinema_data}")
+
+            # 简化验证：只检查session_data，不再强制要求account
+            if not session_data:
+                print(f"[主窗口] ❌ 缺少场次数据")
                 self._safe_update_seat_area("场次信息不完整\n\n无法加载座位图")
                 return
 
-            # 🆕 直接加载座位图，不显示加载提示
-            # 使用QTimer延迟执行，避免阻塞UI
-            QTimer.singleShot(100, lambda: self._load_seat_map(session_info))
+            # 如果没有account，使用默认账号
+            if not account:
+                print(f"[主窗口] ⚠️ 使用默认账号")
+                account = self.current_user or {'phone': '15155712316', 'token': '47794858a832916d8eda012e7cabd269'}
+                session_info['account'] = account
+
+            # 如果没有cinema_data，尝试获取
+            if not cinema_data:
+                print(f"[主窗口] ⚠️ 尝试获取影院数据")
+                cinema_data = self._get_current_cinema_data()
+                session_info['cinema_data'] = cinema_data
+
+            # 检查是否已经包含座位图数据
+            hall_info = session_info.get('hall_info')
+            if hall_info:
+                print(f"[主窗口] ✅ session_info已包含座位图数据，直接显示")
+                self._display_seat_map(hall_info, session_info)
+            else:
+                print(f"[主窗口] 🔄 session_info不包含座位图数据，需要加载")
+                # 🆕 直接加载座位图，不显示加载提示
+                # 使用QTimer延迟执行，避免阻塞UI
+                QTimer.singleShot(100, lambda: self._load_seat_map(session_info))
             
         except Exception as e:
             pass
@@ -2593,65 +2680,67 @@ class ModularCinemaMainWindow(QMainWindow):
     def _load_seat_map(self, session_info: dict):
         """加载座位图数据"""
         try:
-            from services.film_service import get_plan_seat_info
-            
+            print(f"[主窗口] 🎯 开始加载座位图数据")
+
             # 获取必要参数
             session_data = session_info['session_data']
             account = session_info['account']
             cinema_data = session_info['cinema_data']
-            
-            # 🆕 修复base_url字段名问题
-            # 从影院数据中获取base_url，支持多种字段名
-            base_url = cinema_data.get('base_url', '') or cinema_data.get('domain', '')
-            if base_url:
-                # 确保去掉协议前缀
-                base_url = base_url.replace('https://', '').replace('http://', '')
-            
+
+            print(f"[主窗口] 📋 提取参数:")
+            print(f"  - session_data类型: {type(session_data)}")
+            print(f"  - account类型: {type(account)}")
+            print(f"  - cinema_data类型: {type(cinema_data)}")
+
+            # 获取沃美系统需要的参数
+            cinema_id = cinema_data.get('cinemaid', '')
+            schedule_id = session_data.get('schedule_id', '')
+            hall_id = session_data.get('hall_id', '')
+
+            print(f"[主窗口] 🔍 座位图API参数:")
+            print(f"  - cinema_id: {cinema_id} (来源: cinema_data.cinemaid)")
+            print(f"  - schedule_id: {schedule_id} (来源: session_data.schedule_id)")
+            print(f"  - hall_id: {hall_id} (来源: session_data.hall_id)")
+            print(f"  - cinema_data所有字段: {list(cinema_data.keys()) if cinema_data else 'None'}")
+            print(f"  - session_data所有字段: {list(session_data.keys()) if session_data else 'None'}")
+
+            if not all([cinema_id, schedule_id, hall_id]):
+                print(f"[主窗口] ❌ 缺少必要参数:")
+                print(f"  - cinema_id: {cinema_id} ({'✓' if cinema_id else '✗'})")
+                print(f"  - schedule_id: {schedule_id} ({'✓' if schedule_id else '✗'})")
+                print(f"  - hall_id: {hall_id} ({'✓' if hall_id else '✗'})")
+                self._safe_update_seat_area("缺少座位图参数\n\n请重新选择场次")
+                return
+
+            print(f"[主窗口] ✅ 参数验证通过")
             print(f"  - 影院名称: {cinema_data.get('cinemaShortName', 'N/A')}")
             print(f"  - 影院ID: {cinema_data.get('cinemaid', 'N/A')}")
-            
-            # 构建API参数
-            params = {
-                'base_url': base_url,
-                'showCode': session_data.get('g', ''),      # 场次唯一编码
-                'hallCode': session_data.get('j', ''),      # 影厅编码
-                'filmCode': session_data.get('h', ''),      # 影片编码
-                'filmNo': session_data.get('fno', ''),      # 影片No
-                'showDate': session_data.get('k', '').split(' ')[0] if session_data.get('k') else '',  # 日期部分
-                'startTime': session_data.get('q', ''),     # 开始时间
-                'userid': account.get('userid', ''),
-                'openid': account.get('openid', ''),
-                'token': account.get('token', ''),
-                'cinemaid': cinema_data.get('cinemaid', ''),
-                'cardno': account.get('cardno', '')
-            }
-            
-            
-            # 验证参数完整性
-            required_params = ['base_url', 'showCode', 'hallCode', 'filmCode', 'userid', 'openid', 'token', 'cinemaid']
-            missing_params = [p for p in required_params if not params.get(p)]
-            if missing_params:
-                error_msg = f"缺少必要参数: {', '.join(missing_params)}"
-                self._safe_update_seat_area(f"参数不完整\n\n{error_msg}")
-                return
-            
-            # 调用座位图API
-            seat_result = get_plan_seat_info(**params)
-            
-            print(f"[主窗口] 座位图API响应: {type(seat_result)}")
-            
+
+            # 设置token并调用沃美座位图API
+            token = account.get('token', '')
+            print(f"[主窗口] 🔑 设置token: {token[:20]}...{token[-10:] if len(token) > 30 else token}")
+            self.film_service.set_token(token)
+
+            print(f"[主窗口] 🚀 调用沃美座位图API:")
+            print(f"  - URL: cinema/{cinema_id}/hall/info/?hall_id={hall_id}&schedule_id={schedule_id}")
+
+            # 调用沃美座位图API
+            seat_result = self.film_service.get_hall_info(cinema_id, hall_id, schedule_id)
+
+            print(f"[主窗口] 📥 沃美座位图API响应:")
+            print(f"  - 响应类型: {type(seat_result)}")
+            print(f"  - 响应内容: {seat_result}")
+
             if seat_result and isinstance(seat_result, dict):
-                if seat_result.get('resultCode') == '0':
+                if seat_result.get('success'):
                     # 成功获取座位数据
-                    seat_data = seat_result.get('resultData', {})
-                    self._display_seat_map(seat_data, session_info)
+                    hall_info = seat_result.get('hall_info', {})
+                    self._display_seat_map(hall_info, session_info)
                 else:
-                    pass
                     # API返回错误
-                    error_msg = seat_result.get('resultDesc', '未知错误')
+                    error_msg = seat_result.get('error', '未知错误')
                     self._safe_update_seat_area(f"获取座位图失败\n\n{error_msg}")
             else:
-                pass
                 # 响应格式错误
                 self._safe_update_seat_area("座位图数据格式错误\n\n请重新选择场次")
                 
@@ -2677,13 +2766,19 @@ class ModularCinemaMainWindow(QMainWindow):
                     'seat_count': seat_data.get('seatcount', 0)
                 }
                 
-                # 🆕 解析seats数组数据
-                seats_array = seat_data.get('seats', [])
-                if seats_array:
-                    seat_matrix = self._parse_seats_array(seats_array, hall_info)
-                    print(f"[主窗口] 座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行")
+                # 🆕 解析沃美座位数据 - room_seat字段
+                room_seat = seat_data.get('room_seat', [])
+                if room_seat:
+                    seat_matrix = self._parse_womei_room_seat(room_seat, hall_info)
+                    print(f"[主窗口] 沃美座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行")
                 else:
-                    pass
+                    # 兼容旧格式
+                    seats_array = seat_data.get('seats', [])
+                    if seats_array:
+                        seat_matrix = self._parse_seats_array(seats_array, hall_info)
+                        print(f"[主窗口] 座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行")
+                    else:
+                        print(f"[主窗口] 未找到座位数据，可用字段: {list(seat_data.keys())}")
             
             # 🆕 创建或更新座位图面板
             if seat_matrix and len(seat_matrix) > 0:
@@ -2742,6 +2837,159 @@ class ModularCinemaMainWindow(QMainWindow):
             import traceback
             traceback.print_exc()
             self._safe_update_seat_area("显示座位图异常\n\n请重新选择场次")
+
+    def _parse_womei_room_seat(self, room_seat: List[Dict], hall_info: dict) -> List[List[Dict]]:
+        """解析沃美room_seat数据为座位矩阵（增强调试功能）"""
+        try:
+            print(f"[座位调试] ==================== 开始解析沃美座位数据 ====================")
+            print(f"[座位调试] 原始数据区域数量: {len(room_seat)}")
+
+            # 🔧 输出完整的原始API响应数据
+            import json
+            print(f"[座位调试] 完整原始API响应数据:")
+            print(json.dumps(room_seat, indent=2, ensure_ascii=False))
+
+            # 收集所有座位
+            all_seats = []
+            max_row = 0
+            max_col = 0
+
+            for area_index, area in enumerate(room_seat):
+                area_name = area.get('area_name', '未知区域')
+                area_price = area.get('area_price', 0)
+                seats_dict = area.get('seats', {})
+
+                print(f"[座位调试] 区域 {area_index + 1}: {area_name}, 价格: {area_price}元")
+                print(f"[座位调试] 区域座位行数: {len(seats_dict)}")
+
+                for row_key, row_data in seats_dict.items():
+                    row_num = row_data.get('row', int(row_key))
+                    seat_details = row_data.get('detail', [])
+                    print(f"[座位调试] 第{row_num}行: {len(seat_details)}个座位")
+
+                    for seat_detail in seat_details:
+                        # 🔧 沃美座位状态映射：数字状态转换为字符串状态（增强调试）
+                        seat_status = seat_detail.get('status', 0)
+                        seat_no = seat_detail.get('seat_no', '')
+
+                        # 详细的状态映射调试
+                        if seat_status == 0:
+                            status = 'available'  # 可选
+                        elif seat_status == 1:
+                            status = 'sold'       # 已售
+                        elif seat_status == 2:
+                            status = 'locked'     # 锁定
+                        else:
+                            status = 'available'  # 默认可选
+                            print(f"[主窗口] ⚠️ 未知座位状态: {seat_no} status={seat_status}, 默认设为可选")
+
+                        # 🔧 打印前10个座位的详细信息示例
+                        if len(all_seats) < 10:
+                            row_info = seat_detail.get('row', row_num)
+                            col_info = seat_detail.get('col', 1)
+                            x_info = seat_detail.get('x', 1)
+                            y_info = seat_detail.get('y', row_num)
+                            type_info = seat_detail.get('type', 0)
+                            print(f"[座位调试] 座位 {len(all_seats) + 1}: {seat_no}")
+                            print(f"  - 位置: 第{row_info}行第{col_info}列 (x={x_info}, y={y_info})")
+                            print(f"  - 状态: {seat_status} → {status}")
+                            print(f"  - 类型: {type_info}, 价格: {area_price}元")
+
+                        # 沃美座位数据格式
+                        seat = {
+                            'seat_no': seat_detail.get('seat_no', ''),
+                            'row': int(seat_detail.get('row', row_num)),
+                            'col': int(seat_detail.get('col', 1)),
+                            'x': seat_detail.get('x', 1),
+                            'y': seat_detail.get('y', row_num),
+                            'type': seat_detail.get('type', 0),
+                            'status': status,  # 使用转换后的字符串状态
+                            'area_name': area_name,
+                            'area_price': area_price,
+                            'price': area_price,  # 添加价格字段
+                            'num': str(seat_detail.get('col', 1)),  # 添加座位号显示
+                            'original_status': seat_status  # 保存原始状态用于调试
+                        }
+
+                        all_seats.append(seat)
+                        max_row = max(max_row, seat['row'])
+                        max_col = max(max_col, seat['col'])
+
+            # 🔧 统计座位状态分布
+            status_count = {'available': 0, 'sold': 0, 'locked': 0, 'other': 0}
+            for seat in all_seats:
+                status = seat.get('status', 'other')
+                if status in status_count:
+                    status_count[status] += 1
+                else:
+                    status_count['other'] += 1
+
+            print(f"[座位调试] ==================== 座位数据统计 ====================")
+            print(f"[座位调试] 总座位数: {len(all_seats)}")
+            print(f"[座位调试] 座位图尺寸: {max_row}行 x {max_col}列")
+            print(f"[座位调试] 🎯 座位状态分布:")
+            print(f"  - 可选座位: {status_count['available']} 个")
+            print(f"  - 已售座位: {status_count['sold']} 个")
+            print(f"  - 锁定座位: {status_count['locked']} 个")
+            print(f"  - 其他状态: {status_count['other']} 个")
+
+            # 🔧 座位矩阵构建过程调试
+            print(f"[座位调试] ==================== 开始构建座位矩阵 ====================")
+            print(f"[座位调试] 矩阵尺寸: {max_row} 行 x {max_col} 列")
+            seat_matrix = []
+            for row in range(1, max_row + 1):
+                row_seats = []
+                for col in range(1, max_col + 1):
+                    # 查找该位置的座位
+                    seat = None
+                    for s in all_seats:
+                        if s['row'] == row and s['col'] == col:
+                            seat = s
+                            break
+
+                    if seat:
+                        row_seats.append(seat)
+                    else:
+                        # 空座位
+                        row_seats.append({
+                            'seat_no': '',
+                            'row': row,
+                            'col': col,
+                            'type': -1,  # 空座位标记
+                            'status': 'empty',  # 空座位状态
+                            'area_name': '',
+                            'area_price': 0,
+                            'price': 0,
+                            'num': ''  # 空座位无座位号
+                        })
+
+                seat_matrix.append(row_seats)
+
+            # 更新hall_info
+            hall_info['seat_count'] = len(all_seats)
+            hall_info['row_count'] = max_row
+            hall_info['col_count'] = max_col
+            hall_info['name'] = hall_info.get('hall_name', '未知影厅')
+
+            print(f"[主窗口] 沃美座位矩阵构建完成: {len(seat_matrix)} 行 x {max_col} 列")
+            return seat_matrix
+
+        except Exception as e:
+            print(f"[座位调试] ❌ 解析沃美座位数据失败: {e}")
+            print(f"[座位调试] ==================== 错误诊断信息 ====================")
+            print(f"[座位调试] 原始数据类型: {type(room_seat)}")
+            print(f"[座位调试] 原始数据长度: {len(room_seat) if isinstance(room_seat, (list, dict)) else 'N/A'}")
+
+            # 尝试输出部分原始数据用于诊断
+            try:
+                import json
+                print(f"[座位调试] 原始数据前100字符: {str(room_seat)[:100]}...")
+            except:
+                print(f"[座位调试] 无法输出原始数据")
+
+            import traceback
+            traceback.print_exc()
+            return []
 
     def _parse_seats_array(self, seats_array: List[Dict], hall_info: dict) -> List[List[Dict]]:
         """解析seats数组为座位矩阵"""
@@ -2934,16 +3182,25 @@ class ModularCinemaMainWindow(QMainWindow):
             MessageManager.show_error(self, "加载失败", f"座位图加载失败: {str(e)}", auto_close=False)
 
     def _get_current_cinema_data(self):
-        """获取当前选中的影院数据"""
+        """获取当前选中的影院数据（适配沃美系统）"""
         try:
             if hasattr(self.tab_manager_widget, 'cinema_combo'):
                 cinema_name = self.tab_manager_widget.cinema_combo.currentText()
                 if cinema_name and hasattr(self.tab_manager_widget, 'cinemas_data'):
                     for cinema in self.tab_manager_widget.cinemas_data:
-                        if cinema.get('cinemaShortName') == cinema_name:
+                        # 适配沃美系统的字段名
+                        if cinema.get('cinema_name') == cinema_name:
+                            # 为了兼容主窗口的座位图加载逻辑，添加华联格式的字段
+                            cinema_data = cinema.copy()
+                            cinema_data['cinemaid'] = cinema.get('cinema_id')  # 映射沃美cinema_id到华联cinemaid
+                            cinema_data['cinemaShortName'] = cinema.get('cinema_name')  # 映射沃美cinema_name到华联cinemaShortName
+                            return cinema_data
+                        # 兼容华联系统的字段名（如果存在）
+                        elif cinema.get('cinemaShortName') == cinema_name:
                             return cinema
             return {}
         except Exception as e:
+            print(f"[主窗口] 获取影院数据失败: {e}")
             return {}
 
     def _on_seat_input_changed(self, text: str):

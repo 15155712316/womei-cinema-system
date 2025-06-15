@@ -600,33 +600,20 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "重启登录失败", f"无法重新启动登录: {str(e)}")
 
     def _start_data_loading(self):
-        """启动数据加载 - 优化版：先影院后账号"""
+        """启动数据加载 - 移除本地影院文件加载"""
         try:
-            print("[主窗口] 开始智能数据加载流程...")
+            print("[主窗口] 开始数据加载流程（不加载本地影院文件）...")
 
-            # 第一步：加载影院列表
-            print("[主窗口] 步骤1: 加载影院列表")
-            cinemas = self.cinema_controller.load_cinema_list()
+            # 🚫 移除本地影院文件加载
+            print("[主窗口] 🚫 已移除本地影院文件加载")
+            print("[主窗口] 🔄 沃美系统：影院将通过API动态获取")
+            print("[主窗口] 📋 流程：用户选择城市 → API获取影院列表 → 用户选择影院")
 
-            if cinemas and len(cinemas) > 0:
-                # 第二步：自动选择第一个影院
-                first_cinema = cinemas[0]
-                cinema_name = first_cinema.get('cinemaShortName', first_cinema.get('name', ''))
-                cinema_id = first_cinema.get('cinemaid', '')
+            # 第一步：加载所有账号（不按影院过滤）
+            print("[主窗口] 步骤1: 加载所有账号")
+            self.account_controller.load_account_list()
 
-                print(f"[主窗口] 步骤2: 自动选择默认影院: {cinema_name} ({cinema_id})")
-
-                # 发布影院选择事件
-                from utils.signals import event_bus
-                event_bus.cinema_selected.emit(first_cinema)
-
-                # 第三步：延迟加载该影院的关联账号
-                QTimer.singleShot(300, lambda: self._load_cinema_accounts(first_cinema))
-            else:
-                print("[主窗口] 没有可用影院，加载所有账号")
-                self.account_controller.load_account_list()
-
-            print("[主窗口] 智能数据加载流程启动完成")
+            print("[主窗口] 数据加载流程完成，等待用户选择城市和影院")
 
         except Exception as e:
             print(f"[主窗口] 数据加载错误: {e}")

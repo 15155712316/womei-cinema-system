@@ -64,31 +64,24 @@ class CinemaController(QObject):
         self.load_cinema_list()
     
     def load_cinema_list(self) -> List[dict]:
-        """加载影院列表"""
+        """移除本地影院文件加载 - 影院通过API动态获取"""
         try:
-            print("[影院控制器] 开始加载影院列表")
-            
-            # 从影院管理器获取影院列表
-            cinemas = self.cinema_manager.load_cinema_list()
-            
-            if cinemas:
-                self.cinema_list = cinemas
-                print(f"[影院控制器] 影院列表加载成功: {len(cinemas)} 个影院")
-                
-                # 发布影院列表更新事件
-                self.cinema_list_updated.emit(cinemas)
-                event_bus.cinema_list_updated.emit(cinemas)
-                
-                return cinemas
-            else:
-                print("[影院控制器] 没有找到影院数据")
-                self.cinema_list = []
-                self.cinema_list_updated.emit([])
-                return []
-                
+            print("[影院控制器] 🚫 已移除本地影院文件加载")
+            print("[影院控制器] 🔄 沃美系统：影院将通过城市API动态获取")
+
+            # 不再从本地文件加载影院列表
+            # 沃美系统的影院数据通过城市API获取
+            self.cinema_list = []
+
+            # 发布空的影院列表（表示需要通过API获取）
+            self.cinema_list_updated.emit([])
+            event_bus.cinema_list_updated.emit([])
+
+            return []
+
         except Exception as e:
-            print(f"[影院控制器] 加载影院列表错误: {e}")
-            self.cinema_error.emit("加载失败", f"加载影院列表失败: {str(e)}")
+            print(f"[影院控制器] 初始化错误: {e}")
+            self.cinema_error.emit("初始化失败", f"影院控制器初始化失败: {str(e)}")
             return []
     
     def select_cinema(self, cinema_data: dict):

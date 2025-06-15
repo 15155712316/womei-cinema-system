@@ -1,45 +1,70 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-影院面板组件 - 重构版本
+影院面板组件 - 七级联动版本
+支持：系统→城市→影院→电影→日期→场次→座位
 """
 
 from typing import Dict, List, Optional
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
-    QComboBox, QGroupBox, QTableWidget, QTableWidgetItem, QHeaderView
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QComboBox, QGroupBox, QTableWidget, QTableWidgetItem, QHeaderView,
+    QDateEdit, QScrollArea
 )
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QDate
 from PyQt5.QtGui import QFont
 from utils.signals import event_bus, event_handler
 
+# 导入七级联动相关组件
+from config.cinema_systems_config import CinemaSystemType, CinemaSystemConfig
+from services.unified_cinema_api import CinemaAPIFactory
+
 
 class CinemaPanel(QWidget):
-    """影院面板"""
-    
-    # 信号定义
-    cinema_selected = pyqtSignal(dict)  # 影院选择
-    movie_selected = pyqtSignal(dict)  # 电影选择
-    session_selected = pyqtSignal(dict)  # 场次选择
-    
+    """影院面板 - 七级联动版本"""
+
+    # 七级联动信号定义
+    system_selected = pyqtSignal(object)  # 系统选择 (CinemaSystemType)
+    city_selected = pyqtSignal(dict)      # 城市选择
+    cinema_selected = pyqtSignal(dict)    # 影院选择
+    movie_selected = pyqtSignal(dict)     # 电影选择
+    date_selected = pyqtSignal(str)       # 日期选择
+    session_selected = pyqtSignal(dict)   # 场次选择
+    seat_selected = pyqtSignal(list)      # 座位选择
+
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        # 状态变量
-        self.cinema_list = []
-        self.movie_list = []
-        self.session_list = []
-        self.current_cinema = None
-        self.current_movie = None
-        self.current_session = None
-        
+
+        # 七级联动状态变量
+        self.current_system = None          # 当前系统
+        self.current_city = None            # 当前城市
+        self.current_cinema = None          # 当前影院
+        self.current_movie = None           # 当前电影
+        self.current_date = None            # 当前日期
+        self.current_session = None         # 当前场次
+        self.current_seats = []             # 当前座位
+
+        # 数据列表
+        self.system_list = []               # 系统列表
+        self.city_list = []                 # 城市列表
+        self.cinema_list = []               # 影院列表
+        self.movie_list = []                # 电影列表
+        self.date_list = []                 # 日期列表
+        self.session_list = []              # 场次列表
+
+        # API实例
+        self.api_instance = None
+
         # 初始化UI
         self._init_ui()
-        
+
         # 连接事件总线
         self._connect_events()
-        
-        print("[影院面板] 初始化完成")
+
+        # 初始化系统列表
+        self._init_system_list()
+
+        print("[影院面板] 七级联动初始化完成")
     
     def _init_ui(self):
         """初始化用户界面"""

@@ -1,0 +1,2182 @@
+{
+  "total_requests": 51,
+  "api_requests": 27,
+  "categorized_calls": {
+    "城市选择": [
+      {
+        "index": 27,
+        "time": "2025-06-15T07:21:43.196Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/citys/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/citys/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/citys/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJob3QiOlt7ImNpdHlfaWQiOjEsImNpdHlfcGlueWluIjoiYmVpamluZyIsImNpdHlfbmFtZSI6Ilx1NTMxN1x1NGVhYyIsImNpbmVtYV90b3RhbCI6NiwiY2luZW1hcyI6W3siY2luZW1hX2lkIjoiNDAwMDI4IiwiY2luZW1hX25hbWUiOiJcdTUzMTdcdTRlYWNcdTZjODNcdTdmOGVcdTRlMTZcdTc1NGNcdTU3Y2VcdTVlOTciLCJjaW5lbWFfYXJlYV9pZCI6ImQ0MWQ4Y2Q5OGYwMGIyMDRlOTgwMDk5OGVjZjg0MjdlIiwiY2luZW1hX2FyZWEiOiIiLCJjaW5lbWFfYWRkciI6Ilx1NTMxN1x1NGVhY1x1NWUwMlx1NjcxZFx1OTYzM1x1NTMzYVx1OTFkMVx1NmM0N1x1OGRlZjEwMVx1NWU2Mlx1NGUyZFx1OWE4Zlx1NGUxNlx1NzU0Y1x1NTdjZUVcdTVlYTdCMVx1ZmYwOFx1NmQ3N1x1NWU5NVx1NjM1ZVx1NjY3YVx1NjE2N1x1OTkxMFx1NTM4NVx1NWJmOVx1OTc2Mlx1ZmYwOSIsImxvbmdpdHVkZSI6IjAuMDAwMDAwMDAiLCJsYXRpdHVkZSI6IjAuMDAwMDAwMDAifSx7ImNpbmVtYV9pZCI6IjQwMDExNSIsImNpbmVtYV9uYW1lIjoiXHU2YzgzXHU3ZjhlXHU1MzE3XHU0ZWFjXHU5Zjk5XHU2ZTU2XHU1ZTk3IiwiY2luZW1hX2FyZWFfaWQiOiJkNDFkOGNkOThmMDBiMjA0ZTk4MDA5OThlY2Y4NDI3ZSIsImNpbmVtYV9hcmVhIjoiIiwiY2luZW1hX2FkZHIiOiJcdTUzMTdcdTRlYWNcdTVlMDJcdTYyM2ZcdTVjNzFcdTUzM2FcdTk1N2ZcdTRlOGVc",
+        "is_api": true
+      }
+    ],
+    "影院选择": [
+      {
+        "index": 4,
+        "time": "2025-06-15T07:21:45.334Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/ads/?ad_type=1",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/ads/",
+        "query_params": {
+          "ad_type": [
+            "1"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/ads/?ad_type=1",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpbmRleF90b3BfYmFubmVyIjpbXX19",
+        "is_api": true
+      },
+      {
+        "index": 5,
+        "time": "2025-06-15T07:21:46.666Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/ads/?ad_type=8",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/ads/",
+        "query_params": {
+          "ad_type": [
+            "8"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/ads/?ad_type=8",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJzY2hlZHVsZV9pbmRleF9iYW5uZXIiOltdfX0=",
+        "is_api": true
+      },
+      {
+        "index": 6,
+        "time": "2025-06-15T07:21:50.143Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/hall/info/?hall_id=6&schedule_id=16607189",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/hall/info/",
+        "query_params": {
+          "hall_id": [
+            "6"
+          ],
+          "schedule_id": [
+            "16607189"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/hall/info/?hall_id=6&schedule_id=16607189",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJjaW5lbWFfaWQiOjQwMDExNSwiaGFsbF9ubyI6IjYiLCJoYWxsX25hbWUiOiI2XHU1M2Y3LVx1OWFkOFx1NGVhZVx1NmZjMFx1NTE0OVx1NTM4NS0xLjNtXHU0ZWU1XHU0ZTBiXHU1MTNmXHU3YWU1XHU2NjZlXHU5MDFhXHU1Mzg1XHU1MTRkXHU3OTY4Iiwicm9vbV9zZWF0IjpbeyJhcmVhX25vIjoiMSIsImFyZWFfbmFtZSI6Ilx1OWVkOFx1OGJhNFx1NTMzYSIsImFyZWFfcHJpY2Vfbm9ybWFsIjp0cnVlLCJhcmVhX3ByaWNlIjo2NSwic2VhdHMiOltdfSx7ImFyZWFfbm8iOiIxMDAxNCIsImFyZWFfbmFtZSI6Ilx1NjMwOVx1NjQ2OVx1NTMzYVx1NTdkZiIsImFyZWFfcHJpY2Vfbm9ybWFsIjp0cnVlLCJhcmVhX3ByaWNlIjo3NSwic2VhdHMiOnsiMyI6eyJyb3ciOjMsImRlc2MiOiIzIiwiZGV0YWlsIjpbeyJzZWF0X25vIjoiMTExMTIyMTEjMDgjMTMiLCJyb3ciOiIzIiwiY29sIjoiMTAiLCJ4Ijo3LCJ5IjozLCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzA4IzEyIiwicm93IjoiMyIsImNvbCI6IjkiLCJ4Ijo4LCJ5IjozLCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzA4IzExIiwicm93IjoiMyIsImNvbCI6IjgiLCJ4Ijo5LCJ5IjozLCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzA4IzEwIiwicm93IjoiMyIsImNvbCI6IjciLCJ4IjoxMCwieSI6",
+        "is_api": true
+      },
+      {
+        "index": 7,
+        "time": "2025-06-15T07:21:50.204Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/hall/saleable/?schedule_id=16607189",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/hall/saleable/",
+        "query_params": {
+          "schedule_id": [
+            "16607189"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/hall/saleable/?schedule_id=16607189",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJjaW5lbWFfaWQiOjQwMDExNSwiaGFsbF9uYW1lIjoiNlx1NTNmNy1cdTlhZDhcdTRlYWVcdTZmYzBcdTUxNDlcdTUzODUtMS4zbVx1NGVlNVx1NGUwYlx1NTEzZlx1N2FlNVx1NjY2ZVx1OTAxYVx1NTM4NVx1NTE0ZFx1Nzk2OCIsImhhbGxfbm8iOiI2Iiwicm9vbV9zZWF0IjpbeyJhcmVhX25vIjoiIiwiYXJlYV9uYW1lIjoiIiwic2VhdHMiOnsiMSI6eyJyb3ciOjEsImRlc2MiOiIxIiwiZGV0YWlsIjpbeyJzZWF0X25vIjoiMTExMTIyMTEjMTAjMTAiLCJyb3ciOiIxIiwiY29sIjoiNyIsInkiOjEsIngiOjEwLCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzEwIzE3Iiwicm93IjoiMSIsImNvbCI6IjE0IiwieSI6MSwieCI6MywidHlwZSI6MCwic3RhdHVzIjowfSx7InNlYXRfbm8iOiIxMTExMjIxMSMxMCMxOCIsInJvdyI6IjEiLCJjb2wiOiIxNSIsInkiOjEsIngiOjIsInR5cGUiOjAsInN0YXR1cyI6MH0seyJzZWF0X25vIjoiMTExMTIyMTEjMTAjMTIiLCJyb3ciOiIxIiwiY29sIjoiOSIsInkiOjEsIngiOjgsInR5cGUiOjAsInN0YXR1cyI6MH0seyJzZWF0X25vIjoiMTExMTIyMTEjMTAjMTYiLCJyb3ciOiIxIiwiY29sIjoiMTMiLCJ5IjoxLCJ4Ijo0LCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzEwIzE1Iiwicm93IjoiMSIsImNvbCI6IjEyIiwieSI6MSwieCI6NSwidHlw",
+        "is_api": true
+      },
+      {
+        "index": 8,
+        "time": "2025-06-15T07:21:45.439Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/info/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/info/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/info/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJjaW5lbWFfaWQiOiI0MDAxMTUiLCJjaW5lbWFfbmFtZSI6Ilx1NmM4M1x1N2Y4ZVx1NTMxN1x1NGVhY1x1OWY5OVx1NmU1Nlx1NWU5NyIsImNpbmVtYV9hcmVhX2lkIjoiIiwiY2luZW1hX2FyZWEiOiIiLCJjaW5lbWFfYWRkciI6Ilx1NTMxN1x1NGVhY1x1NWUwMlx1NjIzZlx1NWM3MVx1NTMzYVx1OTU3Zlx1NGU4ZVx1NTkyN1x1ODg1N1x1NGUwZVx1ODI2Zlx1NGU2MVx1NGUxY1x1OGRlZlx1NGVhNFx1NTNjOVx1NTNlM1x1OTk5Nlx1NWYwMFx1OWY5OVx1NmU1Nlx1NzE5OVx1NjBhNlx1NTkyOVx1ODg1NzVcdTVjNDJcdTZjODNcdTdmOGVcdTVmNzFcdTU3Y2UiLCJsb25naXR1ZGUiOiIwLjAwMDAwMDAwIiwibGF0aXR1ZGUiOiIwLjAwMDAwMDAwIiwic2VsbF9zeXN0ZW0iOiJWSVNUQSIsImNvbnRhY3RfcGhvbmUiOiIwMTAtNjkzNjg3MDYiLCJvZmZpY2VfaG91cnMiOiIwOTowMC0wMDowMCIsImJ1c19yb3V0ZSI6IiIsInN1YndheV9yb3V0ZSI6IiIsInRpY2tldF9jb2xsZWN0b3JfbG9jYXRpb24iOiIiLCJmZWF0dXJlX3BhcmtpbmdfcG9saWN5IjoiIiwiZmVhdHVyZV9yZXN0X2FyZWEiOiIiLCJmZWF0dXJlX25lYXJieV9jdWlzaW5lIjoiIiwiZmVhdHVyZV9jaGlsZF9wb2xpY3kiOiIiLCJmZWF0dXJlXzNkIjoiIiwiZmVhdHVyZV9nb29kcyI6IiIsImZlYXR1cmVfbWVtYmVyX2Rpc2NvdW50IjoiXHU0ZjFhXHU1NDU4XHU1MzYxXHU2",
+        "is_api": true
+      },
+      {
+        "index": 9,
+        "time": "2025-06-15T07:21:49.968Z",
+        "method": "POST",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/member/card/auto_solid/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/member/card/auto_solid/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "POST",
+          ":path": "/ticket/wmyc/cinema/400115/member/card/auto_solid/",
+          ":scheme": "https",
+          "content-length": "2",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "application/x-www-form-urlencoded",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "e30=",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJub3JtYWxfdXNlIjp0cnVlLCJnb19iaW5kX2NhcmQiOmZhbHNlLCJnb19vcGVuX2NhcmQiOmZhbHNlfX0=",
+        "is_api": true
+      },
+      {
+        "index": 10,
+        "time": "2025-06-15T07:21:45.333Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/movies/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/movies/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/movies/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sibW92aWVfaWQiOjE0ODA3MzIsInNjaGVkdWxlX251bSI6NTMsIm5hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJlbl9uYW1lIjoiSG93IHRvIFRyYWluIFlvdXIgRHJhZ29uIiwidGFncyI6Ilx1NTI2N1x1NjBjNSxcdTU1OWNcdTUyNjcsXHU1OTQ3XHU1ZTdiIiwiY291bnRyeSI6Ilx1N2Y4ZVx1NTZmZCIsInNob3dfcGxhY2UiOiJcdTRlMmRcdTU2ZmRcdTU5MjdcdTk2NDZcdTRlMGFcdTY2MjAiLCJkaXJlY3RvciI6Ilx1OGZlYVx1NjA2OVx1MDBiN1x1NWZiN1x1NWUwM1x1NmQxYlx1NjVhZiIsImFjdG9yIjoiXHU2ODg1XHU2OGVlXHUwMGI3XHU2Y2YwXHU2NjY0XHU1OGViLFx1Njc3MFx1NjJjOVx1NWZiN1x1MDBiN1x1NWRmNFx1NzI3OVx1NTJkMixcdTU5YWVcdTUzZWZcdTAwYjdcdTVlMTVcdTUxNGIiLCJzY29yZSI6IjkuNSIsImhhdmVfdmlkZW8iOmZhbHNlLCJ2ZXJzaW9uIjpbIjJEIiwiSU1BWDJEIl0sImRhdGUiOiIyMDI1LTA2LTEzIiwidG9kYXlfc2hvdyI6WyIxNTo0MCIsIjE2OjIwIiwiMTc6MjAiXSwiYWZ0ZXJfbmV3ZXN0X3Nob3ciOiIiLCJsb25ncyI6IjEyNlx1NTIwNlx1OTQ5ZiIsImhhdmVfbWFya2V0aW5nIjpmYWxzZSwiaXNfcHJlX3NhbGUiOmZhbHNlLCJlZ2dfbnVtIjowLCJlZ2dfZGVzYyI6Ilx1NmUyOVx1OTlhOFx1NjNkMFx1OTE5Mlx1ZmYxYVx1NjcyY1x1NWY3MVx1NzI0",
+        "is_api": true
+      },
+      {
+        "index": 11,
+        "time": "2025-06-15T07:21:46.663Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/movies/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/movies/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/movies/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sibW92aWVfaWQiOjE0ODA3MzIsInNjaGVkdWxlX251bSI6NTMsIm5hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJlbl9uYW1lIjoiSG93IHRvIFRyYWluIFlvdXIgRHJhZ29uIiwidGFncyI6Ilx1NTI2N1x1NjBjNSxcdTU1OWNcdTUyNjcsXHU1OTQ3XHU1ZTdiIiwiY291bnRyeSI6Ilx1N2Y4ZVx1NTZmZCIsInNob3dfcGxhY2UiOiJcdTRlMmRcdTU2ZmRcdTU5MjdcdTk2NDZcdTRlMGFcdTY2MjAiLCJkaXJlY3RvciI6Ilx1OGZlYVx1NjA2OVx1MDBiN1x1NWZiN1x1NWUwM1x1NmQxYlx1NjVhZiIsImFjdG9yIjoiXHU2ODg1XHU2OGVlXHUwMGI3XHU2Y2YwXHU2NjY0XHU1OGViLFx1Njc3MFx1NjJjOVx1NWZiN1x1MDBiN1x1NWRmNFx1NzI3OVx1NTJkMixcdTU5YWVcdTUzZWZcdTAwYjdcdTVlMTVcdTUxNGIiLCJzY29yZSI6IjkuNSIsImhhdmVfdmlkZW8iOmZhbHNlLCJ2ZXJzaW9uIjpbIjJEIiwiSU1BWDJEIl0sImRhdGUiOiIyMDI1LTA2LTEzIiwidG9kYXlfc2hvdyI6WyIxNTo0MCIsIjE2OjIwIiwiMTc6MjAiXSwiYWZ0ZXJfbmV3ZXN0X3Nob3ciOiIiLCJsb25ncyI6IjEyNlx1NTIwNlx1OTQ5ZiIsImhhdmVfbWFya2V0aW5nIjpmYWxzZSwiaXNfcHJlX3NhbGUiOmZhbHNlLCJlZ2dfbnVtIjowLCJlZ2dfZGVzYyI6Ilx1NmUyOVx1OTlhOFx1NjNkMFx1OTE5Mlx1ZmYxYVx1NjcyY1x1NWY3MVx1NzI0",
+        "is_api": true
+      },
+      {
+        "index": 12,
+        "time": "2025-06-15T07:21:55.584Z",
+        "method": "POST",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/change/?version=tp_version",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/change/",
+        "query_params": {
+          "version": [
+            "tp_version"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "POST",
+          ":path": "/ticket/wmyc/cinema/400115/order/change/?version=tp_version",
+          ":scheme": "https",
+          "content-length": "214",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "application/x-www-form-urlencoded",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "b3JkZXJfaWQ9MjUwNjE1MTUyMTEwMDAxMjM5JmRpc2NvdW50X2lkPTAmZGlzY291bnRfdHlwZT1NQVJLRVRJTkcmY2FyZF9pZD0zNzYzNTQmcGF5X3R5cGU9TUVNQkVSJnJld2FyZHM9JTVCJTVEJnVzZV9yZXdhcmRzPVkmdXNlX2xpbWl0X2NhcmRzPU4mbGltaXRfY2FyZHM9JTVCJTVEJnZvdWNoZXJfY29kZT0mdm91Y2hlcl9jb2RlX3R5cGU9JnRpY2tldF9wYWNrX2dvb2RzPQ==",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsIm9yZGVyX3RvdGFsX3ByaWNlIjoxMzAsIm9yZGVyX3VuZmVlX3RvdGFsX3ByaWNlIjoxMzAsIm9yZGVyX3BheW1lbnRfcHJpY2UiOjEzMCwib3JkZXJfcGF5bWVudF9saW1pdF9iYWxhbmNlIjowLCJvcmRlcl9wYXltZW50X2FmdGVyX2xpbWl0X2JhbGFuY2UiOjAsImxpbWl0X3N1Yl9jYXJkX3BheSI6dHJ1ZSwidGlja2V0X3RvdGFsX3ByaWNlIjoxMzAsInRpY2tldF91bmZlZV90b3RhbF9wcmljZSI6MTMwLCJ0aWNrZXRfYmlzX2ZlZSI6NCwidGlja2V0X3BheW1lbnRfdG90YWxfcHJpY2UiOjEzMCwidGlja2V0X3RvdGFsX2ZlZSI6MCwidGlja2V0X3NpbmdsZV9wcmljZSI6WzY1LDY1XSwidGlja2V0X3NpbmdsZV9mZWUiOjAsInRpY2tldF9udW0iOjIsImZlZV90aWNrZXRfbnVtIjoyLCJsaW1pdF9jYXJkX3VzZSI6e30sIm1hcmtldGluZ191c2UiOnt9LCJ2b3VjaGVyX3VzZSI6e30sInZvdWNoZXJfdXNlX2dvb2RzIjp7fSwiY291cG9uX3VzZSI6e30sInJld2FyZHNfdXNlIjp7fSwibWFya2V0aW5nX2Rpc2NvdW50cyI6W10sInZvdWNoZXJfZGlzY291bnRzIjpbXSwiY291cG9uX2Rpc2NvdW50cyI6W10sInJld2FyZHNfZGlzY291bnRzIjp7InVzYWJsZV9yZXdhcmRzIjpbXSwidW51c2FibGVfcmV3YXJkcyI6W119LCJnb29kcyI6e30sIm9yZGVyX21zZyI6IiIsImV2Z2Nfdm91",
+        "is_api": true
+      },
+      {
+        "index": 13,
+        "time": "2025-06-15T07:21:55.171Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/info/?version=tp_version&order_id=250615152110001239",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/info/",
+        "query_params": {
+          "version": [
+            "tp_version"
+          ],
+          "order_id": [
+            "250615152110001239"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/order/info/?version=tp_version&order_id=250615152110001239",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInN0YXR1cyI6IlBFTkRJTkciLCJzdGF0dXNfZGVzYyI6Ilx1NjcyYVx1NjUyZlx1NGVkOCIsInN0YXR1c19pbmZvIjoiXHU2YjIyXHU4ZmNlXHU1NzI4XHU2NzJjXHU1ZjcxXHU5NjYyXHU4OWMyXHU1ZjcxIiwic3RhdHVzX3Nob3dfZXhjZXB0aW9uIjp0cnVlLCJvcmRlcl90b3RhbF9wcmljZSI6MCwib3JkZXJfcGF5bWVudF9wcmljZSI6MCwib3JkZXJfdG90YWxfZmVlIjoyLCJ0aWNrZXRfdG90YWxfcHJpY2UiOjAsInBheV90aW1lIjoiMjAyNS0wNi0xNSAxNToyMSIsInBob25lIjoiMTUxKioqKjIzMTYiLCJjaW5lbWFfaWQiOiI0MDAxMTUiLCJjaW5lbWFfbmFtZSI6Ilx1NmM4M1x1N2Y4ZVx1NTMxN1x1NGVhY1x1OWY5OVx1NmU1Nlx1NWU5NyIsImNpbmVtYV9hZGRyZXNzIjoiXHU1MzE3XHU0ZWFjXHU1ZTAyXHU2MjNmXHU1YzcxXHU1MzNhXHU5NTdmXHU0ZThlXHU1OTI3XHU4ODU3XHU0ZTBlXHU4MjZmXHU0ZTYxXHU0ZTFjXHU4ZGVmXHU0ZWE0XHU1M2M5XHU1M2UzXHU5OTk2XHU1ZjAwXHU5Zjk5XHU2ZTU2XHU3MTk5XHU2MGE2XHU1OTI5XHU4ODU3NVx1NWM0Mlx1NmM4M1x1N2Y4ZVx1NWY3MVx1NTdjZSIsIm1vdmllX25hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJtb3ZpZV9lZ2dfZGVjIjoiIiwibW92aWVfZWdnX251bSI6IiIsIm1vdmll",
+        "is_api": true
+      },
+      {
+        "index": 14,
+        "time": "2025-06-15T07:21:54.490Z",
+        "method": "POST",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/ticket/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/ticket/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "POST",
+          ":path": "/ticket/wmyc/cinema/400115/order/ticket/",
+          ":scheme": "https",
+          "content-length": "102",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "application/x-www-form-urlencoded",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "c2VhdGxhYmxlPTEwMDEzJTNBNyUzQTUlM0ExMTExMjIxMSUyMzA0JTIzMTAlN0MxMDAxMyUzQTclM0E0JTNBMTExMTIyMTElMjMwNCUyMzA5JnNjaGVkdWxlX2lkPTE2NjA3MTg5",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInNlcnZlcl90aW1lIjoxNzQ5OTcyMTE0fX0=",
+        "is_api": true
+      },
+      {
+        "index": 15,
+        "time": "2025-06-15T07:21:56.088Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/vcc/list/?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/vcc/list/",
+        "query_params": {
+          "order_id": [
+            "250615152110001239"
+          ],
+          "type": [
+            "EVGC_VOUCHER"
+          ],
+          "card_id": [
+            "376354"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/order/vcc/list/?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInVzYWJsZSI6W10sImRpc2FibGUiOltdfX0=",
+        "is_api": true
+      },
+      {
+        "index": 16,
+        "time": "2025-06-15T07:21:56.089Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/vcc/usable/count?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/vcc/usable/count",
+        "query_params": {
+          "order_id": [
+            "250615152110001239"
+          ],
+          "type": [
+            "EVGC_VOUCHER"
+          ],
+          "card_id": [
+            "376354"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/order/vcc/usable/count?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsImNvdW50IjowfX0=",
+        "is_api": true
+      },
+      {
+        "index": 17,
+        "time": "2025-06-15T07:21:45.334Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/public_notice/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/public_notice/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/public_notice/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6e319",
+        "is_api": true
+      },
+      {
+        "index": 18,
+        "time": "2025-06-15T07:21:47.662Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/public_notice/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/public_notice/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/public_notice/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6e319",
+        "is_api": true
+      },
+      {
+        "index": 19,
+        "time": "2025-06-15T07:21:46.664Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/shows/?movie_id=1480732",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/shows/",
+        "query_params": {
+          "movie_id": [
+            "1480732"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/shows/?movie_id=1480732",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyIyMDI1MDYxNSI6eyJtYXJrZXRpbmciOltdLCJzY2hlZHVsZXMiOlt7InNjaGVkdWxlX2lkIjoxNjYwNzIwNywic2hvd190eXBlIjoiMkQiLCJsYW5ndWFnZSI6Ilx1NTZmZFx1OGJlZCIsImhhbGxfaWQiOiI3IiwiaGFsbF9uYW1lIjoiN1x1NTNmNy1cdTRlYjJcdTViNTBcdTUzODUtMS4zbVx1NGVlNVx1NGUwYlx1NTEzZlx1N2FlNVx1NjY2ZVx1OTAxYVx1NTM4NVx1NTE0ZFx1Nzk2OCIsIm1vdmllX25hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJzaG93X3RpbWUiOiIxNTo0MCIsInNob3dfZGF0ZSI6IjIwMjUwNjE1IiwiZW5kX3RpbWUiOiIxNzo0NiIsInNlbGxpbmdfcHJpY2UiOjM1LCJ1bl9tZW1iZXJfdGlja2V0X2ZlZSI6MywibWVtYmVyX3NvbGlkX3N0b3JlZF9mZWUiOjMsIm1lbWJlcl9zb2xpZF9lcXVpdHlfZmVlIjozLCJtZW1iZXJfdmlydF9zdG9yZWRfZmVlIjoyLCJtZW1iZXJfdmlydF9lcXVpdHlfZmVlIjoyLCJtZW1iZXJfc29saWRfc3RvcmVkX3ByaWNlIjowLCJtZW1iZXJfc29saWRfZXF1aXR5X3ByaWNlIjowLCJtZW1iZXJfdmlydF9zdG9yZWRfcHJpY2UiOjAsIm1lbWJlcl92aXJ0X2VxdWl0eV9wcmljZSI6MCwiaGF2ZV9maXJzdF9tYXJrZXRpbmciOmZhbHNlLCJmaXJzdF9yb3dfcHJlZml4X3RleHQiOiJcdTk3NWVcdTRmMWFcdTU0NTgiLCJmaXJzdF9yb3dfcHJpY2UiOiI1NVx1",
+        "is_api": true
+      },
+      {
+        "index": 20,
+        "time": "2025-06-15T07:21:55.380Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/cards/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/cards/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/cards/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJzb2xpZF9jYXJkIjpbeyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwiaXNfbGltaXRfY2FyZCI6ZmFsc2UsImxpbWl0X21lbWJlcl93ZWNoYXRfcGF5IjpmYWxzZSwiY2FyZF9iYWxhbmNlIjoxLjEsImNhcmRfc2NvcmUiOjQ4MDM5LCJjYXJkX2ltYWdlIjoiaHR0cHM6XC9cL3Jlcy52aXN0YWNoaW5hLmNuXC9zdG9yZVwvY2FyZHBpY1wvMjAxOFwvMDZcLzI1XC8xNTI5OTE1MjAzXzIxNyIsImNhcmRfdHlwZSI6IlNPTElEX1NUT1JFRF9DQVJEIiwiaXNfZXhwaXJlIjpmYWxzZSwiaXNfZm9yYmlkIjpmYWxzZSwiaXNfcGF5X3Nob3ciOnRydWUsImlzX3VzYWJsZSI6dHJ1ZSwiaXNfcmVjaGFyZ2UiOnRydWUsImlzX2FjdGl2ZV9zaG93IjpmYWxzZSwiaXNfc3RvcmVfbW9uZXkiOnRydWUsInJld2FyZHNfbnVtIjpudWxsLCJhY3RpdmVfZXhwaXJlX3RpbWUiOiIi",
+        "is_api": true
+      },
+      {
+        "index": 21,
+        "time": "2025-06-15T07:21:45.397Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/info/?version=1749972105310&fact=",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/info/",
+        "query_params": {
+          "version": [
+            "1749972105310"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/info/?version=1749972105310&fact=",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpc19uZXdfdXNlciI6ZmFsc2UsImlzX3Jpc2tfdXNlciI6ZmFsc2UsImlzX2F1dGhfZXhwaXJlIjp0cnVlLCJpc19kZWxldGUiOjAsImlzX2JpbmRfbW9iaWxlIjp0cnVlLCJpc19tZW1iZXIiOnRydWUsImlkZW50aXR5X3Nob3ciOmZhbHNlLCJzZXgiOiJNRU4iLCJhdmF0YXIiOiJodHRwczpcL1wvdGhpcmR3eC5xbG9nby5jblwvbW1vcGVuXC92aV8zMlwvUTBqNFR3R1RmVElmYW5Gem1BTXc4Q09STlFwb2YzbWZmSktaeGtuUXB4RXRSZ3NINmhibzFvaHRXbWljaWJCOUFJS0RBUWlhczYwWUpmY24zWDNVZ2JKd2dcLzEzMiIsIm5pY2tuYW1lIjoiQVx1OTY4Zlx1N2YxOCIsInBob25lIjoiMTUqKioqKjIzMTYiLCJvcmRlcl9waG9uZSI6IjE1MTU1NzEyMzE2IiwibWVtYmVyX2luZm8iOnsic29saWRfY2FyZCI6eyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwi",
+        "is_api": true
+      },
+      {
+        "index": 22,
+        "time": "2025-06-15T07:21:55.173Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/info/?version=1749972115109&fact=Y",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/info/",
+        "query_params": {
+          "version": [
+            "1749972115109"
+          ],
+          "fact": [
+            "Y"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/info/?version=1749972115109&fact=Y",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpc19uZXdfdXNlciI6ZmFsc2UsImlzX3Jpc2tfdXNlciI6ZmFsc2UsImlzX2F1dGhfZXhwaXJlIjp0cnVlLCJpc19kZWxldGUiOjAsImlzX2JpbmRfbW9iaWxlIjp0cnVlLCJpc19tZW1iZXIiOnRydWUsImlkZW50aXR5X3Nob3ciOmZhbHNlLCJzZXgiOiJNRU4iLCJhdmF0YXIiOiJodHRwczpcL1wvdGhpcmR3eC5xbG9nby5jblwvbW1vcGVuXC92aV8zMlwvUTBqNFR3R1RmVElmYW5Gem1BTXc4Q09STlFwb2YzbWZmSktaeGtuUXB4RXRSZ3NINmhibzFvaHRXbWljaWJCOUFJS0RBUWlhczYwWUpmY24zWDNVZ2JKd2dcLzEzMiIsIm5pY2tuYW1lIjoiQVx1OTY4Zlx1N2YxOCIsInBob25lIjoiMTUqKioqKjIzMTYiLCJvcmRlcl9waG9uZSI6IjE1MTU1NzEyMzE2IiwibWVtYmVyX2luZm8iOnsic29saWRfY2FyZCI6eyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwi",
+        "is_api": true
+      },
+      {
+        "index": 23,
+        "time": "2025-06-15T07:21:55.172Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/voucher/list/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/voucher/list/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/voucher/list/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJ1bnVzZWQiOltdLCJ1c2VkIjpbXSwiZGlzYWJsZWQiOlt7InZvdWNoZXJfY29kZSI6IkNBVEhZMDA4MDg1MTM3NzQiLCJ2b3VjaGVyX2NvZGVfbWFzayI6IkNBVEgqKioqKioqKioqNzQiLCJ2b3VjaGVyX25hbWUiOiJcdTdlYmZcdTRlMGEzNVx1NTE0M1x1NTZlMlx1NGY1M1x1NTIzOFx1NWY3MVx1ODg2NSIsImV4cGlyZV90aW1lIjoxNzI2OTM0NDAwLCJleHBpcmVfdGltZV9zdHJpbmciOiIyMDI0XHU1ZTc0OVx1NjcwODIyXHU2NWU1IDAwOjAwIiwidm91Y2hlcl9udW0iOjEsInZvdWNoZXJfZGVzYyI6Ilx1NjcyY1x1NTE1MVx1NjM2Mlx1NTIzOFx1NGUwZFx1NTNlZlx1NGUwZVx1NGYxOFx1NjBlMFx1NmQzYlx1NTJhOFx1NTQwY1x1NjVmNlx1NGY3Zlx1NzUyOFx1ZmYwY1x1NGUxNFx1NGUwZFx1NjUyZlx1NjMwMVx1OTAwMFx1Nzk2OCJ9LHsidm91Y2hlcl9jb2RlIjoiQ0FUSFkwMDgwNjc2ODkzMyIsInZvdWNoZXJfY29kZV9tYXNrIjoiQ0FUSCoqKioqKioqKiozMyIsInZvdWNoZXJfbmFtZSI6Ilx1N2ViZlx1NGUwYTM1XHU1MTQzXHU1NmUyXHU0ZjUzXHU1MjM4XHU1ZjcxXHU4ODY1IiwiZXhwaXJlX3RpbWUiOjE3MjY5MzQ0MDAsImV4cGlyZV90aW1lX3N0cmluZyI6IjIwMjRcdTVlNzQ5XHU2NzA4MjJcdTY1ZTUgMDA6MDAiLCJ2b3VjaGVyX251bSI6MSwidm91Y2hlcl9kZXNjIjoiXHU2NzJjXHU1MTUxXHU2MzYyXHU1MjM4XHU0",
+        "is_api": true
+      },
+      {
+        "index": 24,
+        "time": "2025-06-15T07:21:56.090Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_P&schedule_id=16607189&goods_id=",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/vouchers",
+        "query_params": {
+          "voucher_type": [
+            "VGC_P"
+          ],
+          "schedule_id": [
+            "16607189"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_P&schedule_id=16607189&goods_id=",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W119",
+        "is_api": true
+      },
+      {
+        "index": 25,
+        "time": "2025-06-15T07:21:56.089Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_T&schedule_id=16607189&goods_id=",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/vouchers",
+        "query_params": {
+          "voucher_type": [
+            "VGC_T"
+          ],
+          "schedule_id": [
+            "16607189"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_T&schedule_id=16607189&goods_id=",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sidm91Y2hlcl9jb2RlIjoiQ0dZVEowMDEwNDc0MzIzMiIsInZvdWNoZXJfY29kZV9tYXNrIjoiQ0dZVCoqKioqKioqKiozMiIsInZvdWNoZXJfbmFtZSI6Ilx1NTkyOVx1NmQyNVx1OTAxYVx1NTE1MUdcdTUyMzhZIiwiZXhwaXJlX3RpbWUiOjE3MTg4MTI4MDAsImV4cGlyZV90aW1lX3N0cmluZyI6IjIwMjRcdTVlNzQ2XHU2NzA4MjBcdTY1ZTUgMDA6MDAoXHU1ZGYyXHU0ZjVjXHU1ZTlmKSIsInZvdWNoZXJfZGVzYyI6Ilx1NjcyY1x1NTE1MVx1NjM2Mlx1NTIzOFx1NGUwZFx1NTNlZlx1NGUwZVx1NGYxOFx1NjBlMFx1NmQzYlx1NTJhOFx1NTQwY1x1NjVmNlx1NGY3Zlx1NzUyOFx1ZmYwY1x1NGUxNFx1NGUwZFx1NjUyZlx1NjMwMVx1OTAwMFx1Nzk2OCIsImJpbmRfdGltZSI6MTcwNTIxMTQyNCwiYmluZF90aW1lX3N0ciI6IjIwMjQtMDEtMTQgMTM6NTA6MjQiLCJ1c2VfdGltZSI6MCwidXNlX3RpbWVfc3RyIjoiIiwic3RhdHVzIjoiRElTQUJMRUQiLCJ2b3VjaGVyX2JhbGFuY2UiOjEsInZvdWNoZXJfYmFsYW5jZV90eXBlIjoiTlQiLCJ2b3VjaGVyX2JhbGFuY2Vfc3RyIjoiMVx1NmIyMSIsInVzZV9kZXNjIjoiIiwidXNlX3J1bGVfZGVzYyI6IiIsInNjb3BlX2Rlc2MiOiIiLCJkb3V5aW5fY29kZV9yZXNhdWx0IjpbXX0seyJ2b3VjaGVyX2NvZGUiOiJDR1lUSjAwMTA1MDc2NjQwIiwidm91Y2hlcl9jb2RlX21hc2siOiJDR1lUKioq",
+        "is_api": true
+      },
+      {
+        "index": 26,
+        "time": "2025-06-15T07:21:47.668Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/vcc/activity/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/vcc/activity/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/vcc/activity/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W119",
+        "is_api": true
+      }
+    ],
+    "电影选择": [
+      {
+        "index": 10,
+        "time": "2025-06-15T07:21:45.333Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/movies/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/movies/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/movies/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sibW92aWVfaWQiOjE0ODA3MzIsInNjaGVkdWxlX251bSI6NTMsIm5hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJlbl9uYW1lIjoiSG93IHRvIFRyYWluIFlvdXIgRHJhZ29uIiwidGFncyI6Ilx1NTI2N1x1NjBjNSxcdTU1OWNcdTUyNjcsXHU1OTQ3XHU1ZTdiIiwiY291bnRyeSI6Ilx1N2Y4ZVx1NTZmZCIsInNob3dfcGxhY2UiOiJcdTRlMmRcdTU2ZmRcdTU5MjdcdTk2NDZcdTRlMGFcdTY2MjAiLCJkaXJlY3RvciI6Ilx1OGZlYVx1NjA2OVx1MDBiN1x1NWZiN1x1NWUwM1x1NmQxYlx1NjVhZiIsImFjdG9yIjoiXHU2ODg1XHU2OGVlXHUwMGI3XHU2Y2YwXHU2NjY0XHU1OGViLFx1Njc3MFx1NjJjOVx1NWZiN1x1MDBiN1x1NWRmNFx1NzI3OVx1NTJkMixcdTU5YWVcdTUzZWZcdTAwYjdcdTVlMTVcdTUxNGIiLCJzY29yZSI6IjkuNSIsImhhdmVfdmlkZW8iOmZhbHNlLCJ2ZXJzaW9uIjpbIjJEIiwiSU1BWDJEIl0sImRhdGUiOiIyMDI1LTA2LTEzIiwidG9kYXlfc2hvdyI6WyIxNTo0MCIsIjE2OjIwIiwiMTc6MjAiXSwiYWZ0ZXJfbmV3ZXN0X3Nob3ciOiIiLCJsb25ncyI6IjEyNlx1NTIwNlx1OTQ5ZiIsImhhdmVfbWFya2V0aW5nIjpmYWxzZSwiaXNfcHJlX3NhbGUiOmZhbHNlLCJlZ2dfbnVtIjowLCJlZ2dfZGVzYyI6Ilx1NmUyOVx1OTlhOFx1NjNkMFx1OTE5Mlx1ZmYxYVx1NjcyY1x1NWY3MVx1NzI0",
+        "is_api": true
+      },
+      {
+        "index": 11,
+        "time": "2025-06-15T07:21:46.663Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/movies/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/movies/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/movies/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sibW92aWVfaWQiOjE0ODA3MzIsInNjaGVkdWxlX251bSI6NTMsIm5hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJlbl9uYW1lIjoiSG93IHRvIFRyYWluIFlvdXIgRHJhZ29uIiwidGFncyI6Ilx1NTI2N1x1NjBjNSxcdTU1OWNcdTUyNjcsXHU1OTQ3XHU1ZTdiIiwiY291bnRyeSI6Ilx1N2Y4ZVx1NTZmZCIsInNob3dfcGxhY2UiOiJcdTRlMmRcdTU2ZmRcdTU5MjdcdTk2NDZcdTRlMGFcdTY2MjAiLCJkaXJlY3RvciI6Ilx1OGZlYVx1NjA2OVx1MDBiN1x1NWZiN1x1NWUwM1x1NmQxYlx1NjVhZiIsImFjdG9yIjoiXHU2ODg1XHU2OGVlXHUwMGI3XHU2Y2YwXHU2NjY0XHU1OGViLFx1Njc3MFx1NjJjOVx1NWZiN1x1MDBiN1x1NWRmNFx1NzI3OVx1NTJkMixcdTU5YWVcdTUzZWZcdTAwYjdcdTVlMTVcdTUxNGIiLCJzY29yZSI6IjkuNSIsImhhdmVfdmlkZW8iOmZhbHNlLCJ2ZXJzaW9uIjpbIjJEIiwiSU1BWDJEIl0sImRhdGUiOiIyMDI1LTA2LTEzIiwidG9kYXlfc2hvdyI6WyIxNTo0MCIsIjE2OjIwIiwiMTc6MjAiXSwiYWZ0ZXJfbmV3ZXN0X3Nob3ciOiIiLCJsb25ncyI6IjEyNlx1NTIwNlx1OTQ5ZiIsImhhdmVfbWFya2V0aW5nIjpmYWxzZSwiaXNfcHJlX3NhbGUiOmZhbHNlLCJlZ2dfbnVtIjowLCJlZ2dfZGVzYyI6Ilx1NmUyOVx1OTlhOFx1NjNkMFx1OTE5Mlx1ZmYxYVx1NjcyY1x1NWY3MVx1NzI0",
+        "is_api": true
+      }
+    ],
+    "场次选择": [
+      {
+        "index": 19,
+        "time": "2025-06-15T07:21:46.664Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/shows/?movie_id=1480732",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/shows/",
+        "query_params": {
+          "movie_id": [
+            "1480732"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/shows/?movie_id=1480732",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyIyMDI1MDYxNSI6eyJtYXJrZXRpbmciOltdLCJzY2hlZHVsZXMiOlt7InNjaGVkdWxlX2lkIjoxNjYwNzIwNywic2hvd190eXBlIjoiMkQiLCJsYW5ndWFnZSI6Ilx1NTZmZFx1OGJlZCIsImhhbGxfaWQiOiI3IiwiaGFsbF9uYW1lIjoiN1x1NTNmNy1cdTRlYjJcdTViNTBcdTUzODUtMS4zbVx1NGVlNVx1NGUwYlx1NTEzZlx1N2FlNVx1NjY2ZVx1OTAxYVx1NTM4NVx1NTE0ZFx1Nzk2OCIsIm1vdmllX25hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJzaG93X3RpbWUiOiIxNTo0MCIsInNob3dfZGF0ZSI6IjIwMjUwNjE1IiwiZW5kX3RpbWUiOiIxNzo0NiIsInNlbGxpbmdfcHJpY2UiOjM1LCJ1bl9tZW1iZXJfdGlja2V0X2ZlZSI6MywibWVtYmVyX3NvbGlkX3N0b3JlZF9mZWUiOjMsIm1lbWJlcl9zb2xpZF9lcXVpdHlfZmVlIjozLCJtZW1iZXJfdmlydF9zdG9yZWRfZmVlIjoyLCJtZW1iZXJfdmlydF9lcXVpdHlfZmVlIjoyLCJtZW1iZXJfc29saWRfc3RvcmVkX3ByaWNlIjowLCJtZW1iZXJfc29saWRfZXF1aXR5X3ByaWNlIjowLCJtZW1iZXJfdmlydF9zdG9yZWRfcHJpY2UiOjAsIm1lbWJlcl92aXJ0X2VxdWl0eV9wcmljZSI6MCwiaGF2ZV9maXJzdF9tYXJrZXRpbmciOmZhbHNlLCJmaXJzdF9yb3dfcHJlZml4X3RleHQiOiJcdTk3NWVcdTRmMWFcdTU0NTgiLCJmaXJzdF9yb3dfcHJpY2UiOiI1NVx1",
+        "is_api": true
+      }
+    ],
+    "座位选择": [],
+    "订单创建": [
+      {
+        "index": 3,
+        "time": "2025-06-15T07:21:55.161Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/order/sublists/info?order_id=250615152110001239",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/order/sublists/info",
+        "query_params": {
+          "order_id": [
+            "250615152110001239"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/order/sublists/info?order_id=250615152110001239",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W119",
+        "is_api": true
+      },
+      {
+        "index": 12,
+        "time": "2025-06-15T07:21:55.584Z",
+        "method": "POST",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/change/?version=tp_version",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/change/",
+        "query_params": {
+          "version": [
+            "tp_version"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "POST",
+          ":path": "/ticket/wmyc/cinema/400115/order/change/?version=tp_version",
+          ":scheme": "https",
+          "content-length": "214",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "application/x-www-form-urlencoded",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "b3JkZXJfaWQ9MjUwNjE1MTUyMTEwMDAxMjM5JmRpc2NvdW50X2lkPTAmZGlzY291bnRfdHlwZT1NQVJLRVRJTkcmY2FyZF9pZD0zNzYzNTQmcGF5X3R5cGU9TUVNQkVSJnJld2FyZHM9JTVCJTVEJnVzZV9yZXdhcmRzPVkmdXNlX2xpbWl0X2NhcmRzPU4mbGltaXRfY2FyZHM9JTVCJTVEJnZvdWNoZXJfY29kZT0mdm91Y2hlcl9jb2RlX3R5cGU9JnRpY2tldF9wYWNrX2dvb2RzPQ==",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsIm9yZGVyX3RvdGFsX3ByaWNlIjoxMzAsIm9yZGVyX3VuZmVlX3RvdGFsX3ByaWNlIjoxMzAsIm9yZGVyX3BheW1lbnRfcHJpY2UiOjEzMCwib3JkZXJfcGF5bWVudF9saW1pdF9iYWxhbmNlIjowLCJvcmRlcl9wYXltZW50X2FmdGVyX2xpbWl0X2JhbGFuY2UiOjAsImxpbWl0X3N1Yl9jYXJkX3BheSI6dHJ1ZSwidGlja2V0X3RvdGFsX3ByaWNlIjoxMzAsInRpY2tldF91bmZlZV90b3RhbF9wcmljZSI6MTMwLCJ0aWNrZXRfYmlzX2ZlZSI6NCwidGlja2V0X3BheW1lbnRfdG90YWxfcHJpY2UiOjEzMCwidGlja2V0X3RvdGFsX2ZlZSI6MCwidGlja2V0X3NpbmdsZV9wcmljZSI6WzY1LDY1XSwidGlja2V0X3NpbmdsZV9mZWUiOjAsInRpY2tldF9udW0iOjIsImZlZV90aWNrZXRfbnVtIjoyLCJsaW1pdF9jYXJkX3VzZSI6e30sIm1hcmtldGluZ191c2UiOnt9LCJ2b3VjaGVyX3VzZSI6e30sInZvdWNoZXJfdXNlX2dvb2RzIjp7fSwiY291cG9uX3VzZSI6e30sInJld2FyZHNfdXNlIjp7fSwibWFya2V0aW5nX2Rpc2NvdW50cyI6W10sInZvdWNoZXJfZGlzY291bnRzIjpbXSwiY291cG9uX2Rpc2NvdW50cyI6W10sInJld2FyZHNfZGlzY291bnRzIjp7InVzYWJsZV9yZXdhcmRzIjpbXSwidW51c2FibGVfcmV3YXJkcyI6W119LCJnb29kcyI6e30sIm9yZGVyX21zZyI6IiIsImV2Z2Nfdm91",
+        "is_api": true
+      },
+      {
+        "index": 13,
+        "time": "2025-06-15T07:21:55.171Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/info/?version=tp_version&order_id=250615152110001239",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/info/",
+        "query_params": {
+          "version": [
+            "tp_version"
+          ],
+          "order_id": [
+            "250615152110001239"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/order/info/?version=tp_version&order_id=250615152110001239",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInN0YXR1cyI6IlBFTkRJTkciLCJzdGF0dXNfZGVzYyI6Ilx1NjcyYVx1NjUyZlx1NGVkOCIsInN0YXR1c19pbmZvIjoiXHU2YjIyXHU4ZmNlXHU1NzI4XHU2NzJjXHU1ZjcxXHU5NjYyXHU4OWMyXHU1ZjcxIiwic3RhdHVzX3Nob3dfZXhjZXB0aW9uIjp0cnVlLCJvcmRlcl90b3RhbF9wcmljZSI6MCwib3JkZXJfcGF5bWVudF9wcmljZSI6MCwib3JkZXJfdG90YWxfZmVlIjoyLCJ0aWNrZXRfdG90YWxfcHJpY2UiOjAsInBheV90aW1lIjoiMjAyNS0wNi0xNSAxNToyMSIsInBob25lIjoiMTUxKioqKjIzMTYiLCJjaW5lbWFfaWQiOiI0MDAxMTUiLCJjaW5lbWFfbmFtZSI6Ilx1NmM4M1x1N2Y4ZVx1NTMxN1x1NGVhY1x1OWY5OVx1NmU1Nlx1NWU5NyIsImNpbmVtYV9hZGRyZXNzIjoiXHU1MzE3XHU0ZWFjXHU1ZTAyXHU2MjNmXHU1YzcxXHU1MzNhXHU5NTdmXHU0ZThlXHU1OTI3XHU4ODU3XHU0ZTBlXHU4MjZmXHU0ZTYxXHU0ZTFjXHU4ZGVmXHU0ZWE0XHU1M2M5XHU1M2UzXHU5OTk2XHU1ZjAwXHU5Zjk5XHU2ZTU2XHU3MTk5XHU2MGE2XHU1OTI5XHU4ODU3NVx1NWM0Mlx1NmM4M1x1N2Y4ZVx1NWY3MVx1NTdjZSIsIm1vdmllX25hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJtb3ZpZV9lZ2dfZGVjIjoiIiwibW92aWVfZWdnX251bSI6IiIsIm1vdmll",
+        "is_api": true
+      },
+      {
+        "index": 14,
+        "time": "2025-06-15T07:21:54.490Z",
+        "method": "POST",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/ticket/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/ticket/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "POST",
+          ":path": "/ticket/wmyc/cinema/400115/order/ticket/",
+          ":scheme": "https",
+          "content-length": "102",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "application/x-www-form-urlencoded",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "c2VhdGxhYmxlPTEwMDEzJTNBNyUzQTUlM0ExMTExMjIxMSUyMzA0JTIzMTAlN0MxMDAxMyUzQTclM0E0JTNBMTExMTIyMTElMjMwNCUyMzA5JnNjaGVkdWxlX2lkPTE2NjA3MTg5",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInNlcnZlcl90aW1lIjoxNzQ5OTcyMTE0fX0=",
+        "is_api": true
+      },
+      {
+        "index": 15,
+        "time": "2025-06-15T07:21:56.088Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/vcc/list/?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/vcc/list/",
+        "query_params": {
+          "order_id": [
+            "250615152110001239"
+          ],
+          "type": [
+            "EVGC_VOUCHER"
+          ],
+          "card_id": [
+            "376354"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/order/vcc/list/?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInVzYWJsZSI6W10sImRpc2FibGUiOltdfX0=",
+        "is_api": true
+      },
+      {
+        "index": 16,
+        "time": "2025-06-15T07:21:56.089Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/vcc/usable/count?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/order/vcc/usable/count",
+        "query_params": {
+          "order_id": [
+            "250615152110001239"
+          ],
+          "type": [
+            "EVGC_VOUCHER"
+          ],
+          "card_id": [
+            "376354"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/order/vcc/usable/count?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsImNvdW50IjowfX0=",
+        "is_api": true
+      }
+    ],
+    "用户认证": [
+      {
+        "index": 20,
+        "time": "2025-06-15T07:21:55.380Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/cards/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/cards/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/cards/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJzb2xpZF9jYXJkIjpbeyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwiaXNfbGltaXRfY2FyZCI6ZmFsc2UsImxpbWl0X21lbWJlcl93ZWNoYXRfcGF5IjpmYWxzZSwiY2FyZF9iYWxhbmNlIjoxLjEsImNhcmRfc2NvcmUiOjQ4MDM5LCJjYXJkX2ltYWdlIjoiaHR0cHM6XC9cL3Jlcy52aXN0YWNoaW5hLmNuXC9zdG9yZVwvY2FyZHBpY1wvMjAxOFwvMDZcLzI1XC8xNTI5OTE1MjAzXzIxNyIsImNhcmRfdHlwZSI6IlNPTElEX1NUT1JFRF9DQVJEIiwiaXNfZXhwaXJlIjpmYWxzZSwiaXNfZm9yYmlkIjpmYWxzZSwiaXNfcGF5X3Nob3ciOnRydWUsImlzX3VzYWJsZSI6dHJ1ZSwiaXNfcmVjaGFyZ2UiOnRydWUsImlzX2FjdGl2ZV9zaG93IjpmYWxzZSwiaXNfc3RvcmVfbW9uZXkiOnRydWUsInJld2FyZHNfbnVtIjpudWxsLCJhY3RpdmVfZXhwaXJlX3RpbWUiOiIi",
+        "is_api": true
+      },
+      {
+        "index": 21,
+        "time": "2025-06-15T07:21:45.397Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/info/?version=1749972105310&fact=",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/info/",
+        "query_params": {
+          "version": [
+            "1749972105310"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/info/?version=1749972105310&fact=",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpc19uZXdfdXNlciI6ZmFsc2UsImlzX3Jpc2tfdXNlciI6ZmFsc2UsImlzX2F1dGhfZXhwaXJlIjp0cnVlLCJpc19kZWxldGUiOjAsImlzX2JpbmRfbW9iaWxlIjp0cnVlLCJpc19tZW1iZXIiOnRydWUsImlkZW50aXR5X3Nob3ciOmZhbHNlLCJzZXgiOiJNRU4iLCJhdmF0YXIiOiJodHRwczpcL1wvdGhpcmR3eC5xbG9nby5jblwvbW1vcGVuXC92aV8zMlwvUTBqNFR3R1RmVElmYW5Gem1BTXc4Q09STlFwb2YzbWZmSktaeGtuUXB4RXRSZ3NINmhibzFvaHRXbWljaWJCOUFJS0RBUWlhczYwWUpmY24zWDNVZ2JKd2dcLzEzMiIsIm5pY2tuYW1lIjoiQVx1OTY4Zlx1N2YxOCIsInBob25lIjoiMTUqKioqKjIzMTYiLCJvcmRlcl9waG9uZSI6IjE1MTU1NzEyMzE2IiwibWVtYmVyX2luZm8iOnsic29saWRfY2FyZCI6eyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwi",
+        "is_api": true
+      },
+      {
+        "index": 22,
+        "time": "2025-06-15T07:21:55.173Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/info/?version=1749972115109&fact=Y",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/info/",
+        "query_params": {
+          "version": [
+            "1749972115109"
+          ],
+          "fact": [
+            "Y"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/info/?version=1749972115109&fact=Y",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpc19uZXdfdXNlciI6ZmFsc2UsImlzX3Jpc2tfdXNlciI6ZmFsc2UsImlzX2F1dGhfZXhwaXJlIjp0cnVlLCJpc19kZWxldGUiOjAsImlzX2JpbmRfbW9iaWxlIjp0cnVlLCJpc19tZW1iZXIiOnRydWUsImlkZW50aXR5X3Nob3ciOmZhbHNlLCJzZXgiOiJNRU4iLCJhdmF0YXIiOiJodHRwczpcL1wvdGhpcmR3eC5xbG9nby5jblwvbW1vcGVuXC92aV8zMlwvUTBqNFR3R1RmVElmYW5Gem1BTXc4Q09STlFwb2YzbWZmSktaeGtuUXB4RXRSZ3NINmhibzFvaHRXbWljaWJCOUFJS0RBUWlhczYwWUpmY24zWDNVZ2JKd2dcLzEzMiIsIm5pY2tuYW1lIjoiQVx1OTY4Zlx1N2YxOCIsInBob25lIjoiMTUqKioqKjIzMTYiLCJvcmRlcl9waG9uZSI6IjE1MTU1NzEyMzE2IiwibWVtYmVyX2luZm8iOnsic29saWRfY2FyZCI6eyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwi",
+        "is_api": true
+      },
+      {
+        "index": 23,
+        "time": "2025-06-15T07:21:55.172Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/voucher/list/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/voucher/list/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/voucher/list/",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJ1bnVzZWQiOltdLCJ1c2VkIjpbXSwiZGlzYWJsZWQiOlt7InZvdWNoZXJfY29kZSI6IkNBVEhZMDA4MDg1MTM3NzQiLCJ2b3VjaGVyX2NvZGVfbWFzayI6IkNBVEgqKioqKioqKioqNzQiLCJ2b3VjaGVyX25hbWUiOiJcdTdlYmZcdTRlMGEzNVx1NTE0M1x1NTZlMlx1NGY1M1x1NTIzOFx1NWY3MVx1ODg2NSIsImV4cGlyZV90aW1lIjoxNzI2OTM0NDAwLCJleHBpcmVfdGltZV9zdHJpbmciOiIyMDI0XHU1ZTc0OVx1NjcwODIyXHU2NWU1IDAwOjAwIiwidm91Y2hlcl9udW0iOjEsInZvdWNoZXJfZGVzYyI6Ilx1NjcyY1x1NTE1MVx1NjM2Mlx1NTIzOFx1NGUwZFx1NTNlZlx1NGUwZVx1NGYxOFx1NjBlMFx1NmQzYlx1NTJhOFx1NTQwY1x1NjVmNlx1NGY3Zlx1NzUyOFx1ZmYwY1x1NGUxNFx1NGUwZFx1NjUyZlx1NjMwMVx1OTAwMFx1Nzk2OCJ9LHsidm91Y2hlcl9jb2RlIjoiQ0FUSFkwMDgwNjc2ODkzMyIsInZvdWNoZXJfY29kZV9tYXNrIjoiQ0FUSCoqKioqKioqKiozMyIsInZvdWNoZXJfbmFtZSI6Ilx1N2ViZlx1NGUwYTM1XHU1MTQzXHU1NmUyXHU0ZjUzXHU1MjM4XHU1ZjcxXHU4ODY1IiwiZXhwaXJlX3RpbWUiOjE3MjY5MzQ0MDAsImV4cGlyZV90aW1lX3N0cmluZyI6IjIwMjRcdTVlNzQ5XHU2NzA4MjJcdTY1ZTUgMDA6MDAiLCJ2b3VjaGVyX251bSI6MSwidm91Y2hlcl9kZXNjIjoiXHU2NzJjXHU1MTUxXHU2MzYyXHU1MjM4XHU0",
+        "is_api": true
+      },
+      {
+        "index": 24,
+        "time": "2025-06-15T07:21:56.090Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_P&schedule_id=16607189&goods_id=",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/vouchers",
+        "query_params": {
+          "voucher_type": [
+            "VGC_P"
+          ],
+          "schedule_id": [
+            "16607189"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_P&schedule_id=16607189&goods_id=",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W119",
+        "is_api": true
+      },
+      {
+        "index": 25,
+        "time": "2025-06-15T07:21:56.089Z",
+        "method": "GET",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_T&schedule_id=16607189&goods_id=",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/user/vouchers",
+        "query_params": {
+          "voucher_type": [
+            "VGC_T"
+          ],
+          "schedule_id": [
+            "16607189"
+          ]
+        },
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "GET",
+          ":path": "/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_T&schedule_id=16607189&goods_id=",
+          ":scheme": "https",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "multipart/form-data",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sidm91Y2hlcl9jb2RlIjoiQ0dZVEowMDEwNDc0MzIzMiIsInZvdWNoZXJfY29kZV9tYXNrIjoiQ0dZVCoqKioqKioqKiozMiIsInZvdWNoZXJfbmFtZSI6Ilx1NTkyOVx1NmQyNVx1OTAxYVx1NTE1MUdcdTUyMzhZIiwiZXhwaXJlX3RpbWUiOjE3MTg4MTI4MDAsImV4cGlyZV90aW1lX3N0cmluZyI6IjIwMjRcdTVlNzQ2XHU2NzA4MjBcdTY1ZTUgMDA6MDAoXHU1ZGYyXHU0ZjVjXHU1ZTlmKSIsInZvdWNoZXJfZGVzYyI6Ilx1NjcyY1x1NTE1MVx1NjM2Mlx1NTIzOFx1NGUwZFx1NTNlZlx1NGUwZVx1NGYxOFx1NjBlMFx1NmQzYlx1NTJhOFx1NTQwY1x1NjVmNlx1NGY3Zlx1NzUyOFx1ZmYwY1x1NGUxNFx1NGUwZFx1NjUyZlx1NjMwMVx1OTAwMFx1Nzk2OCIsImJpbmRfdGltZSI6MTcwNTIxMTQyNCwiYmluZF90aW1lX3N0ciI6IjIwMjQtMDEtMTQgMTM6NTA6MjQiLCJ1c2VfdGltZSI6MCwidXNlX3RpbWVfc3RyIjoiIiwic3RhdHVzIjoiRElTQUJMRUQiLCJ2b3VjaGVyX2JhbGFuY2UiOjEsInZvdWNoZXJfYmFsYW5jZV90eXBlIjoiTlQiLCJ2b3VjaGVyX2JhbGFuY2Vfc3RyIjoiMVx1NmIyMSIsInVzZV9kZXNjIjoiIiwidXNlX3J1bGVfZGVzYyI6IiIsInNjb3BlX2Rlc2MiOiIiLCJkb3V5aW5fY29kZV9yZXNhdWx0IjpbXX0seyJ2b3VjaGVyX2NvZGUiOiJDR1lUSjAwMTA1MDc2NjQwIiwidm91Y2hlcl9jb2RlX21hc2siOiJDR1lUKioq",
+        "is_api": true
+      },
+      {
+        "index": 28,
+        "time": "2025-06-15T07:21:45.337Z",
+        "method": "POST",
+        "url": "https://ct.womovie.cn/ticket/wmyc/user/check_phone/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/user/check_phone/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "POST",
+          ":path": "/ticket/wmyc/user/check_phone/",
+          ":scheme": "https",
+          "content-length": "2",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "application/x-www-form-urlencoded",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "e30=",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpc19iaW5kIjp0cnVlfX0=",
+        "is_api": true
+      }
+    ],
+    "会员信息": [
+      {
+        "index": 9,
+        "time": "2025-06-15T07:21:49.968Z",
+        "method": "POST",
+        "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/member/card/auto_solid/",
+        "domain": "ct.womovie.cn",
+        "path": "/ticket/wmyc/cinema/400115/member/card/auto_solid/",
+        "query_params": {},
+        "headers": {
+          ":authority": "ct.womovie.cn",
+          ":method": "POST",
+          ":path": "/ticket/wmyc/cinema/400115/member/card/auto_solid/",
+          ":scheme": "https",
+          "content-length": "2",
+          "x-channel-id": "40000",
+          "tenant-short": "wmyc",
+          "client-version": "4.0",
+          "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+          "content-type": "application/x-www-form-urlencoded",
+          "xweb_xhr": "1",
+          "x-requested-with": "wxapp",
+          "token": "47794858a832916d8eda012e7cabd269",
+          "accept": "*/*",
+          "sec-fetch-site": "cross-site",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-dest": "empty",
+          "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html",
+          "accept-encoding": "gzip, deflate, br",
+          "accept-language": "zh-CN,zh;q=0.9",
+          "priority": "u=1, i"
+        },
+        "request_body": "e30=",
+        "status": 200,
+        "response_text": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJub3JtYWxfdXNlIjp0cnVlLCJnb19iaW5kX2NhcmQiOmZhbHNlLCJnb19vcGVuX2NhcmQiOmZhbHNlfX0=",
+        "is_api": true
+      }
+    ],
+    "优惠券": []
+  },
+  "api_details": [
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/qrgoods/api/goods/list/400115/routine/?flag=duplicate",
+      "path": "/qrgoods/api/goods/list/400115/routine/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "flag": [
+          "duplicate"
+        ]
+      },
+      "body": "",
+      "response": "eyJjb2RlIjoiMTAwMDYiLCJtc2ciOiJcdTY2ODJcdTY1ZTBcdTUzNTZcdTU0YzEiLCJkYXRhIjpbXX0="
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/order/sublists/info?order_id=250615152110001239",
+      "path": "/ticket/order/sublists/info",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "order_id": [
+          "250615152110001239"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W119"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/ads/?ad_type=1",
+      "path": "/ticket/wmyc/cinema/400115/ads/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "ad_type": [
+          "1"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpbmRleF90b3BfYmFubmVyIjpbXX19"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/ads/?ad_type=8",
+      "path": "/ticket/wmyc/cinema/400115/ads/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "ad_type": [
+          "8"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJzY2hlZHVsZV9pbmRleF9iYW5uZXIiOltdfX0="
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/hall/info/?hall_id=6&schedule_id=16607189",
+      "path": "/ticket/wmyc/cinema/400115/hall/info/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "hall_id": [
+          "6"
+        ],
+        "schedule_id": [
+          "16607189"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJjaW5lbWFfaWQiOjQwMDExNSwiaGFsbF9ubyI6IjYiLCJoYWxsX25hbWUiOiI2XHU1M2Y3LVx1OWFkOFx1NGVhZVx1NmZjMFx1NTE0OVx1NTM4NS0xLjNtXHU0ZWU1XHU0ZTBiXHU1MTNmXHU3YWU1XHU2NjZlXHU5MDFhXHU1Mzg1XHU1MTRkXHU3OTY4Iiwicm9vbV9zZWF0IjpbeyJhcmVhX25vIjoiMSIsImFyZWFfbmFtZSI6Ilx1OWVkOFx1OGJhNFx1NTMzYSIsImFyZWFfcHJpY2Vfbm9ybWFsIjp0cnVlLCJhcmVhX3ByaWNlIjo2NSwic2VhdHMiOltdfSx7ImFyZWFfbm8iOiIxMDAxNCIsImFyZWFfbmFtZSI6Ilx1NjMwOVx1NjQ2OVx1NTMzYVx1NTdkZiIsImFyZWFfcHJpY2Vfbm9ybWFsIjp0cnVlLCJhcmVhX3ByaWNlIjo3NSwic2VhdHMiOnsiMyI6eyJyb3ciOjMsImRlc2MiOiIzIiwiZGV0YWlsIjpbeyJzZWF0X25vIjoiMTExMTIyMTEjMDgjMTMiLCJyb3ciOiIzIiwiY29sIjoiMTAiLCJ4Ijo3LCJ5IjozLCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzA4IzEyIiwicm93IjoiMyIsImNvbCI6IjkiLCJ4Ijo4LCJ5IjozLCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzA4IzExIiwicm93IjoiMyIsImNvbCI6IjgiLCJ4Ijo5LCJ5IjozLCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzA4IzEwIiwicm93IjoiMyIsImNvbCI6IjciLCJ4IjoxMCwieSI6"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/hall/saleable/?schedule_id=16607189",
+      "path": "/ticket/wmyc/cinema/400115/hall/saleable/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "schedule_id": [
+          "16607189"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJjaW5lbWFfaWQiOjQwMDExNSwiaGFsbF9uYW1lIjoiNlx1NTNmNy1cdTlhZDhcdTRlYWVcdTZmYzBcdTUxNDlcdTUzODUtMS4zbVx1NGVlNVx1NGUwYlx1NTEzZlx1N2FlNVx1NjY2ZVx1OTAxYVx1NTM4NVx1NTE0ZFx1Nzk2OCIsImhhbGxfbm8iOiI2Iiwicm9vbV9zZWF0IjpbeyJhcmVhX25vIjoiIiwiYXJlYV9uYW1lIjoiIiwic2VhdHMiOnsiMSI6eyJyb3ciOjEsImRlc2MiOiIxIiwiZGV0YWlsIjpbeyJzZWF0X25vIjoiMTExMTIyMTEjMTAjMTAiLCJyb3ciOiIxIiwiY29sIjoiNyIsInkiOjEsIngiOjEwLCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzEwIzE3Iiwicm93IjoiMSIsImNvbCI6IjE0IiwieSI6MSwieCI6MywidHlwZSI6MCwic3RhdHVzIjowfSx7InNlYXRfbm8iOiIxMTExMjIxMSMxMCMxOCIsInJvdyI6IjEiLCJjb2wiOiIxNSIsInkiOjEsIngiOjIsInR5cGUiOjAsInN0YXR1cyI6MH0seyJzZWF0X25vIjoiMTExMTIyMTEjMTAjMTIiLCJyb3ciOiIxIiwiY29sIjoiOSIsInkiOjEsIngiOjgsInR5cGUiOjAsInN0YXR1cyI6MH0seyJzZWF0X25vIjoiMTExMTIyMTEjMTAjMTYiLCJyb3ciOiIxIiwiY29sIjoiMTMiLCJ5IjoxLCJ4Ijo0LCJ0eXBlIjowLCJzdGF0dXMiOjB9LHsic2VhdF9ubyI6IjExMTEyMjExIzEwIzE1Iiwicm93IjoiMSIsImNvbCI6IjEyIiwieSI6MSwieCI6NSwidHlw"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/info/",
+      "path": "/ticket/wmyc/cinema/400115/info/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJjaW5lbWFfaWQiOiI0MDAxMTUiLCJjaW5lbWFfbmFtZSI6Ilx1NmM4M1x1N2Y4ZVx1NTMxN1x1NGVhY1x1OWY5OVx1NmU1Nlx1NWU5NyIsImNpbmVtYV9hcmVhX2lkIjoiIiwiY2luZW1hX2FyZWEiOiIiLCJjaW5lbWFfYWRkciI6Ilx1NTMxN1x1NGVhY1x1NWUwMlx1NjIzZlx1NWM3MVx1NTMzYVx1OTU3Zlx1NGU4ZVx1NTkyN1x1ODg1N1x1NGUwZVx1ODI2Zlx1NGU2MVx1NGUxY1x1OGRlZlx1NGVhNFx1NTNjOVx1NTNlM1x1OTk5Nlx1NWYwMFx1OWY5OVx1NmU1Nlx1NzE5OVx1NjBhNlx1NTkyOVx1ODg1NzVcdTVjNDJcdTZjODNcdTdmOGVcdTVmNzFcdTU3Y2UiLCJsb25naXR1ZGUiOiIwLjAwMDAwMDAwIiwibGF0aXR1ZGUiOiIwLjAwMDAwMDAwIiwic2VsbF9zeXN0ZW0iOiJWSVNUQSIsImNvbnRhY3RfcGhvbmUiOiIwMTAtNjkzNjg3MDYiLCJvZmZpY2VfaG91cnMiOiIwOTowMC0wMDowMCIsImJ1c19yb3V0ZSI6IiIsInN1YndheV9yb3V0ZSI6IiIsInRpY2tldF9jb2xsZWN0b3JfbG9jYXRpb24iOiIiLCJmZWF0dXJlX3BhcmtpbmdfcG9saWN5IjoiIiwiZmVhdHVyZV9yZXN0X2FyZWEiOiIiLCJmZWF0dXJlX25lYXJieV9jdWlzaW5lIjoiIiwiZmVhdHVyZV9jaGlsZF9wb2xpY3kiOiIiLCJmZWF0dXJlXzNkIjoiIiwiZmVhdHVyZV9nb29kcyI6IiIsImZlYXR1cmVfbWVtYmVyX2Rpc2NvdW50IjoiXHU0ZjFhXHU1NDU4XHU1MzYxXHU2"
+    },
+    {
+      "method": "POST",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/member/card/auto_solid/",
+      "path": "/ticket/wmyc/cinema/400115/member/card/auto_solid/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "e30=",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJub3JtYWxfdXNlIjp0cnVlLCJnb19iaW5kX2NhcmQiOmZhbHNlLCJnb19vcGVuX2NhcmQiOmZhbHNlfX0="
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/movies/",
+      "path": "/ticket/wmyc/cinema/400115/movies/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sibW92aWVfaWQiOjE0ODA3MzIsInNjaGVkdWxlX251bSI6NTMsIm5hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJlbl9uYW1lIjoiSG93IHRvIFRyYWluIFlvdXIgRHJhZ29uIiwidGFncyI6Ilx1NTI2N1x1NjBjNSxcdTU1OWNcdTUyNjcsXHU1OTQ3XHU1ZTdiIiwiY291bnRyeSI6Ilx1N2Y4ZVx1NTZmZCIsInNob3dfcGxhY2UiOiJcdTRlMmRcdTU2ZmRcdTU5MjdcdTk2NDZcdTRlMGFcdTY2MjAiLCJkaXJlY3RvciI6Ilx1OGZlYVx1NjA2OVx1MDBiN1x1NWZiN1x1NWUwM1x1NmQxYlx1NjVhZiIsImFjdG9yIjoiXHU2ODg1XHU2OGVlXHUwMGI3XHU2Y2YwXHU2NjY0XHU1OGViLFx1Njc3MFx1NjJjOVx1NWZiN1x1MDBiN1x1NWRmNFx1NzI3OVx1NTJkMixcdTU5YWVcdTUzZWZcdTAwYjdcdTVlMTVcdTUxNGIiLCJzY29yZSI6IjkuNSIsImhhdmVfdmlkZW8iOmZhbHNlLCJ2ZXJzaW9uIjpbIjJEIiwiSU1BWDJEIl0sImRhdGUiOiIyMDI1LTA2LTEzIiwidG9kYXlfc2hvdyI6WyIxNTo0MCIsIjE2OjIwIiwiMTc6MjAiXSwiYWZ0ZXJfbmV3ZXN0X3Nob3ciOiIiLCJsb25ncyI6IjEyNlx1NTIwNlx1OTQ5ZiIsImhhdmVfbWFya2V0aW5nIjpmYWxzZSwiaXNfcHJlX3NhbGUiOmZhbHNlLCJlZ2dfbnVtIjowLCJlZ2dfZGVzYyI6Ilx1NmUyOVx1OTlhOFx1NjNkMFx1OTE5Mlx1ZmYxYVx1NjcyY1x1NWY3MVx1NzI0"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/movies/",
+      "path": "/ticket/wmyc/cinema/400115/movies/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sibW92aWVfaWQiOjE0ODA3MzIsInNjaGVkdWxlX251bSI6NTMsIm5hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJlbl9uYW1lIjoiSG93IHRvIFRyYWluIFlvdXIgRHJhZ29uIiwidGFncyI6Ilx1NTI2N1x1NjBjNSxcdTU1OWNcdTUyNjcsXHU1OTQ3XHU1ZTdiIiwiY291bnRyeSI6Ilx1N2Y4ZVx1NTZmZCIsInNob3dfcGxhY2UiOiJcdTRlMmRcdTU2ZmRcdTU5MjdcdTk2NDZcdTRlMGFcdTY2MjAiLCJkaXJlY3RvciI6Ilx1OGZlYVx1NjA2OVx1MDBiN1x1NWZiN1x1NWUwM1x1NmQxYlx1NjVhZiIsImFjdG9yIjoiXHU2ODg1XHU2OGVlXHUwMGI3XHU2Y2YwXHU2NjY0XHU1OGViLFx1Njc3MFx1NjJjOVx1NWZiN1x1MDBiN1x1NWRmNFx1NzI3OVx1NTJkMixcdTU5YWVcdTUzZWZcdTAwYjdcdTVlMTVcdTUxNGIiLCJzY29yZSI6IjkuNSIsImhhdmVfdmlkZW8iOmZhbHNlLCJ2ZXJzaW9uIjpbIjJEIiwiSU1BWDJEIl0sImRhdGUiOiIyMDI1LTA2LTEzIiwidG9kYXlfc2hvdyI6WyIxNTo0MCIsIjE2OjIwIiwiMTc6MjAiXSwiYWZ0ZXJfbmV3ZXN0X3Nob3ciOiIiLCJsb25ncyI6IjEyNlx1NTIwNlx1OTQ5ZiIsImhhdmVfbWFya2V0aW5nIjpmYWxzZSwiaXNfcHJlX3NhbGUiOmZhbHNlLCJlZ2dfbnVtIjowLCJlZ2dfZGVzYyI6Ilx1NmUyOVx1OTlhOFx1NjNkMFx1OTE5Mlx1ZmYxYVx1NjcyY1x1NWY3MVx1NzI0"
+    },
+    {
+      "method": "POST",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/change/?version=tp_version",
+      "path": "/ticket/wmyc/cinema/400115/order/change/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "version": [
+          "tp_version"
+        ]
+      },
+      "body": "b3JkZXJfaWQ9MjUwNjE1MTUyMTEwMDAxMjM5JmRpc2NvdW50X2lkPTAmZGlzY291bnRfdHlwZT1NQVJLRVRJTkcmY2FyZF9pZD0zNzYzNTQmcGF5X3R5cGU9TUVNQkVSJnJld2FyZHM9JTVCJTVEJnVzZV9yZXdhcmRzPVkmdXNlX2xpbWl0X2NhcmRzPU4mbGltaXRfY2FyZHM9JTVCJTVEJnZvdWNoZXJfY29kZT0mdm91Y2hlcl9jb2RlX3R5cGU9JnRpY2tldF9wYWNrX2dvb2RzPQ==",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsIm9yZGVyX3RvdGFsX3ByaWNlIjoxMzAsIm9yZGVyX3VuZmVlX3RvdGFsX3ByaWNlIjoxMzAsIm9yZGVyX3BheW1lbnRfcHJpY2UiOjEzMCwib3JkZXJfcGF5bWVudF9saW1pdF9iYWxhbmNlIjowLCJvcmRlcl9wYXltZW50X2FmdGVyX2xpbWl0X2JhbGFuY2UiOjAsImxpbWl0X3N1Yl9jYXJkX3BheSI6dHJ1ZSwidGlja2V0X3RvdGFsX3ByaWNlIjoxMzAsInRpY2tldF91bmZlZV90b3RhbF9wcmljZSI6MTMwLCJ0aWNrZXRfYmlzX2ZlZSI6NCwidGlja2V0X3BheW1lbnRfdG90YWxfcHJpY2UiOjEzMCwidGlja2V0X3RvdGFsX2ZlZSI6MCwidGlja2V0X3NpbmdsZV9wcmljZSI6WzY1LDY1XSwidGlja2V0X3NpbmdsZV9mZWUiOjAsInRpY2tldF9udW0iOjIsImZlZV90aWNrZXRfbnVtIjoyLCJsaW1pdF9jYXJkX3VzZSI6e30sIm1hcmtldGluZ191c2UiOnt9LCJ2b3VjaGVyX3VzZSI6e30sInZvdWNoZXJfdXNlX2dvb2RzIjp7fSwiY291cG9uX3VzZSI6e30sInJld2FyZHNfdXNlIjp7fSwibWFya2V0aW5nX2Rpc2NvdW50cyI6W10sInZvdWNoZXJfZGlzY291bnRzIjpbXSwiY291cG9uX2Rpc2NvdW50cyI6W10sInJld2FyZHNfZGlzY291bnRzIjp7InVzYWJsZV9yZXdhcmRzIjpbXSwidW51c2FibGVfcmV3YXJkcyI6W119LCJnb29kcyI6e30sIm9yZGVyX21zZyI6IiIsImV2Z2Nfdm91"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/info/?version=tp_version&order_id=250615152110001239",
+      "path": "/ticket/wmyc/cinema/400115/order/info/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "version": [
+          "tp_version"
+        ],
+        "order_id": [
+          "250615152110001239"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInN0YXR1cyI6IlBFTkRJTkciLCJzdGF0dXNfZGVzYyI6Ilx1NjcyYVx1NjUyZlx1NGVkOCIsInN0YXR1c19pbmZvIjoiXHU2YjIyXHU4ZmNlXHU1NzI4XHU2NzJjXHU1ZjcxXHU5NjYyXHU4OWMyXHU1ZjcxIiwic3RhdHVzX3Nob3dfZXhjZXB0aW9uIjp0cnVlLCJvcmRlcl90b3RhbF9wcmljZSI6MCwib3JkZXJfcGF5bWVudF9wcmljZSI6MCwib3JkZXJfdG90YWxfZmVlIjoyLCJ0aWNrZXRfdG90YWxfcHJpY2UiOjAsInBheV90aW1lIjoiMjAyNS0wNi0xNSAxNToyMSIsInBob25lIjoiMTUxKioqKjIzMTYiLCJjaW5lbWFfaWQiOiI0MDAxMTUiLCJjaW5lbWFfbmFtZSI6Ilx1NmM4M1x1N2Y4ZVx1NTMxN1x1NGVhY1x1OWY5OVx1NmU1Nlx1NWU5NyIsImNpbmVtYV9hZGRyZXNzIjoiXHU1MzE3XHU0ZWFjXHU1ZTAyXHU2MjNmXHU1YzcxXHU1MzNhXHU5NTdmXHU0ZThlXHU1OTI3XHU4ODU3XHU0ZTBlXHU4MjZmXHU0ZTYxXHU0ZTFjXHU4ZGVmXHU0ZWE0XHU1M2M5XHU1M2UzXHU5OTk2XHU1ZjAwXHU5Zjk5XHU2ZTU2XHU3MTk5XHU2MGE2XHU1OTI5XHU4ODU3NVx1NWM0Mlx1NmM4M1x1N2Y4ZVx1NWY3MVx1NTdjZSIsIm1vdmllX25hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJtb3ZpZV9lZ2dfZGVjIjoiIiwibW92aWVfZWdnX251bSI6IiIsIm1vdmll"
+    },
+    {
+      "method": "POST",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/ticket/",
+      "path": "/ticket/wmyc/cinema/400115/order/ticket/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "c2VhdGxhYmxlPTEwMDEzJTNBNyUzQTUlM0ExMTExMjIxMSUyMzA0JTIzMTAlN0MxMDAxMyUzQTclM0E0JTNBMTExMTIyMTElMjMwNCUyMzA5JnNjaGVkdWxlX2lkPTE2NjA3MTg5",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInNlcnZlcl90aW1lIjoxNzQ5OTcyMTE0fX0="
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/vcc/list/?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+      "path": "/ticket/wmyc/cinema/400115/order/vcc/list/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "order_id": [
+          "250615152110001239"
+        ],
+        "type": [
+          "EVGC_VOUCHER"
+        ],
+        "card_id": [
+          "376354"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsInVzYWJsZSI6W10sImRpc2FibGUiOltdfX0="
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/order/vcc/usable/count?order_id=250615152110001239&type=EVGC_VOUCHER&card_id=376354",
+      "path": "/ticket/wmyc/cinema/400115/order/vcc/usable/count",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "order_id": [
+          "250615152110001239"
+        ],
+        "type": [
+          "EVGC_VOUCHER"
+        ],
+        "card_id": [
+          "376354"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJvcmRlcl9pZCI6IjI1MDYxNTE1MjExMDAwMTIzOSIsImNvdW50IjowfX0="
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/public_notice/",
+      "path": "/ticket/wmyc/cinema/400115/public_notice/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6e319"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/public_notice/",
+      "path": "/ticket/wmyc/cinema/400115/public_notice/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6e319"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/shows/?movie_id=1480732",
+      "path": "/ticket/wmyc/cinema/400115/shows/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "movie_id": [
+          "1480732"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyIyMDI1MDYxNSI6eyJtYXJrZXRpbmciOltdLCJzY2hlZHVsZXMiOlt7InNjaGVkdWxlX2lkIjoxNjYwNzIwNywic2hvd190eXBlIjoiMkQiLCJsYW5ndWFnZSI6Ilx1NTZmZFx1OGJlZCIsImhhbGxfaWQiOiI3IiwiaGFsbF9uYW1lIjoiN1x1NTNmNy1cdTRlYjJcdTViNTBcdTUzODUtMS4zbVx1NGVlNVx1NGUwYlx1NTEzZlx1N2FlNVx1NjY2ZVx1OTAxYVx1NTM4NVx1NTE0ZFx1Nzk2OCIsIm1vdmllX25hbWUiOiJcdTY1YjBcdTAwYjdcdTlhNmZcdTlmOTlcdTlhZDhcdTYyNGIiLCJzaG93X3RpbWUiOiIxNTo0MCIsInNob3dfZGF0ZSI6IjIwMjUwNjE1IiwiZW5kX3RpbWUiOiIxNzo0NiIsInNlbGxpbmdfcHJpY2UiOjM1LCJ1bl9tZW1iZXJfdGlja2V0X2ZlZSI6MywibWVtYmVyX3NvbGlkX3N0b3JlZF9mZWUiOjMsIm1lbWJlcl9zb2xpZF9lcXVpdHlfZmVlIjozLCJtZW1iZXJfdmlydF9zdG9yZWRfZmVlIjoyLCJtZW1iZXJfdmlydF9lcXVpdHlfZmVlIjoyLCJtZW1iZXJfc29saWRfc3RvcmVkX3ByaWNlIjowLCJtZW1iZXJfc29saWRfZXF1aXR5X3ByaWNlIjowLCJtZW1iZXJfdmlydF9zdG9yZWRfcHJpY2UiOjAsIm1lbWJlcl92aXJ0X2VxdWl0eV9wcmljZSI6MCwiaGF2ZV9maXJzdF9tYXJrZXRpbmciOmZhbHNlLCJmaXJzdF9yb3dfcHJlZml4X3RleHQiOiJcdTk3NWVcdTRmMWFcdTU0NTgiLCJmaXJzdF9yb3dfcHJpY2UiOiI1NVx1"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/cards/",
+      "path": "/ticket/wmyc/cinema/400115/user/cards/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJzb2xpZF9jYXJkIjpbeyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwiaXNfbGltaXRfY2FyZCI6ZmFsc2UsImxpbWl0X21lbWJlcl93ZWNoYXRfcGF5IjpmYWxzZSwiY2FyZF9iYWxhbmNlIjoxLjEsImNhcmRfc2NvcmUiOjQ4MDM5LCJjYXJkX2ltYWdlIjoiaHR0cHM6XC9cL3Jlcy52aXN0YWNoaW5hLmNuXC9zdG9yZVwvY2FyZHBpY1wvMjAxOFwvMDZcLzI1XC8xNTI5OTE1MjAzXzIxNyIsImNhcmRfdHlwZSI6IlNPTElEX1NUT1JFRF9DQVJEIiwiaXNfZXhwaXJlIjpmYWxzZSwiaXNfZm9yYmlkIjpmYWxzZSwiaXNfcGF5X3Nob3ciOnRydWUsImlzX3VzYWJsZSI6dHJ1ZSwiaXNfcmVjaGFyZ2UiOnRydWUsImlzX2FjdGl2ZV9zaG93IjpmYWxzZSwiaXNfc3RvcmVfbW9uZXkiOnRydWUsInJld2FyZHNfbnVtIjpudWxsLCJhY3RpdmVfZXhwaXJlX3RpbWUiOiIi"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/info/?version=1749972105310&fact=",
+      "path": "/ticket/wmyc/cinema/400115/user/info/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "version": [
+          "1749972105310"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpc19uZXdfdXNlciI6ZmFsc2UsImlzX3Jpc2tfdXNlciI6ZmFsc2UsImlzX2F1dGhfZXhwaXJlIjp0cnVlLCJpc19kZWxldGUiOjAsImlzX2JpbmRfbW9iaWxlIjp0cnVlLCJpc19tZW1iZXIiOnRydWUsImlkZW50aXR5X3Nob3ciOmZhbHNlLCJzZXgiOiJNRU4iLCJhdmF0YXIiOiJodHRwczpcL1wvdGhpcmR3eC5xbG9nby5jblwvbW1vcGVuXC92aV8zMlwvUTBqNFR3R1RmVElmYW5Gem1BTXc4Q09STlFwb2YzbWZmSktaeGtuUXB4RXRSZ3NINmhibzFvaHRXbWljaWJCOUFJS0RBUWlhczYwWUpmY24zWDNVZ2JKd2dcLzEzMiIsIm5pY2tuYW1lIjoiQVx1OTY4Zlx1N2YxOCIsInBob25lIjoiMTUqKioqKjIzMTYiLCJvcmRlcl9waG9uZSI6IjE1MTU1NzEyMzE2IiwibWVtYmVyX2luZm8iOnsic29saWRfY2FyZCI6eyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwi"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/info/?version=1749972115109&fact=Y",
+      "path": "/ticket/wmyc/cinema/400115/user/info/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "version": [
+          "1749972115109"
+        ],
+        "fact": [
+          "Y"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpc19uZXdfdXNlciI6ZmFsc2UsImlzX3Jpc2tfdXNlciI6ZmFsc2UsImlzX2F1dGhfZXhwaXJlIjp0cnVlLCJpc19kZWxldGUiOjAsImlzX2JpbmRfbW9iaWxlIjp0cnVlLCJpc19tZW1iZXIiOnRydWUsImlkZW50aXR5X3Nob3ciOmZhbHNlLCJzZXgiOiJNRU4iLCJhdmF0YXIiOiJodHRwczpcL1wvdGhpcmR3eC5xbG9nby5jblwvbW1vcGVuXC92aV8zMlwvUTBqNFR3R1RmVElmYW5Gem1BTXc4Q09STlFwb2YzbWZmSktaeGtuUXB4RXRSZ3NINmhibzFvaHRXbWljaWJCOUFJS0RBUWlhczYwWUpmY24zWDNVZ2JKd2dcLzEzMiIsIm5pY2tuYW1lIjoiQVx1OTY4Zlx1N2YxOCIsInBob25lIjoiMTUqKioqKjIzMTYiLCJvcmRlcl9waG9uZSI6IjE1MTU1NzEyMzE2IiwibWVtYmVyX2luZm8iOnsic29saWRfY2FyZCI6eyJjYXJkX2lkIjozNzYzNTQsImNhcmRfbm8iOiI4MCoqKioqKio5MjIwIiwiY2FyZF9ub19zaG93IjoiODAxMDIwMTAyOTIyMCIsImNhcmRfbmFtZSI6Ilx1OTRiYlx1NzdmM1x1NTM2MSIsImNhcmRfZGVzYyI6Ilx1OTRiYlx1NzdmM1x1NTM2MVx1NGYxOFx1NjBlMFx1OGQyZFx1Nzk2OCIsImNhcmRfc3RhdHVzIjoiVVNBQkxFIiwidGlwIjoiIiwiZXhwaXJhdGlvbl9kYXRlIjoiMjA3My0xMS0wNyAxMjo1MjozNCIsImV4cGlyZV9kYXkiOjE3Njc3LCJjYXJkX2dyYWRlX2lkIjoxMTcsImNhcmRfbGltaXRfYmFsYW5jZSI6MCwi"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/voucher/list/",
+      "path": "/ticket/wmyc/cinema/400115/user/voucher/list/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJ1bnVzZWQiOltdLCJ1c2VkIjpbXSwiZGlzYWJsZWQiOlt7InZvdWNoZXJfY29kZSI6IkNBVEhZMDA4MDg1MTM3NzQiLCJ2b3VjaGVyX2NvZGVfbWFzayI6IkNBVEgqKioqKioqKioqNzQiLCJ2b3VjaGVyX25hbWUiOiJcdTdlYmZcdTRlMGEzNVx1NTE0M1x1NTZlMlx1NGY1M1x1NTIzOFx1NWY3MVx1ODg2NSIsImV4cGlyZV90aW1lIjoxNzI2OTM0NDAwLCJleHBpcmVfdGltZV9zdHJpbmciOiIyMDI0XHU1ZTc0OVx1NjcwODIyXHU2NWU1IDAwOjAwIiwidm91Y2hlcl9udW0iOjEsInZvdWNoZXJfZGVzYyI6Ilx1NjcyY1x1NTE1MVx1NjM2Mlx1NTIzOFx1NGUwZFx1NTNlZlx1NGUwZVx1NGYxOFx1NjBlMFx1NmQzYlx1NTJhOFx1NTQwY1x1NjVmNlx1NGY3Zlx1NzUyOFx1ZmYwY1x1NGUxNFx1NGUwZFx1NjUyZlx1NjMwMVx1OTAwMFx1Nzk2OCJ9LHsidm91Y2hlcl9jb2RlIjoiQ0FUSFkwMDgwNjc2ODkzMyIsInZvdWNoZXJfY29kZV9tYXNrIjoiQ0FUSCoqKioqKioqKiozMyIsInZvdWNoZXJfbmFtZSI6Ilx1N2ViZlx1NGUwYTM1XHU1MTQzXHU1NmUyXHU0ZjUzXHU1MjM4XHU1ZjcxXHU4ODY1IiwiZXhwaXJlX3RpbWUiOjE3MjY5MzQ0MDAsImV4cGlyZV90aW1lX3N0cmluZyI6IjIwMjRcdTVlNzQ5XHU2NzA4MjJcdTY1ZTUgMDA6MDAiLCJ2b3VjaGVyX251bSI6MSwidm91Y2hlcl9kZXNjIjoiXHU2NzJjXHU1MTUxXHU2MzYyXHU1MjM4XHU0"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_P&schedule_id=16607189&goods_id=",
+      "path": "/ticket/wmyc/cinema/400115/user/vouchers",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "voucher_type": [
+          "VGC_P"
+        ],
+        "schedule_id": [
+          "16607189"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W119"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/user/vouchers?voucher_type=VGC_T&schedule_id=16607189&goods_id=",
+      "path": "/ticket/wmyc/cinema/400115/user/vouchers",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {
+        "voucher_type": [
+          "VGC_T"
+        ],
+        "schedule_id": [
+          "16607189"
+        ]
+      },
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W3sidm91Y2hlcl9jb2RlIjoiQ0dZVEowMDEwNDc0MzIzMiIsInZvdWNoZXJfY29kZV9tYXNrIjoiQ0dZVCoqKioqKioqKiozMiIsInZvdWNoZXJfbmFtZSI6Ilx1NTkyOVx1NmQyNVx1OTAxYVx1NTE1MUdcdTUyMzhZIiwiZXhwaXJlX3RpbWUiOjE3MTg4MTI4MDAsImV4cGlyZV90aW1lX3N0cmluZyI6IjIwMjRcdTVlNzQ2XHU2NzA4MjBcdTY1ZTUgMDA6MDAoXHU1ZGYyXHU0ZjVjXHU1ZTlmKSIsInZvdWNoZXJfZGVzYyI6Ilx1NjcyY1x1NTE1MVx1NjM2Mlx1NTIzOFx1NGUwZFx1NTNlZlx1NGUwZVx1NGYxOFx1NjBlMFx1NmQzYlx1NTJhOFx1NTQwY1x1NjVmNlx1NGY3Zlx1NzUyOFx1ZmYwY1x1NGUxNFx1NGUwZFx1NjUyZlx1NjMwMVx1OTAwMFx1Nzk2OCIsImJpbmRfdGltZSI6MTcwNTIxMTQyNCwiYmluZF90aW1lX3N0ciI6IjIwMjQtMDEtMTQgMTM6NTA6MjQiLCJ1c2VfdGltZSI6MCwidXNlX3RpbWVfc3RyIjoiIiwic3RhdHVzIjoiRElTQUJMRUQiLCJ2b3VjaGVyX2JhbGFuY2UiOjEsInZvdWNoZXJfYmFsYW5jZV90eXBlIjoiTlQiLCJ2b3VjaGVyX2JhbGFuY2Vfc3RyIjoiMVx1NmIyMSIsInVzZV9kZXNjIjoiIiwidXNlX3J1bGVfZGVzYyI6IiIsInNjb3BlX2Rlc2MiOiIiLCJkb3V5aW5fY29kZV9yZXNhdWx0IjpbXX0seyJ2b3VjaGVyX2NvZGUiOiJDR1lUSjAwMTA1MDc2NjQwIiwidm91Y2hlcl9jb2RlX21hc2siOiJDR1lUKioq"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/cinema/400115/vcc/activity/",
+      "path": "/ticket/wmyc/cinema/400115/vcc/activity/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6W119"
+    },
+    {
+      "method": "GET",
+      "url": "https://ct.womovie.cn/ticket/wmyc/citys/",
+      "path": "/ticket/wmyc/citys/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "multipart/form-data",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJob3QiOlt7ImNpdHlfaWQiOjEsImNpdHlfcGlueWluIjoiYmVpamluZyIsImNpdHlfbmFtZSI6Ilx1NTMxN1x1NGVhYyIsImNpbmVtYV90b3RhbCI6NiwiY2luZW1hcyI6W3siY2luZW1hX2lkIjoiNDAwMDI4IiwiY2luZW1hX25hbWUiOiJcdTUzMTdcdTRlYWNcdTZjODNcdTdmOGVcdTRlMTZcdTc1NGNcdTU3Y2VcdTVlOTciLCJjaW5lbWFfYXJlYV9pZCI6ImQ0MWQ4Y2Q5OGYwMGIyMDRlOTgwMDk5OGVjZjg0MjdlIiwiY2luZW1hX2FyZWEiOiIiLCJjaW5lbWFfYWRkciI6Ilx1NTMxN1x1NGVhY1x1NWUwMlx1NjcxZFx1OTYzM1x1NTMzYVx1OTFkMVx1NmM0N1x1OGRlZjEwMVx1NWU2Mlx1NGUyZFx1OWE4Zlx1NGUxNlx1NzU0Y1x1NTdjZUVcdTVlYTdCMVx1ZmYwOFx1NmQ3N1x1NWU5NVx1NjM1ZVx1NjY3YVx1NjE2N1x1OTkxMFx1NTM4NVx1NWJmOVx1OTc2Mlx1ZmYwOSIsImxvbmdpdHVkZSI6IjAuMDAwMDAwMDAiLCJsYXRpdHVkZSI6IjAuMDAwMDAwMDAifSx7ImNpbmVtYV9pZCI6IjQwMDExNSIsImNpbmVtYV9uYW1lIjoiXHU2YzgzXHU3ZjhlXHU1MzE3XHU0ZWFjXHU5Zjk5XHU2ZTU2XHU1ZTk3IiwiY2luZW1hX2FyZWFfaWQiOiJkNDFkOGNkOThmMDBiMjA0ZTk4MDA5OThlY2Y4NDI3ZSIsImNpbmVtYV9hcmVhIjoiIiwiY2luZW1hX2FkZHIiOiJcdTUzMTdcdTRlYWNcdTVlMDJcdTYyM2ZcdTVjNzFcdTUzM2FcdTk1N2ZcdTRlOGVc"
+    },
+    {
+      "method": "POST",
+      "url": "https://ct.womovie.cn/ticket/wmyc/user/check_phone/",
+      "path": "/ticket/wmyc/user/check_phone/",
+      "domain": "ct.womovie.cn",
+      "headers": {
+        "content-type": "application/x-www-form-urlencoded",
+        "token": "47794858a832916d8eda012e7cabd269",
+        "tenant-short": "wmyc",
+        "x-channel-id": "40000",
+        "client-version": "4.0",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839",
+        "referer": "https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html"
+      },
+      "params": {},
+      "body": "e30=",
+      "response": "eyJyZXQiOjAsInN1YiI6MCwibXNnIjoic3VjY2Vzc2Z1bGx5IiwiZGF0YSI6eyJpc19iaW5kIjp0cnVlfX0="
+    }
+  ]
+}
