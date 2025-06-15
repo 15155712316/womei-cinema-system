@@ -3630,12 +3630,16 @@ class TabManagerWidget(QWidget):
                 self._update_city_combo()
                 print(f"[城市调试] ✅ 城市下拉框更新完成")
 
-                # 🚫 移除自动选择第一个城市的机制
+                # 🆕 启用自动选择第一个城市的机制
                 if len(cities) > 0:
                     first_city = cities[0]
                     city_name = first_city.get('city_name', '未知城市')
-                    print(f"[城市调试] 🚫 已移除自动选择城市机制，城市列表已加载，等待用户手动选择")
-                    print(f"[城市调试] 第一个城市: {city_name}（用户可手动选择）")
+                    print(f"[城市调试] 🚀 启用自动选择城市机制，将自动选择第一个城市")
+                    print(f"[城市调试] 第一个城市: {city_name}（即将自动选择）")
+
+                    # 延迟自动选择，确保下拉框更新完成
+                    from PyQt5.QtCore import QTimer
+                    QTimer.singleShot(100, lambda: self._auto_select_first_city(city_name))
 
             else:
                 error = cities_result.get('error', '未知错误')
@@ -3819,12 +3823,16 @@ class TabManagerWidget(QWidget):
                 self._update_cinema_combo()
                 print(f"[影院调试] ✅ 影院下拉框更新完成，共 {len(cinemas)} 个影院")
 
-                # 🚫 移除自动选择第一个影院的机制
+                # 🆕 启用自动选择第一个影院的机制
                 if len(cinemas) > 0:
                     first_cinema = cinemas[0]
                     cinema_name = first_cinema.get('cinema_name', '未知影院')
-                    print(f"[影院调试] 🚫 已移除自动选择影院机制，影院列表已加载，等待用户手动选择")
-                    print(f"[影院调试] 第一个影院: {cinema_name}（用户可手动选择）")
+                    print(f"[影院调试] 🚀 启用自动选择影院机制，将自动选择第一个影院")
+                    print(f"[影院调试] 第一个影院: {cinema_name}（即将自动选择）")
+
+                    # 延迟自动选择，确保下拉框更新完成
+                    from PyQt5.QtCore import QTimer
+                    QTimer.singleShot(200, lambda: self._auto_select_first_cinema(cinema_name))
             else:
                 # 如果城市数据中没有影院，尝试调用影院API
                 print(f"[Tab管理器] 城市数据中无影院，尝试调用影院API")
