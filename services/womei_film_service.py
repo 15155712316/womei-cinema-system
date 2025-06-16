@@ -351,7 +351,56 @@ class WomeiFilmService:
                 "error": str(e),
                 "saleable_info": {}
             }
-    
+
+    def get_accurate_seat_data(self, cinema_id: str, hall_id: str, schedule_id: str, debug: bool = True) -> Dict[str, Any]:
+        """
+        获取准确的座位数据（已售状态已正确标记）
+        通过对比全部座位API和可售座位API来准确识别已售座位
+
+        Args:
+            cinema_id: 影院ID
+            hall_id: 影厅ID
+            schedule_id: 场次ID
+            debug: 是否启用调试模式
+
+        Returns:
+            处理后的座位数据，格式与原始API响应保持一致
+        """
+        try:
+            # 延迟导入，避免循环导入
+            from .seat_status_processor import get_seat_status_processor
+
+            if debug:
+                print(f"\n🎯 获取准确座位数据")
+                print(f"影院: {cinema_id}, 影厅: {hall_id}, 场次: {schedule_id}")
+
+            # 创建座位状态处理器
+            processor = get_seat_status_processor(self.token)
+            processor.set_debug_mode(debug)
+
+            # 获取准确的座位数据
+            accurate_data = processor.get_accurate_seat_data(cinema_id, hall_id, schedule_id)
+
+            if accurate_data:
+                return {
+                    "success": True,
+                    "hall_info": accurate_data,
+                    "processing_method": "API差异对比分析"
+                }
+            else:
+                # 如果处理失败，回退到原始的全部座位API
+                if debug:
+                    print(f"⚠️ 座位状态处理失败，回退到原始API")
+
+                return self.get_hall_info(cinema_id, hall_id, schedule_id)
+
+        except Exception as e:
+            if debug:
+                print(f"❌ 获取准确座位数据异常: {e}")
+
+            # 异常时回退到原始API
+            return self.get_hall_info(cinema_id, hall_id, schedule_id)
+
     def create_order(self, cinema_id: str, seatlable: str, schedule_id: str) -> Dict[str, Any]:
         """创建订单"""
         try:

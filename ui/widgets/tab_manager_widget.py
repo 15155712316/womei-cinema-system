@@ -2503,8 +2503,8 @@ class TabManagerWidget(QWidget):
             from services.womei_film_service import get_womei_film_service
             film_service = get_womei_film_service("47794858a832916d8eda012e7cabd269")
 
-            # 调用座位图API
-            hall_result = film_service.get_hall_info(cinema_id, hall_id, schedule_id)
+            # 🆕 使用准确座位数据API（对比两个API识别已售座位）
+            hall_result = film_service.get_accurate_seat_data(cinema_id, hall_id, schedule_id, debug=True)
 
             if hall_result.get('success'):
                 hall_info = hall_result.get('hall_info', {})
