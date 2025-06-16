@@ -304,20 +304,24 @@ class WomeiFilmService:
         """获取影厅座位信息"""
         try:
             response = self.api.get_hall_info(cinema_id, hall_id, schedule_id)
-            
+
             if response.get('ret') != 0:
                 return {
                     "success": False,
                     "error": response.get('msg', '获取座位信息失败'),
                     "hall_info": {}
                 }
-            
+
             hall_data = response.get('data', {})
+
+            # 🔧 新增：保存完整的API响应数据用于调试
+            self._save_seat_debug_data(cinema_id, hall_id, schedule_id, response, hall_data)
+
             return {
                 "success": True,
                 "hall_info": hall_data
             }
-            
+
         except Exception as e:
             print(f"[沃美电影服务] 获取座位信息失败: {e}")
             return {
@@ -325,6 +329,74 @@ class WomeiFilmService:
                 "error": str(e),
                 "hall_info": {}
             }
+
+    def _save_seat_debug_data(self, cinema_id: str, hall_id: str, schedule_id: str, api_response: dict, hall_data: dict):
+        """保存座位图调试数据到JSON文件"""
+        try:
+            import os
+            import json
+            from datetime import datetime
+
+            # 确保data目录存在
+            os.makedirs('data', exist_ok=True)
+
+            # 构建调试数据
+            debug_data = {
+                "session_info": {
+                    "cinema_name": "沃美影院",  # 默认名称，后续可以从其他地方获取
+                    "movie_name": "未知影片",   # 默认名称，后续可以从其他地方获取
+                    "show_date": "未知日期",   # 默认值，后续可以从其他地方获取
+                    "show_time": "未知时间",   # 默认值，后续可以从其他地方获取
+                    "cinema_id": cinema_id,
+                    "hall_id": hall_id,
+                    "hall_name": hall_data.get('hall_name', f'{hall_id}号厅'),
+                    "schedule_id": schedule_id,
+                    "timestamp": datetime.now().isoformat()
+                },
+                "api_response": api_response,
+                "processed_hall_data": hall_data,
+                "debug_notes": {
+                    "purpose": "座位图API调试数据（每次覆盖保存）",
+                    "area_no_usage": "区域ID应该使用area_no字段，不是固定的1",
+                    "seat_no_format": "seat_no应该是类似11051771#09#06的格式",
+                    "coordinate_mapping": "row/col是逻辑位置，x/y是物理位置",
+                    "status_meaning": "0=可选，1=已售，2=锁定",
+                    "file_location": "data/座位调试数据.json（固定文件名）"
+                }
+            }
+
+            # 🔧 修改：固定文件名，每次覆盖
+            filename = "data/座位调试数据.json"
+
+            # 保存到文件
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(debug_data, f, ensure_ascii=False, indent=2)
+
+            print(f"[沃美电影服务] 📁 座位调试数据已覆盖保存: {filename}")
+            print(f"[沃美电影服务] 📊 当前场次数据:")
+            print(f"  - 影院ID: {cinema_id}")
+            print(f"  - 影厅ID: {hall_id}")
+            print(f"  - 场次ID: {schedule_id}")
+            print(f"  - 影厅名: {hall_data.get('hall_name', 'N/A')}")
+
+            # 统计座位数
+            room_seat = hall_data.get('room_seat', [])
+            total_seats = 0
+            area_count = len(room_seat)
+
+            for area in room_seat:
+                for row_key, row_data in area.get('seats', {}).items():
+                    total_seats += len(row_data.get('detail', []))
+
+            print(f"  - 区域数: {area_count}")
+            print(f"  - 座位总数: {total_seats}")
+            print(f"  - 文件大小: {os.path.getsize(filename)} bytes")
+            print(f"  - 保存方式: 覆盖保存（固定文件名）")
+
+        except Exception as e:
+            print(f"[沃美电影服务] ❌ 保存座位调试数据失败: {e}")
+            import traceback
+            traceback.print_exc()
     
     def get_hall_saleable(self, cinema_id: str, schedule_id: str) -> Dict[str, Any]:
         """获取可售座位信息"""
@@ -405,24 +477,41 @@ class WomeiFilmService:
         """创建订单"""
         try:
             response = self.api.create_order(cinema_id, seatlable, schedule_id)
-            
+
+            print(f"[沃美电影服务] 订单API响应: {response}")
+
+            # 🔧 修复：检查API调用是否成功
             if response.get('ret') != 0:
                 return {
                     "success": False,
                     "error": response.get('msg', '创建订单失败'),
-                    "order_info": {}
+                    "order_info": response
                 }
-            
+
+            # 🔧 修复：即使ret=0，也要检查业务逻辑是否成功
+            msg = response.get('msg', '')
             order_data = response.get('data', {})
+
+            # 检查是否有业务错误（如锁座失败）
+            if '失败' in msg or '错误' in msg or not order_data:
+                print(f"[沃美电影服务] 业务逻辑失败: {msg}")
+                return {
+                    "success": False,
+                    "error": msg or '订单创建失败',
+                    "order_info": response
+                }
+
+            # 真正成功的情况
+            print(f"[沃美电影服务] 订单创建成功: {order_data}")
             return {
                 "success": True,
                 "order_id": order_data.get('order_id'),
                 "server_time": order_data.get('server_time'),
                 "order_info": order_data
             }
-            
+
         except Exception as e:
-            print(f"[沃美电影服务] 创建订单失败: {e}")
+            print(f"[沃美电影服务] 创建订单异常: {e}")
             return {
                 "success": False,
                 "error": str(e),

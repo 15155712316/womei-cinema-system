@@ -2349,6 +2349,589 @@ class ModularCinemaMainWindow(QMainWindow):
         """创建订单（保留原方法供其他地方调用）"""
         # 直接调用主要的订单创建方法
         return self.on_submit_order(selected_seats)
+
+    def _create_order_with_session_info(self, selected_seats, session_info):
+        """使用session_info创建订单（修复影院数据缺失问题）"""
+        try:
+            from services.ui_utils import MessageManager
+            import time
+
+            # 从session_info获取数据
+            cinema_data = session_info.get('cinema_data', {})
+            account_data = session_info.get('account', {})
+            session_data = session_info.get('session_data', {})
+
+            print(f"[订单创建] 使用session_info创建订单")
+            print(f"[订单创建] 账号: {account_data.get('phone', 'N/A')}")
+            print(f"[订单创建] 影院: {cinema_data.get('cinema_name', 'N/A')}")
+            print(f"[订单创建] 座位: {len(selected_seats)} 个")
+
+            # 🔧 修复：沃美系统不需要取消未付款订单功能
+            # 第一步：取消该账号的所有未付款订单（沃美系统跳过此步骤）
+            print(f"[订单创建] 沃美系统跳过取消未付款订单步骤")
+
+            # 第二步：构建完整的订单参数（使用session_info数据）
+            order_params = self._build_order_params_from_session_info(selected_seats, session_info)
+            if not order_params:
+                MessageManager.show_error(self, "参数错误", "构建订单参数失败", auto_close=False)
+                return False
+
+            # 第三步：调用沃美订单创建API
+            from services.womei_film_service import get_womei_film_service
+
+            # 🔍 详细打印提交的订单参数
+            print(f"\n🔍 [订单调试] 提交订单参数详情:")
+            print(f"=" * 60)
+            for key, value in order_params.items():
+                if key == 'token':
+                    print(f"  {key}: {str(value)[:20]}...")
+                elif key == 'seatlable':
+                    print(f"  {key}: {str(value)[:200]}...")
+                else:
+                    print(f"  {key}: {value}")
+            print(f"=" * 60)
+
+            # 🔧 修复：使用沃美电影服务创建订单
+            token = account_data.get('token', '')
+            film_service = get_womei_film_service(token)
+
+            # 构建沃美系统的座位参数格式
+            seatlable_str = self._build_womei_seatlable(order_params.get('seatlable', []), session_info)
+
+            print(f"🔍 [订单调试] 沃美系统参数:")
+            print(f"  cinema_id: {order_params['cinemaid']}")
+            print(f"  schedule_id: {order_params['sessionid']}")
+            print(f"  seatlable: {seatlable_str}")
+
+            result = film_service.create_order(
+                cinema_id=order_params['cinemaid'],
+                seatlable=seatlable_str,
+                schedule_id=order_params['sessionid']
+            )
+
+            # 🔍 详细打印API返回数据
+            print(f"\n🔍 [订单调试] 沃美API返回数据详情:")
+            print(f"=" * 60)
+            if result:
+                print(f"返回数据类型: {type(result)}")
+                if isinstance(result, dict):
+                    for key, value in result.items():
+                        print(f"  {key}: {value}")
+                else:
+                    print(f"返回数据: {result}")
+            else:
+                print(f"返回数据: None")
+            print(f"=" * 60)
+
+            # 🔧 修复：适配沃美系统的返回格式
+            if not result or not result.get('success'):
+                error_msg = result.get('error', '创建订单失败') if result else '网络错误'
+                print(f"❌ [订单调试] 沃美订单创建失败: {error_msg}")
+                MessageManager.show_error(self, "创建失败", f"订单创建失败: {error_msg}", auto_close=False)
+                return False
+
+            # 🔧 修复：使用沃美系统专用方法
+            return self._create_womei_order_direct(selected_seats, session_info)
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            from services.ui_utils import MessageManager
+            MessageManager.show_error(self, "提交失败", f"提交订单失败\n\n错误: {str(e)}", auto_close=False)
+            return False
+
+    def _create_womei_order_direct(self, selected_seats, session_info):
+        """沃美系统专用：直接创建订单（抛弃华联系统逻辑）"""
+        try:
+            print(f"[沃美订单] 🚀 沃美系统专用订单创建")
+
+            # 🔧 沃美系统：从session_info获取必要数据
+            cinema_data = session_info.get('cinema_data', {})
+            account_data = session_info.get('account', {})
+            session_data = session_info.get('session_data', {})
+
+            cinema_id = cinema_data.get('cinema_id', '')
+            schedule_id = session_data.get('schedule_id', '')
+            token = account_data.get('token', '')
+
+            print(f"[沃美订单] 参数验证:")
+            print(f"  - cinema_id: {cinema_id}")
+            print(f"  - schedule_id: {schedule_id}")
+            print(f"  - token: {token[:20]}..." if token else "  - token: 空")
+            print(f"  - 座位数: {len(selected_seats)}")
+
+            if not cinema_id or not schedule_id or not token:
+                print(f"[沃美订单] ❌ 缺少必要参数")
+                return False
+
+            # 🔧 沃美系统：构建真实的座位参数
+            seatlable = self._build_womei_seatlable_from_selected_seats(selected_seats)
+
+            if not seatlable:
+                print(f"[沃美订单] ❌ 座位参数构建失败")
+                return False
+
+            print(f"[沃美订单] 🔍 最终参数:")
+            print(f"  - seatlable: {seatlable}")
+
+            # 🔧 沃美系统：调用专用API
+            from services.womei_film_service import get_womei_film_service
+            film_service = get_womei_film_service(token)
+
+            result = film_service.create_order(cinema_id, seatlable, schedule_id)
+
+            print(f"[沃美订单] 📥 API返回: {result}")
+
+            # 🔧 沃美系统：处理返回结果
+            if result and result.get('success'):
+                print(f"[沃美订单] ✅ 订单创建成功")
+                return self._handle_womei_order_success(result, selected_seats, session_info)
+            else:
+                error_msg = result.get('error', '未知错误') if result else '网络错误'
+                print(f"[沃美订单] ❌ 订单创建失败: {error_msg}")
+                from services.ui_utils import MessageManager
+                MessageManager.show_error(self, "订单失败", f"沃美订单创建失败: {error_msg}", auto_close=False)
+                return False
+
+        except Exception as e:
+            print(f"[沃美订单] ❌ 异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _build_womei_seatlable_from_selected_seats(self, selected_seats):
+        """沃美系统专用：从选中座位构建座位参数"""
+        try:
+            print(f"[沃美座位] 🔍 构建座位参数，座位数: {len(selected_seats)}")
+
+            seat_parts = []
+            for i, seat in enumerate(selected_seats):
+                print(f"[沃美座位] 座位{i+1}完整数据: {seat}")
+
+                # 🔧 修复：从original_data获取真实的座位图API数据
+                original_data = seat.get('original_data', {})
+
+                # 优先使用original_data中的真实数据
+                real_seat_no = original_data.get('seat_no', '')
+                real_area_no = original_data.get('area_no', '')
+                real_row = original_data.get('row', '')
+                real_col = original_data.get('col', '')
+
+                print(f"[沃美座位] 座位{i+1}原始数据:")
+                print(f"  - seat_no: {real_seat_no}")
+                print(f"  - area_no: {real_area_no}")
+                print(f"  - row: {real_row}")
+                print(f"  - col: {real_col}")
+
+                # 验证数据完整性
+                if not real_seat_no or '#' not in real_seat_no:
+                    print(f"[沃美座位] ❌ 座位{i+1}缺少有效的seat_no: {real_seat_no}")
+                    return ""
+
+                if not real_area_no:
+                    print(f"[沃美座位] ❌ 座位{i+1}缺少area_no: {real_area_no}")
+                    return ""
+
+                # 🔧 修复：使用真实的座位图API数据构建参数
+                # 沃美格式：area_no:row:col:seat_no
+                seat_str = f"{real_area_no}:{real_row}:{real_col}:{real_seat_no}"
+                seat_parts.append(seat_str)
+
+                print(f"[沃美座位] 座位{i+1}构建: {seat_str}")
+
+            seatlable_str = "|".join(seat_parts)
+            print(f"[沃美座位] ✅ 最终座位参数: {seatlable_str}")
+
+            return seatlable_str
+
+        except Exception as e:
+            print(f"[沃美座位] ❌ 构建失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return ""
+
+    def _handle_womei_order_success(self, result, selected_seats, session_info):
+        """沃美系统专用：处理订单成功"""
+        try:
+            # 获取沃美订单数据
+            order_id = result.get('order_id', f"WOMEI{int(__import__('time').time())}")
+            order_info = result.get('order_info', {})
+
+            # 从session_info获取显示数据
+            cinema_data = session_info.get('cinema_data', {})
+            session_data = session_info.get('session_data', {})
+
+            # 计算总价
+            total_amount = sum(seat.get('price', 0) for seat in selected_seats)
+
+            # 构建订单详情
+            self.current_order = {
+                'order_id': order_id,
+                'seats': selected_seats,
+                'total_price': total_amount,
+                'cinema_name': cinema_data.get('cinema_name', ''),
+                'film_name': session_data.get('movie_name', ''),
+                'hall_name': session_data.get('hall_name', ''),
+                'show_time': session_data.get('show_time', ''),
+                'show_date': session_data.get('show_date', ''),
+                'api_data': order_info,
+                'movieid': session_data.get('movie_id', ''),
+                'showid': session_data.get('schedule_id', ''),
+                'totalprice': total_amount,
+                'cinemaid': cinema_data.get('cinema_id', ''),
+                'system_type': 'womei'  # 标记为沃美系统
+            }
+
+            print(f"[沃美订单] ✅ 订单详情构建完成:")
+            print(f"  - 订单号: {order_id}")
+            print(f"  - 座位数: {len(selected_seats)}")
+            print(f"  - 总价: {total_amount} 分")
+
+            # 显示订单详情
+            self._show_order_detail(self.current_order)
+
+            # 发布全局事件
+            if hasattr(self, 'event_bus'):
+                self.event_bus.order_created.emit(self.current_order)
+
+            return True
+
+        except Exception as e:
+            print(f"[沃美订单] ❌ 成功处理失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+
+    def _save_enhanced_seat_debug_data(self, cinema_id: str, hall_id: str, schedule_id: str, seat_result: dict, session_info: dict):
+        """保存增强的座位调试数据，包含完整的会话信息"""
+        try:
+            import os
+            import json
+            from datetime import datetime
+
+            # 确保data目录存在
+            os.makedirs('data', exist_ok=True)
+
+            # 从session_info获取详细的会话信息
+            cinema_data = session_info.get('cinema_data', {})
+            session_data = session_info.get('session_data', {})
+            account_data = session_info.get('account', {})
+
+            # 构建增强的调试数据
+            enhanced_debug_data = {
+                "session_info": {
+                    "cinema_name": cinema_data.get('cinema_name', cinema_data.get('cinemaShortName', '沃美影院')),
+                    "movie_name": session_data.get('movie_name', session_data.get('filmName', '未知影片')),
+                    "show_date": session_data.get('show_date', session_data.get('showDate', '未知日期')),
+                    "show_time": session_data.get('show_time', session_data.get('showTime', '未知时间')),
+                    "cinema_id": cinema_id,
+                    "hall_id": hall_id,
+                    "hall_name": session_data.get('hall_name', f'{hall_id}号厅'),
+                    "schedule_id": schedule_id,
+                    "timestamp": datetime.now().isoformat(),
+                    "account_phone": account_data.get('phone', 'N/A'),
+                    "session_text": session_info.get('session_text', 'N/A')
+                },
+                "api_response": seat_result,
+                "hall_info": seat_result.get('hall_info', {}),
+                "cinema_data": cinema_data,
+                "session_data": session_data,
+                "account_data": {
+                    "phone": account_data.get('phone', 'N/A'),
+                    "token_prefix": account_data.get('token', '')[:20] + '...' if account_data.get('token') else 'N/A'
+                },
+                "debug_notes": {
+                    "purpose": "增强的座位图调试数据（包含完整会话信息，每次覆盖保存）",
+                    "area_no_usage": "区域ID应该使用area_no字段，不是固定的1",
+                    "seat_no_format": "seat_no应该是类似11051771#09#06的格式",
+                    "coordinate_mapping": "row/col是逻辑位置，x/y是物理位置",
+                    "status_meaning": "0=可选，1=已售，2=锁定",
+                    "file_location": "data/座位调试数据.json（固定文件名，每次覆盖）",
+                    "enhanced_features": [
+                        "包含完整的影院、影片、场次信息",
+                        "包含账号信息（脱敏处理）",
+                        "包含会话上下文数据",
+                        "便于调试座位参数构建问题"
+                    ]
+                }
+            }
+
+            # 🔧 修改：固定文件名，每次覆盖
+            filename = "data/座位调试数据.json"
+
+            # 保存到文件
+            with open(filename, 'w', encoding='utf-8') as f:
+                json.dump(enhanced_debug_data, f, ensure_ascii=False, indent=2)
+
+            print(f"[主窗口] 📁 座位调试数据已覆盖保存: {filename}")
+            print(f"[主窗口] 📊 当前会话数据:")
+            print(f"  - 影院: {enhanced_debug_data['session_info']['cinema_name']}")
+            print(f"  - 影片: {enhanced_debug_data['session_info']['movie_name']}")
+            print(f"  - 场次: {enhanced_debug_data['session_info']['show_date']} {enhanced_debug_data['session_info']['show_time']}")
+            print(f"  - 影厅: {enhanced_debug_data['session_info']['hall_name']}")
+            print(f"  - 账号: {enhanced_debug_data['session_info']['account_phone']}")
+            print(f"  - 文件大小: {os.path.getsize(filename)} bytes")
+            print(f"  - 保存方式: 覆盖保存（固定文件名）")
+
+        except Exception as e:
+            print(f"[主窗口] ❌ 保存增强座位调试数据失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _build_womei_seatlable(self, seat_info_list, session_info):
+        """构建沃美系统的座位参数格式 - 真实格式"""
+        try:
+            # 🔧 修复：沃美系统使用特殊的字符串格式
+            # 真实格式：1:2:5:11051771#09#06
+            # 解析：区域ID:行号:列号:seat_no
+            # 其中 seat_no = 11051771#09#06 (座位唯一标识)
+
+            print(f"[订单调试] 🔍 分析座位数据:")
+            for i, seat in enumerate(seat_info_list[:2]):  # 只打印前2个座位
+                print(f"  座位{i+1}: {seat}")
+
+            seat_parts = []
+            for seat in seat_info_list:
+                # 获取座位信息
+                row_num = seat.get("rowNum", 1)
+                col_num = seat.get("columnNum", 1)
+                area_id = seat.get("areaId", 1)  # 从座位数据获取区域ID
+
+                # 🔧 关键修复：使用真实的seat_no
+                # 从座位数据的original_data中获取真实的sn字段
+                original_data = seat.get("original_data", {})
+                seat_no_from_original = original_data.get("sn", "")
+                seat_no_from_seat = seat.get("seatNo", "")
+
+                print(f"[订单调试] 🔍 座位{row_num}-{col_num}完整数据分析:")
+                print(f"  - original_data: {original_data}")
+                print(f"  - seat完整数据: {seat}")
+
+                # 🔍 尝试多种可能的seat_no字段名
+                possible_seat_no_fields = ['sn', 'seat_no', 'seatNo', 'seat_id', 'id', 'code']
+                real_seat_no = ""
+
+                # 优先从original_data中查找
+                for field in possible_seat_no_fields:
+                    if original_data.get(field):
+                        real_seat_no = str(original_data[field])
+                        print(f"  - 从original_data.{field}获取: {real_seat_no}")
+                        break
+
+                # 如果original_data中没有，从seat中查找
+                if not real_seat_no:
+                    for field in possible_seat_no_fields:
+                        if seat.get(field):
+                            real_seat_no = str(seat[field])
+                            print(f"  - 从seat.{field}获取: {real_seat_no}")
+                            break
+
+                # 🔧 如果仍然没有找到，根据真实curl构造
+                if not real_seat_no or not "#" in real_seat_no:
+                    # 根据真实curl的格式构造：11051771#09#06
+                    # 这里需要从session_info获取真实的场次相关信息
+                    session_data = session_info.get('session_data', {})
+                    schedule_id = session_data.get('schedule_id', '16626081')
+
+                    # 构造格式：{schedule_id}#09#{col_num:02d}
+                    constructed_seat_no = f"{schedule_id}#09#{col_num:02d}"
+                    real_seat_no = constructed_seat_no
+                    print(f"  - 🔧 构造seat_no: {real_seat_no} (基于场次ID: {schedule_id})")
+
+                print(f"  - ✅ 最终使用seat_no: {real_seat_no}")
+
+                # 构建座位字符串：区域ID:行号:列号:seat_no
+                seat_str = f"{area_id}:{row_num}:{col_num}:{real_seat_no}"
+                seat_parts.append(seat_str)
+
+                print(f"[订单调试] 座位构建: 区域{area_id} 行{row_num} 列{col_num} -> {seat_str}")
+
+            # 用 | 连接多个座位
+            seatlable_str = "|".join(seat_parts)
+            print(f"[订单调试] 沃美座位参数（最终）: {seatlable_str}")
+            print(f"[订单调试] 对比真实请求: 1:2:5:11051771#09#06|1:2:4:11051771#09#05")
+
+            return seatlable_str
+
+        except Exception as e:
+            print(f"[订单调试] 构建沃美座位参数失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return ""
+
+    def _build_order_params_from_session_info(self, selected_seats, session_info):
+        """从session_info构建订单参数"""
+        try:
+            # 从session_info获取数据
+            cinema_data = session_info.get('cinema_data', {})
+            account_data = session_info.get('account', {})
+            session_data = session_info.get('session_data', {})
+
+            if not cinema_data or not account_data or not session_data:
+                print("[订单参数] session_info数据不完整")
+                return None
+
+            # 构建座位参数
+            seat_info_list = []
+            for i, seat in enumerate(selected_seats):
+                seat_no = seat.get('sn', '')
+                if not seat_no:
+                    row_num = seat.get('rn', seat.get('row', 1))
+                    col_num = seat.get('cn', seat.get('col', 1))
+                    seat_no = f"000000011111-{col_num}-{row_num}"
+
+                seat_price = seat.get('price', 0)
+
+                # 🔧 修复：从original_data获取真实的area_no
+                original_data = seat.get('original_data', {})
+                real_area_no = original_data.get('area_no', '1')
+
+                seat_info = {
+                    "seatNo": seat_no,
+                    "rowNum": seat.get('rn', seat.get('row', 1)),
+                    "columnNum": seat.get('cn', seat.get('col', 1)),
+                    "seatType": seat.get('seatType', 1),
+                    "areaId": real_area_no,  # 🔧 修复：使用真实的area_no
+                    "unitPrice": seat_price,
+                    "seatPrice": seat_price,
+                    "serviceCharge": 0,
+                    "seatId": f"seat_{i+1}",
+                    "x": seat.get('x', 0),
+                    "y": seat.get('y', 0),
+                    "original_data": original_data  # 🔧 添加：保留original_data用于调试
+                }
+                seat_info_list.append(seat_info)
+
+            # 构建订单参数
+            order_params = {
+                "account": account_data,
+                "cinemaid": cinema_data.get('cinema_id', ''),
+                "filmid": session_data.get('movie_id', ''),
+                "seatlable": seat_info_list,
+                "sessionid": session_data.get('schedule_id', ''),
+                "hallid": session_data.get('hall_id', ''),
+                "showtime": session_data.get('show_time', ''),
+                "showdate": session_data.get('show_date', ''),
+                "totalprice": sum(seat.get('price', 0) for seat in selected_seats),
+                "seatcount": len(selected_seats)
+            }
+
+            print(f"[订单参数] 构建完成:")
+            print(f"  - 影院ID: {order_params['cinemaid']}")
+            print(f"  - 电影ID: {order_params['filmid']}")
+            print(f"  - 场次ID: {order_params['sessionid']}")
+            print(f"  - 座位数: {order_params['seatcount']}")
+
+            return order_params
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"[订单参数] 构建失败: {e}")
+            return None
+
+    def _handle_womei_order_creation_success(self, result, selected_seats, session_info):
+        """处理沃美订单创建成功"""
+        try:
+            # 获取沃美订单数据
+            order_id = result.get('order_id', f"WOMEI{int(__import__('time').time())}")
+            order_info = result.get('order_info', {})
+
+            # 从session_info获取显示数据
+            cinema_data = session_info.get('cinema_data', {})
+            session_data = session_info.get('session_data', {})
+
+            # 计算总价
+            total_amount = sum(seat.get('price', 0) for seat in selected_seats)
+
+            # 构建订单详情
+            self.current_order = {
+                'order_id': order_id,
+                'seats': selected_seats,
+                'total_price': total_amount,
+                'cinema_name': cinema_data.get('cinema_name', ''),
+                'film_name': session_data.get('movie_name', ''),
+                'hall_name': session_data.get('hall_name', ''),
+                'show_time': session_data.get('show_time', ''),
+                'show_date': session_data.get('show_date', ''),
+                'api_data': order_info,
+                'movieid': session_data.get('movie_id', ''),
+                'showid': session_data.get('schedule_id', ''),
+                'totalprice': total_amount,
+                'cinemaid': cinema_data.get('cinema_id', ''),
+                'system_type': 'womei'  # 标记为沃美系统
+            }
+
+            print(f"[沃美订单成功] 订单创建完成:")
+            print(f"  - 订单号: {order_id}")
+            print(f"  - 座位数: {len(selected_seats)}")
+            print(f"  - 总价: {total_amount} 分")
+
+            # 显示订单详情
+            self._show_order_detail(self.current_order)
+
+            # 发布全局事件
+            if hasattr(self, 'event_bus'):
+                self.event_bus.order_created.emit(self.current_order)
+
+            return True
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"[沃美订单成功] 处理失败: {e}")
+            return False
+
+    def _handle_order_creation_success_with_session_info(self, result, selected_seats, session_info):
+        """使用session_info处理订单创建成功"""
+        try:
+            # 获取订单数据
+            order_data = result.get('resultData', {})
+            order_id = order_data.get('orderno', f"ORDER{int(__import__('time').time())}")
+
+            # 从session_info获取显示数据
+            cinema_data = session_info.get('cinema_data', {})
+            session_data = session_info.get('session_data', {})
+
+            # 计算总价
+            total_amount = sum(seat.get('price', 0) for seat in selected_seats)
+
+            # 构建订单详情
+            self.current_order = {
+                'order_id': order_id,
+                'seats': selected_seats,
+                'total_price': total_amount,
+                'cinema_name': cinema_data.get('cinema_name', ''),
+                'film_name': session_data.get('movie_name', ''),
+                'hall_name': session_data.get('hall_name', ''),
+                'show_time': session_data.get('show_time', ''),
+                'show_date': session_data.get('show_date', ''),
+                'api_data': order_data,
+                'movieid': session_data.get('movie_id', ''),
+                'showid': session_data.get('schedule_id', ''),
+                'totalprice': total_amount,
+                'cinemaid': cinema_data.get('cinema_id', '')
+            }
+
+            print(f"[订单成功] 订单创建完成:")
+            print(f"  - 订单号: {order_id}")
+            print(f"  - 座位数: {len(selected_seats)}")
+            print(f"  - 总价: {total_amount} 元")
+
+            # 显示订单详情
+            self._show_order_detail(self.current_order)
+
+            # 发布全局事件
+            if hasattr(self, 'event_bus'):
+                self.event_bus.order_created.emit(self.current_order)
+
+            return True
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            print(f"[订单成功] 处理失败: {e}")
+            return False
     
     def cinema_account_login_api(self, phone, openid, token, cinemaid):
         """影院账号登录API"""
@@ -2735,6 +3318,10 @@ class ModularCinemaMainWindow(QMainWindow):
                 if seat_result.get('success'):
                     # 成功获取座位数据
                     hall_info = seat_result.get('hall_info', {})
+
+                    # 🔧 新增：保存增强的会话调试数据
+                    self._save_enhanced_seat_debug_data(cinema_id, hall_id, schedule_id, seat_result, session_info)
+
                     self._display_seat_map(hall_info, session_info)
                 else:
                     # API返回错误
@@ -2895,7 +3482,7 @@ class ModularCinemaMainWindow(QMainWindow):
                         print(f"[座位调试] 第{row_num}行: {len(seat_details)}个座位")
 
                         for seat_detail in seat_details:
-                            seat = self._process_seat_detail(seat_detail, area_name, area_price, all_seats, row_num)
+                            seat = self._process_seat_detail(seat_detail, area_name, area_price, all_seats, area_no, row_num)
                             if seat:
                                 max_row = max(max_row, seat['row'])
                                 max_col = max(max_col, seat['col'])
@@ -2904,7 +3491,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     # 如果seats是列表格式（直接包含座位）
                     print(f"[座位调试] 处理列表格式的座位数据")
                     for seat_detail in seats_data:
-                        seat = self._process_seat_detail(seat_detail, area_name, area_price, all_seats)
+                        seat = self._process_seat_detail(seat_detail, area_name, area_price, all_seats, area_no)
                         if seat:
                             max_row = max(max_row, seat['row'])
                             max_col = max(max_col, seat['col'])
@@ -2989,7 +3576,7 @@ class ModularCinemaMainWindow(QMainWindow):
             traceback.print_exc()
             return [], []
 
-    def _process_seat_detail(self, seat_detail: dict, area_name: str, area_price: float, all_seats: list, row_num: int = None):
+    def _process_seat_detail(self, seat_detail: dict, area_name: str, area_price: float, all_seats: list, area_no: str, row_num: int = None):
         """处理单个座位详情数据（增强版：包含状态验证）"""
         try:
             # 🔧 沃美座位状态映射：数字状态转换为字符串状态
@@ -3062,7 +3649,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 print(f"  - 状态: {seat_status} → {status}")
                 print(f"  - 类型: {type_info}, 价格: {area_price}元")
 
-            # 沃美座位数据格式
+            # 🔧 修复：沃美座位数据格式，确保original_data包含正确的沃美数据
             seat = {
                 'seat_no': seat_detail.get('seat_no', ''),
                 'row': seat_row,
@@ -3076,7 +3663,22 @@ class ModularCinemaMainWindow(QMainWindow):
                 'price': area_price,  # 添加价格字段
                 'num': str(seat_detail.get('col', 1)),  # 添加座位号显示
                 'original_status': seat_status,  # 保存原始状态用于调试
-                'is_target_seat': is_target_seat  # 🆕 标记是否为目标验证座位
+                'is_target_seat': is_target_seat,  # 🆕 标记是否为目标验证座位
+                # 🔧 修复：保存完整的沃美座位数据到original_data
+                'original_data': {
+                    'seat_no': seat_detail.get('seat_no', ''),  # 真实的seat_no
+                    'area_no': area_no,  # 🔧 修复：使用真实的区域area_no，不是默认值
+                    'row': str(seat_row),
+                    'col': str(seat_col),
+                    'x': seat_detail.get('x', 1),
+                    'y': seat_detail.get('y', row_num or 1),
+                    'type': seat_detail.get('type', 0),
+                    'status': seat_status,  # 原始状态码
+                    'area_name': area_name,
+                    'area_price': area_price,
+                    # 保存原始API数据
+                    'api_data': seat_detail
+                }
             }
 
             all_seats.append(seat)
@@ -3099,13 +3701,26 @@ class ModularCinemaMainWindow(QMainWindow):
             max_col = 0
             
             # 🆕 详细打印前几个座位数据以调试座位号问题
-            for i, seat in enumerate(seats_array[:5]):  # 增加到5个
+            print(f"[座位调试] 🔍 座位图API返回的原始数据分析:")
+            for i, seat in enumerate(seats_array[:3]):  # 只打印前3个，但显示完整数据
+                print(f"  座位{i+1}完整数据: {seat}")
                 rn = seat.get('rn', 'N/A')
                 cn = seat.get('cn', 'N/A')
                 sn = seat.get('sn', 'N/A')
                 r = seat.get('r', 'N/A')  # 🆕 逻辑排号
                 c = seat.get('c', 'N/A')  # 🆕 逻辑列数
                 s = seat.get('s', 'N/A')
+                print(f"    - rn(物理行): {rn}, cn(物理列): {cn}")
+                print(f"    - r(逻辑行): {r}, c(逻辑列): {c}")
+                print(f"    - sn(座位号): {sn}, s(状态): {s}")
+
+                # 🔍 检查是否有其他可能的座位编号字段
+                other_fields = {}
+                for key, value in seat.items():
+                    if key not in ['rn', 'cn', 'sn', 'r', 'c', 's'] and isinstance(value, (str, int)):
+                        other_fields[key] = value
+                if other_fields:
+                    print(f"    - 其他字段: {other_fields}")
             
             for seat in seats_array:
                 # 🆕 使用物理座位号（rn, cn）来确定座位图的最大尺寸
@@ -3155,6 +3770,7 @@ class ModularCinemaMainWindow(QMainWindow):
                         # 备选：使用物理列号
                         real_seat_num = str(seat.get('cn', physical_col + 1))
 
+                    # 🔧 修复：为沃美系统构建正确的座位数据格式
                     seat_data = {
                         'row': logical_row if logical_row else seat.get('rn', physical_row + 1),  # 🆕 优先使用逻辑排号r，备选物理排号rn
                         'col': logical_col if logical_col else seat.get('cn', physical_col + 1),  # 🆕 优先使用逻辑列数c，备选物理列数cn
@@ -3162,7 +3778,19 @@ class ModularCinemaMainWindow(QMainWindow):
                         'status': status,
                         'price': 0,  # 价格信息在priceinfo中
                         'seatname': seat.get('sn', ''),
-                        'original_data': seat  # 保存原始数据备用
+                        'original_data': {
+                            # 🔧 修复：保存沃美系统的真实座位数据
+                            'seat_no': seat.get('seat_no', ''),  # 真实的seat_no
+                            'area_no': seat.get('area_no', '1'),  # 真实的area_no
+                            'row': str(logical_row if logical_row else seat.get('rn', physical_row + 1)),
+                            'col': str(logical_col if logical_col else seat.get('cn', physical_col + 1)),
+                            'x': seat.get('x', 1),
+                            'y': seat.get('y', 1),
+                            'type': seat.get('type', 0),
+                            'status': seat.get('status', 0),
+                            # 保存原始API数据
+                            'api_data': seat
+                        }
                     }
 
                     seat_matrix[physical_row][physical_col] = seat_data
@@ -3238,8 +3866,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 else:
                     print(f"[订单参数] ✅ 影院数据验证通过: {cinema_data.get('cinemaShortName', 'N/A')}")
 
-                # 调用主要的订单提交方法
-                self.on_submit_order(selected_seats)
+                # 🔧 修复：直接使用沃美专用订单创建流程
+                self._create_womei_order_direct(selected_seats, session_info)
 
             else:
                 # 兼容旧格式：只有座位数据
@@ -4832,9 +5460,9 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 更新电影列表
                 self._load_movies_for_cinema(cinema_info)
                 
-                # 取消未支付订单
-                if self.current_account and cinema_info.get('cinemaid'):
-                    self._cancel_unpaid_orders(self.current_account, cinema_info['cinemaid'])
+                # 🔧 修复：沃美系统不需要取消未付款订单功能
+                # 取消未支付订单（沃美系统跳过此步骤）
+                print(f"[影院切换] 沃美系统跳过取消未付款订单步骤")
                 
                 # 获取会员信息
                 if self.current_account and cinema_info.get('cinemaid'):
@@ -4917,13 +5545,10 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[订单创建] 账号: {self.current_account.get('userid', 'N/A')}")
             print(f"[订单创建] 座位: {len(selected_seats)} 个")
 
-            # 第一步：取消该账号的所有未付款订单
+            # 🔧 修复：沃美系统不需要取消未付款订单功能
+            # 第一步：取消该账号的所有未付款订单（沃美系统跳过此步骤）
             cinema_data = self._get_cinema_info_by_name(cinema_text)
-            if cinema_data and self.current_account:
-                from services.order_api import cancel_all_unpaid_orders
-                cancel_result = cancel_all_unpaid_orders(self.current_account, cinema_data.get('cinemaid', ''))
-                cancelled_count = cancel_result.get('cancelledCount', 0)
-                print(f"[订单创建] 取消了 {cancelled_count} 个未支付订单")
+            print(f"[订单创建] 沃美系统跳过取消未付款订单步骤")
 
             # 第二步：构建完整的订单参数
             order_params = self._build_complete_order_params(selected_seats)
@@ -4933,10 +5558,38 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 第三步：调用订单创建API
             from services.order_api import create_order
+
+            # 🔍 详细打印提交的订单参数
+            print(f"\n🔍 [订单调试-完整流程] 提交订单参数详情:")
+            print(f"=" * 60)
+            for key, value in order_params.items():
+                if key == 'token':
+                    print(f"  {key}: {str(value)[:20]}...")
+                elif key == 'seatInfo':
+                    print(f"  {key}: {str(value)[:100]}...")
+                else:
+                    print(f"  {key}: {value}")
+            print(f"=" * 60)
+
             result = create_order(order_params)
+
+            # 🔍 详细打印API返回数据
+            print(f"\n🔍 [订单调试-完整流程] API返回数据详情:")
+            print(f"=" * 60)
+            if result:
+                print(f"返回数据类型: {type(result)}")
+                if isinstance(result, dict):
+                    for key, value in result.items():
+                        print(f"  {key}: {value}")
+                else:
+                    print(f"返回数据: {result}")
+            else:
+                print(f"返回数据: None")
+            print(f"=" * 60)
 
             if not result or result.get('resultCode') != '0':
                 error_msg = result.get('resultDesc', '创建订单失败') if result else '网络错误'
+                print(f"❌ [订单调试-完整流程] 订单创建失败: {error_msg}")
                 MessageManager.show_error(self, "创建失败", f"订单创建失败: {error_msg}", auto_close=False)
                 return False
 

@@ -211,12 +211,62 @@ class WomeiAPIAdapter:
         return self.request('hall_saleable', cinema_id=cinema_id, schedule_id=schedule_id)
 
     def create_order(self, cinema_id: str, seatlable: str, schedule_id: str) -> Dict[str, Any]:
-        """创建订单"""
+        """创建订单 - 使用真实的沃美系统格式"""
+        # 🔧 修复：使用真实的沃美系统订单创建API
+        url = f"https://ct.womovie.cn/ticket/wmyc/cinema/{cinema_id}/order/ticket/"
+
+        # 🔧 修复：使用正确的请求头
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 MicroMessenger/7.0.20.1781(0x6700143B) NetType/WIFI MiniProgramEnv/Windows WindowsWechat/WMPF WindowsWechat(0x63090c33)XWEB/13839',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'x-channel-id': '40000',
+            'tenant-short': 'wmyc',
+            'client-version': '4.0',
+            'xweb_xhr': '1',
+            'x-requested-with': 'wxapp',
+            'token': self.token,
+            'sec-fetch-site': 'cross-site',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-dest': 'empty',
+            'referer': 'https://servicewechat.com/wx4bb9342b9d97d53c/33/page-frame.html',
+            'accept-language': 'zh-CN,zh;q=0.9',
+            'priority': 'u=1, i'
+        }
+
+        # 🔧 修复：使用form-urlencoded格式的数据
         data = {
             'seatlable': seatlable,
             'schedule_id': schedule_id
         }
-        return self.request('order_ticket', 'POST', data, cinema_id=cinema_id)
+
+        print(f"[沃美订单API] 🚀 创建订单请求:")
+        print(f"  - URL: {url}")
+        print(f"  - 座位参数: {seatlable}")
+        print(f"  - 场次ID: {schedule_id}")
+        print(f"  - Token: {self.token[:20]}...")
+
+        try:
+            import requests
+            response = requests.post(url, data=data, headers=headers, timeout=30, verify=False)
+
+            print(f"[沃美订单API] 📥 响应状态: {response.status_code}")
+            print(f"[沃美订单API] 📥 响应内容: {response.text[:500]}...")
+
+            if response.status_code == 200:
+                try:
+                    result = response.json()
+                    print(f"[沃美订单API] ✅ 解析成功: {result}")
+                    return result
+                except Exception as e:
+                    print(f"[沃美订单API] ❌ JSON解析失败: {e}")
+                    return {"ret": -1, "msg": f"响应解析失败: {e}", "data": {}}
+            else:
+                print(f"[沃美订单API] ❌ HTTP错误: {response.status_code}")
+                return {"ret": -1, "msg": f"HTTP错误: {response.status_code}", "data": {}}
+
+        except Exception as e:
+            print(f"[沃美订单API] ❌ 请求异常: {e}")
+            return {"ret": -1, "msg": f"请求异常: {e}", "data": {}}
 
     def get_order_info(self, cinema_id: str, order_id: str, version: str = "tp_version") -> Dict[str, Any]:
         """获取订单信息"""

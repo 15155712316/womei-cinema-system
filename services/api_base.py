@@ -86,16 +86,28 @@ class APIBase:
             request_headers.update(headers)
         
         print(f"[API请求] {method} {url}")
+        print(f"[API请求] 请求头: {request_headers}")
         print(f"[API请求] 参数: {params if method == 'GET' else data}")
-        
+
         try:
             if method.upper() == 'GET':
                 response = requests.get(url, params=params, headers=request_headers, timeout=timeout, verify=False)
             else:  # POST
                 response = requests.post(url, data=data, headers=request_headers, timeout=timeout, verify=False)
-            
+
             print(f"[API响应] 状态码: {response.status_code}")
-            
+            print(f"[API响应] 响应头: {dict(response.headers)}")
+            print(f"[API响应] 响应内容长度: {len(response.content)} bytes")
+
+            # 🔍 打印响应内容的前500个字符用于调试
+            if response.content:
+                try:
+                    content_preview = response.content.decode('utf-8-sig')[:500]
+                    print(f"[API响应] 响应内容预览: {content_preview}")
+                except:
+                    content_preview = response.content[:500]
+                    print(f"[API响应] 响应内容预览(bytes): {content_preview}")
+
             if response.status_code == 200:
                 try:
                     # 处理BOM编码

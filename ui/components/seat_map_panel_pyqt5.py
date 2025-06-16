@@ -368,15 +368,14 @@ class SeatMapPanelPyQt5(QWidget):
                 }}
             """)
         elif status == "sold":
-            # 已售座位 - 温和的灰色，外边框显示区域颜色（更精致的2px边框）
+            # 已售座位 - 明显的红色，让用户一眼看出不可选择
             button.setStyleSheet(f"""
                 QPushButton {{
-                    background-color: #f5f5f5;
-                    border: 2px solid {area_border_color};
-                    color: #757575;
-                    font: 10px "Microsoft YaHei";
+                    background-color: #f44336;
+                    border: 2px solid #d32f2f;
+                    color: #ffffff;
+                    font: bold 10px "Microsoft YaHei";
                     border-radius: 6px;
-                    opacity: 0.7;
                 }}
             """)
         elif status == "selected":

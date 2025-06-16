@@ -2501,7 +2501,15 @@ class TabManagerWidget(QWidget):
 
             # 获取沃美电影服务实例
             from services.womei_film_service import get_womei_film_service
-            film_service = get_womei_film_service("47794858a832916d8eda012e7cabd269")
+
+            # 🔧 修复：使用当前账号的token而不是硬编码token
+            current_token = self.current_account.get('token', '') if self.current_account else ''
+            if not current_token:
+                print(f"[Tab管理器] ❌ 当前账号token为空，无法获取座位图")
+                return
+
+            print(f"[Tab管理器] 🔑 使用账号token: {current_token[:20]}...")
+            film_service = get_womei_film_service(current_token)
 
             # 🆕 使用准确座位数据API（对比两个API识别已售座位）
             hall_result = film_service.get_accurate_seat_data(cinema_id, hall_id, schedule_id, debug=True)
