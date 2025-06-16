@@ -188,15 +188,15 @@ class SeatMapPanelPyQt5(QWidget):
         """)
     
     def _draw_seats(self):
-        """绘制所有座位 - 使用网格布局模仿tkinter风格"""
+        """绘制所有座位 - 使用物理位置(x,y)确定显示位置，保存逻辑位置(row,col)用于订单"""
         # 清空现有布局
         for i in reversed(range(self.seat_layout.count())):
             child = self.seat_layout.itemAt(i)
             if child.widget():
                 child.widget().deleteLater()
-        
+
         self.seat_buttons.clear()
-        
+
         if not self.seat_data:
             # 显示空状态
             empty_label = QLabel("暂无座位数据")
@@ -204,120 +204,136 @@ class SeatMapPanelPyQt5(QWidget):
             empty_label.setStyleSheet("color: #6c757d; font: 14px 'Microsoft YaHei';")
             self.seat_layout.addWidget(empty_label, 0, 0)
             return
-        
+
         print(f"[座位面板] 开始绘制座位图，数据: {len(self.seat_data)} 行")
-        
-        # 计算最大列数用于行号标签定位
-        max_col = 0
-        for row in self.seat_data:
-            for seat in row:
+
+        # 🔧 重新设计：使用物理位置(x,y)来确定座位在网格中的显示位置
+        # 首先收集所有座位的物理位置信息
+        all_seats = []
+        max_physical_x = 0
+        max_physical_y = 0
+
+        for row_index, row in enumerate(self.seat_data):
+            for col_index, seat in enumerate(row):
                 if seat:
-                    col_num = seat.get('col', 0)
-                    max_col = max(max_col, col_num)
-        
-        print(f"[座位面板] 最大列数: {max_col}")
-        
-        # 绘制每一行
-        for r, row in enumerate(self.seat_data):
-            if not row:
+                    # 获取物理位置（用于显示）
+                    physical_x = seat.get('x', col_index + 1)  # 物理X坐标
+                    physical_y = seat.get('y', row_index + 1)  # 物理Y坐标
+
+                    # 获取逻辑位置（用于订单）
+                    logical_row = seat.get('row', row_index + 1)  # 逻辑行号
+                    logical_col = seat.get('col', col_index + 1)  # 逻辑列号
+
+                    seat_info = {
+                        'seat_data': seat,
+                        'physical_x': physical_x,
+                        'physical_y': physical_y,
+                        'logical_row': logical_row,
+                        'logical_col': logical_col,
+                        'array_row': row_index,  # 数组索引
+                        'array_col': col_index   # 数组索引
+                    }
+                    all_seats.append(seat_info)
+
+                    max_physical_x = max(max_physical_x, physical_x)
+                    max_physical_y = max(max_physical_y, physical_y)
+
+        print(f"[座位面板] 物理坐标范围: X(1-{max_physical_x}), Y(1-{max_physical_y})")
+        print(f"[座位面板] 总座位数: {len(all_seats)}")
+
+        # 🔧 创建行号标签（基于物理Y坐标）
+        displayed_rows = set()
+        for seat_info in all_seats:
+            physical_y = seat_info['physical_y']
+            logical_row = seat_info['logical_row']
+
+            if physical_y not in displayed_rows:
+                displayed_rows.add(physical_y)
+
+                # 创建行号标签（显示逻辑行号）
+                row_label = QLabel(f"{logical_row}")
+                row_label.setAlignment(Qt.AlignCenter)
+                row_label.setFont(QFont("Microsoft YaHei", 10, QFont.Bold))
+                row_label.setStyleSheet("""
+                    QLabel {
+                        color: #6c757d;
+                        background-color: transparent;
+                        border: none;
+                        padding: 2px;
+                        min-width: 24px;
+                        min-height: 32px;
+                        font-weight: bold;
+                    }
+                """)
+                # 使用物理Y坐标作为网格行，第0列放置行号标签
+                self.seat_layout.addWidget(row_label, physical_y - 1, 0)
+
+        # 🔧 绘制座位按钮（使用物理位置确定网格位置）
+        for seat_info in all_seats:
+            seat = seat_info['seat_data']
+            physical_x = seat_info['physical_x']
+            physical_y = seat_info['physical_y']
+            logical_row = seat_info['logical_row']
+            logical_col = seat_info['logical_col']
+            array_row = seat_info['array_row']
+            array_col = seat_info['array_col']
+
+            # 🔧 计算网格位置：物理Y作为网格行，物理X+1作为网格列（第0列是行号标签）
+            grid_row = physical_y - 1  # 转换为0基索引
+            grid_col = physical_x      # 第0列是行号标签，座位从第1列开始
+
+            status = seat.get('status', 'available')
+
+            # 跳过空座位
+            if status == 'empty':
                 continue
-            
-            # 获取行号（从第一个非空座位获取）
-            row_num = None
-            for seat in row:
-                if seat:
-                    row_num = seat.get('row', r + 1)
-                    break
-            
-            if row_num is None:
-                continue
-            
-            # 创建行号标签（放在第0列）- 🆕 更简洁的数字显示
-            row_label = QLabel(f"{row_num}")
-            row_label.setAlignment(Qt.AlignCenter)
-            row_label.setFont(QFont("Microsoft YaHei", 10, QFont.Bold))
-            row_label.setStyleSheet("""
-                QLabel {
-                    color: #6c757d;
-                    background-color: transparent;
-                    border: none;
-                    padding: 2px;
-                    min-width: 24px;
-                    min-height: 32px;
-                    font-weight: bold;
-                }
-            """)
-            self.seat_layout.addWidget(row_label, r, 0)
-            
-            # 绘制这一行的座位
-            for c, seat in enumerate(row):
-                # 🆕 修复：为空位也创建占位符，确保物理间隔正确显示
-                grid_col = c + 1  # 由于第0列是行号标签，座位从第1列开始
 
-                if seat is None:
-                    # 🆕 为空位创建透明占位符，保持物理间隔
-                    spacer = QLabel("")
-                    spacer.setFixedSize(36, 36)
-                    spacer.setStyleSheet("background-color: transparent; border: none;")
-                    self.seat_layout.addWidget(spacer, r, grid_col)
-                    continue
+            # 🔧 创建座位按钮 - 使用物理位置显示，保存逻辑位置信息
+            seat_btn = QPushButton()
+            seat_btn.setFixedSize(36, 36)
 
-                # 确保使用正确的列号，而不是数组索引
-                col_num = seat.get('col', c + 1)
+            # 🔧 显示逻辑座位号（用于用户识别）
+            display_seat_num = seat.get('num', str(logical_col))
+            seat_btn.setText(display_seat_num)
 
-                status = seat.get('status', 'available')
-                if status == 'empty':
-                    # 🆕 为empty状态也创建占位符
-                    spacer = QLabel("")
-                    spacer.setFixedSize(36, 36)
-                    spacer.setStyleSheet("background-color: transparent; border: none;")
-                    self.seat_layout.addWidget(spacer, r, grid_col)
-                    continue
-                
-                # 创建座位按钮 - 更现代化的样式
-                seat_btn = QPushButton()
-                seat_btn.setFixedSize(36, 36)  # 稍微增大尺寸
-                
-                # 🆕 修复：显示真实座位号（n字段）
-                # 物理座位号（rn, cn）用于构建座位图布局
-                # 真实座位号（r, n）用于显示和提交
-                real_seat_num = seat.get('num', '')  # 这里的num已经是处理过的真实座位号n
-                if not real_seat_num:
-                    # 备选：使用物理列号
-                    real_seat_num = str(seat.get('col', col_num))
+            # 🔧 获取座位所属区域信息
+            area_name = seat.get('area_name', '')
+            area_price = seat.get('area_price', 0)
 
-                seat_btn.setText(real_seat_num)
-                
-                # 🆕 获取座位所属区域信息
-                area_name = seat.get('area_name', '')
-                area_price = seat.get('area_price', 0)
+            # 设置样式（包含区域边框）
+            self._update_seat_button_style(seat_btn, status, area_name)
 
-                # 设置样式（包含区域边框）
-                self._update_seat_button_style(seat_btn, status, area_name)
+            # 🔧 保存完整的座位信息到按钮
+            seat_btn.area_name = area_name
+            seat_btn.area_price = area_price
+            seat_btn.seat_data = seat
+            seat_btn.logical_row = logical_row      # 逻辑行号（用于订单）
+            seat_btn.logical_col = logical_col      # 逻辑列号（用于订单）
+            seat_btn.physical_x = physical_x        # 物理X坐标（用于显示）
+            seat_btn.physical_y = physical_y        # 物理Y坐标（用于显示）
+            seat_btn.array_row = array_row          # 数组行索引
+            seat_btn.array_col = array_col          # 数组列索引
 
-                # 🆕 保存区域信息到按钮
-                seat_btn.area_name = area_name
-                seat_btn.area_price = area_price
-                seat_btn.seat_data = seat
-                
-                # 设置点击事件
-                if status == "available":
-                    # 🆕 使用自定义的座位按钮点击处理，支持拖拽滚动
-                    seat_btn.clicked.connect(lambda checked, r=r, c=c: self._seat_button_clicked(r, c))
-                    seat_btn.setCursor(Qt.PointingHandCursor)
+            # 🔧 设置点击事件（使用数组索引作为键）
+            if status == "available":
+                # 使用数组索引作为参数，保持与现有代码的兼容性
+                seat_btn.clicked.connect(lambda checked, r=array_row, c=array_col: self._seat_button_clicked(r, c))
+                seat_btn.setCursor(Qt.PointingHandCursor)
 
-                    # 🆕 为座位按钮添加鼠标事件处理
-                    seat_btn.mousePressEvent = lambda event, r=r, c=c: self._seat_button_mouse_press(event, r, c)
-                    seat_btn.mouseMoveEvent = lambda event, r=r, c=c: self._seat_button_mouse_move(event, r, c)
-                    seat_btn.mouseReleaseEvent = lambda event, r=r, c=c: self._seat_button_mouse_release(event, r, c)
-                else:
-                    seat_btn.setEnabled(False)
-                
-                # 添加到布局 - 🆕 使用正确的网格位置
-                self.seat_layout.addWidget(seat_btn, r, grid_col)
-                
-                # 保存引用
-                self.seat_buttons[(r, c)] = seat_btn
+                # 为座位按钮添加鼠标事件处理
+                seat_btn.mousePressEvent = lambda event, r=array_row, c=array_col: self._seat_button_mouse_press(event, r, c)
+                seat_btn.mouseMoveEvent = lambda event, r=array_row, c=array_col: self._seat_button_mouse_move(event, r, c)
+                seat_btn.mouseReleaseEvent = lambda event, r=array_row, c=array_col: self._seat_button_mouse_release(event, r, c)
+            else:
+                seat_btn.setEnabled(False)
+
+            # 🔧 添加到布局 - 使用物理位置确定网格位置
+            self.seat_layout.addWidget(seat_btn, grid_row, grid_col)
+
+            # 🔧 保存引用（使用数组索引作为键）
+            self.seat_buttons[(array_row, array_col)] = seat_btn
+
+            print(f"[座位面板] 座位 {logical_row}排{logical_col}座 -> 网格位置({grid_row},{grid_col}), 物理位置({physical_x},{physical_y})")
         
         print(f"[座位面板] 座位图绘制完成，共{len(self.seat_buttons)}个座位")
 
@@ -387,44 +403,42 @@ class SeatMapPanelPyQt5(QWidget):
             """)
     
     def toggle_seat(self, r: int, c: int):
-        """切换座位选中状态"""
+        """切换座位选中状态 - 支持逻辑位置和物理位置的区分"""
         if (r, c) not in self.seat_buttons:
             return
-        
+
         seat = self.seat_data[r][c]
         key = (r, c)
-        
+        seat_btn = self.seat_buttons[key]
+
+        # 🔧 获取座位的逻辑位置信息（用于显示和订单）
+        logical_row = getattr(seat_btn, 'logical_row', seat.get('row', r + 1))
+        logical_col = getattr(seat_btn, 'logical_col', seat.get('col', c + 1))
+        area_name = seat.get('area_name', '')
+
         if key in self.selected_seats:
             # 取消选中
             self.selected_seats.remove(key)
-            # 恢复原始状态
-            original_data = seat.get('original_data', {})
-            original_state = original_data.get('s', 'F')
-            if original_state == 'B':
-                seat['status'] = 'sold'
-            elif original_state == 'F':
-                seat['status'] = 'available'
-            else:
-                seat['status'] = 'unavailable'
+            seat['status'] = 'available'
+            print(f"[座位面板] 取消选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
         else:
             # 选中
             self.selected_seats.add(key)
             seat['status'] = "selected"
-        
-        # 更新按钮样式
-        seat_btn = self.seat_buttons[key]
-        self._update_seat_button_style(seat_btn, seat['status'])
-        
+            print(f"[座位面板] 选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
+
+        # 🔧 更新按钮样式时传递区域信息
+        self._update_seat_button_style(seat_btn, seat['status'], area_name)
+
         # 触发选座回调
         if self.on_seat_selected:
             selected = [self.seat_data[r][c] for (r, c) in self.selected_seats]
             self.on_seat_selected(selected)
-        
+
         # 发送信号
         selected_seats = [self.seat_data[r][c] for (r, c) in self.selected_seats]
         self.seat_selected.emit(selected_seats)
 
-        print(f"[座位面板] 座位{seat.get('num', f'{r+1}-{c+1}')}切换为: {seat['status']}")
         print(f"[座位面板] 当前已选座位数: {len(self.selected_seats)}")
 
         # 更新提交按钮文字
@@ -473,27 +487,99 @@ class SeatMapPanelPyQt5(QWidget):
         self.update_seat_data(seat_data)
     
     def get_selected_seats(self) -> List[str]:
-        """获取选中座位编号列表"""
-        return [self.seat_data[r][c]['num'] for (r, c) in self.selected_seats]
-    
+        """获取选中座位编号列表 - 使用逻辑位置"""
+        selected_seats = []
+        for (r, c) in self.selected_seats:
+            seat = self.seat_data[r][c]
+            seat_btn = self.seat_buttons.get((r, c))
+
+            # 🔧 使用逻辑位置构建座位编号
+            if seat_btn:
+                logical_row = getattr(seat_btn, 'logical_row', seat.get('row', r + 1))
+                logical_col = getattr(seat_btn, 'logical_col', seat.get('col', c + 1))
+                seat_num = f"{logical_row}排{logical_col}座"
+            else:
+                seat_num = seat.get('num', f"{r+1}-{c+1}")
+
+            selected_seats.append(seat_num)
+
+        return selected_seats
+
     def get_selected_seat_objects(self) -> List[Dict]:
-        """获取选中座位对象列表"""
-        return [self.seat_data[r][c] for (r, c) in self.selected_seats]
+        """获取选中座位对象列表 - 包含逻辑位置信息"""
+        selected_seats = []
+        for (r, c) in self.selected_seats:
+            seat = self.seat_data[r][c]
+            seat_btn = self.seat_buttons.get((r, c))
+
+            # 🔧 构建包含逻辑位置信息的座位数据
+            seat_info = seat.copy()
+            if seat_btn:
+                # 使用按钮中保存的逻辑位置信息
+                seat_info['logical_row'] = getattr(seat_btn, 'logical_row', seat.get('row', r + 1))
+                seat_info['logical_col'] = getattr(seat_btn, 'logical_col', seat.get('col', c + 1))
+                seat_info['physical_x'] = getattr(seat_btn, 'physical_x', seat.get('x', c + 1))
+                seat_info['physical_y'] = getattr(seat_btn, 'physical_y', seat.get('y', r + 1))
+
+                # 🔧 确保订单提交时使用逻辑位置
+                seat_info['row'] = seat_info['logical_row']
+                seat_info['col'] = seat_info['logical_col']
+
+            selected_seats.append(seat_info)
+
+        return selected_seats
+
+    def get_selected_seats_for_order(self) -> List[Dict]:
+        """获取用于订单提交的座位信息 - 明确使用逻辑位置"""
+        order_seats = []
+        for (r, c) in self.selected_seats:
+            seat = self.seat_data[r][c]
+            seat_btn = self.seat_buttons.get((r, c))
+
+            if seat_btn:
+                # 🔧 构建订单座位信息，明确使用逻辑位置
+                logical_row = getattr(seat_btn, 'logical_row', seat.get('row', r + 1))
+                logical_col = getattr(seat_btn, 'logical_col', seat.get('col', c + 1))
+
+                order_seat = {
+                    'seat_no': seat.get('seat_no', ''),
+                    'row': logical_row,      # 逻辑行号（用于订单）
+                    'col': logical_col,      # 逻辑列号（用于订单）
+                    'area_name': seat.get('area_name', ''),
+                    'area_price': seat.get('area_price', 0),
+                    'price': seat.get('price', seat.get('area_price', 0)),
+                    'type': seat.get('type', 0),
+                    'num': seat.get('num', str(logical_col))
+                }
+                order_seats.append(order_seat)
+
+                print(f"[订单座位] {logical_row}排{logical_col}座 - {order_seat['area_name']} {order_seat['price']}元")
+
+        return order_seats
     
     def _update_submit_button_text(self):
-        """更新提交按钮文字 - 集成选座信息"""
+        """更新提交按钮文字 - 使用逻辑位置显示座位信息"""
         selected_count = len(self.selected_seats)
         if selected_count == 0:
             self.submit_btn.setText("提交订单")
         else:
-            # 获取选中座位的排号信息
+            # 🔧 获取选中座位的逻辑位置信息
             selected_seats_info = []
             for (r, c) in self.selected_seats:
                 seat = self.seat_data[r][c]
-                # 获取座位的排号和列号
-                row_num = seat.get('row', r + 1)
-                col_num = seat.get('col', c + 1)
-                seat_info = f"{row_num}排{col_num}"
+                seat_btn = self.seat_buttons.get((r, c))
+
+                # 使用逻辑位置构建座位信息
+                if seat_btn:
+                    logical_row = getattr(seat_btn, 'logical_row', seat.get('row', r + 1))
+                    logical_col = getattr(seat_btn, 'logical_col', seat.get('col', c + 1))
+                    seat_info = f"{logical_row}排{logical_col}"
+                else:
+                    # 备用方案
+                    row_num = seat.get('row', r + 1)
+                    col_num = seat.get('col', c + 1)
+                    seat_info = f"{row_num}排{col_num}"
+
                 selected_seats_info.append(seat_info)
 
             # 按钮文字格式：提交订单 5排13 5排12

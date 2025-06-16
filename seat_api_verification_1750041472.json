@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-06-16 10:37:52",
+  "test_cinema_id": "400028",
+  "test_schedule_id": 16626081,
+  "token_used": "47794858a832916d8eda...",
+  "results": {
+    "全部座位API": {
+      "success": false,
+      "error": "获取TOKEN超时 [5105A]",
+      "seats": [],
+      "total": 0
+    },
+    "可售座位API": {
+      "success": false,
+      "error": "获取TOKEN超时 [5105A]",
+      "seats": [],
+      "total": 0
+    }
+  }
+}

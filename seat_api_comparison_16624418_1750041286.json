@@ -1,0 +1,46 @@
+{
+  "timestamp": "2025-06-16 10:34:46",
+  "schedule_id": "16624418",
+  "cinema_id": "400028",
+  "summary": {
+    "full_seats_count": 0,
+    "saleable_seats_count": 0,
+    "full_only_count": 0,
+    "saleable_only_count": 0,
+    "common_count": 0
+  },
+  "full_only_seats": [],
+  "saleable_only_seats": [],
+  "target_seats_analysis": {
+    "1排9座": {
+      "in_full_api": false,
+      "in_saleable_api": false,
+      "conclusion": "不存在"
+    },
+    "1排10座": {
+      "in_full_api": false,
+      "in_saleable_api": false,
+      "conclusion": "不存在"
+    },
+    "1排11座": {
+      "in_full_api": false,
+      "in_saleable_api": false,
+      "conclusion": "不存在"
+    },
+    "1排12座": {
+      "in_full_api": false,
+      "in_saleable_api": false,
+      "conclusion": "不存在"
+    },
+    "8排6座": {
+      "in_full_api": false,
+      "in_saleable_api": false,
+      "conclusion": "不存在"
+    },
+    "8排7座": {
+      "in_full_api": false,
+      "in_saleable_api": false,
+      "conclusion": "不存在"
+    }
+  }
+}
