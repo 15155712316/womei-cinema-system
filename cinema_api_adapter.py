@@ -23,7 +23,7 @@ class WomeiConfig:
             "channel_id": "40000",
             "client_version": "4.0",
             "wx_app_id": "wx4bb9342b9d97d53c",
-            "default_token": "47794858a832916d8eda012e7cabd269"  # 有效token（来自HAR文件）
+            "default_token": None  # 不使用默认token，必须从accounts.json加载
         },
         "endpoints": {
             # 基础端点（不需要cinema_id）
@@ -102,20 +102,20 @@ class WomeiConfig:
         return url
 
     @classmethod
-    def build_request_headers(cls, token: Optional[str] = None) -> Dict[str, str]:
-        """构建请求头"""
+    def build_request_headers(cls, token: str) -> Dict[str, str]:
+        """构建请求头 - 必须提供token"""
+        if not token:
+            raise ValueError("Token是必需的，请从accounts.json文件加载")
+
         config = cls.get_config()
         api_config = config["api_config"]
-
-        # 使用提供的token或默认token
-        auth_token = token or api_config["default_token"]
 
         headers = cls.COMMON_HEADERS.copy()
         headers.update({
             'x-channel-id': api_config["channel_id"],
             'tenant-short': api_config["tenant_short"],
             'client-version': api_config["client_version"],
-            'token': auth_token,
+            'token': token,
             'referer': f"https://servicewechat.com/{api_config['wx_app_id']}/33/page-frame.html"
         })
 
@@ -124,13 +124,16 @@ class WomeiConfig:
 class WomeiAPIAdapter:
     """沃美影院API适配器"""
 
-    def __init__(self, token: Optional[str] = None):
+    def __init__(self, token: str):
         """
         初始化API适配器
 
         Args:
-            token: 认证令牌（可选）
+            token: 认证令牌（必需）
         """
+        if not token:
+            raise ValueError("Token是必需的，请从accounts.json文件加载")
+
         self.token = token
         self.session = requests.Session()
 
@@ -273,24 +276,16 @@ class WomeiAPIAdapter:
         return self.request('order_info', cinema_id=cinema_id, version=version, order_id=order_id)
 
 # 便捷的工厂函数
-def create_womei_api(token: Optional[str] = None) -> WomeiAPIAdapter:
-    """创建沃美API适配器实例"""
+def create_womei_api(token: str) -> WomeiAPIAdapter:
+    """创建沃美API适配器实例 - 必须提供token"""
     return WomeiAPIAdapter(token)
 
 # 使用示例
 if __name__ == "__main__":
-    # 创建沃美API实例
-    api = create_womei_api()
-
-    try:
-        # 获取城市列表
-        cities = api.get_cities()
-        print(f"获取城市列表成功")
-
-        if cities.get('ret') == 0:
-            data = cities.get('data', {})
-            hot_cities = data.get('hot', [])
-            print(f"热门城市数量: {len(hot_cities)}")
-
-    except Exception as e:
-        print(f"API调用失败: {e}")
+    print("请从accounts.json文件加载token后使用API")
+    print("示例:")
+    print("  import json")
+    print("  with open('data/accounts.json', 'r') as f:")
+    print("      accounts = json.load(f)")
+    print("  token = accounts[0]['token']")
+    print("  api = create_womei_api(token)")

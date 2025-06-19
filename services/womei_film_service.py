@@ -11,13 +11,16 @@ from cinema_api_adapter import create_womei_api
 class WomeiFilmService:
     """沃美影院电影服务类"""
     
-    def __init__(self, token: str = None):
+    def __init__(self, token: str):
         """
         初始化沃美电影服务
-        
+
         Args:
-            token: 认证令牌
+            token: 认证令牌（必需）
         """
+        if not token:
+            raise ValueError("Token是必需的，请从accounts.json文件加载")
+
         self.token = token
         self.api = create_womei_api(token)
         self.current_cinema_id = None
@@ -69,7 +72,7 @@ class WomeiFilmService:
                     "note": "使用模拟数据（token可能过期）"
                 }
 
-            # 只使用normal数组，忽略hot数组
+            # 🔧 修正：使用normal数组获取城市数据（根据真实API结构）
             normal_cities = data.get('normal', [])
 
             # 格式化城市数据
@@ -122,8 +125,9 @@ class WomeiFilmService:
                     "cinemas": []
                 }
 
-            # 只使用normal数组，忽略hot数组
+            # 🔧 修正：使用normal数组获取影院数据（根据真实API结构）
             normal_cities = data.get('normal', [])
+            print(f"[沃美电影服务] 使用normal数组，城市数量: {len(normal_cities)}")
 
             all_cinemas = []
             for city in normal_cities:
@@ -521,19 +525,22 @@ class WomeiFilmService:
 # 全局实例
 _womei_film_service = None
 
-def get_womei_film_service(token: str = None) -> WomeiFilmService:
-    """获取沃美电影服务实例（单例模式）"""
+def get_womei_film_service(token: str) -> WomeiFilmService:
+    """获取沃美电影服务实例（单例模式） - 必须提供token"""
+    if not token:
+        raise ValueError("Token是必需的，请从accounts.json文件加载")
+
     global _womei_film_service
-    
+
     if _womei_film_service is None:
         _womei_film_service = WomeiFilmService(token)
-    elif token and token != _womei_film_service.token:
+    elif token != _womei_film_service.token:
         _womei_film_service.set_token(token)
-    
+
     return _womei_film_service
 
 # 便捷函数，保持与原有接口的兼容性
-def get_films(cinema_id: str, token: str = None) -> Dict[str, Any]:
-    """获取电影列表（兼容原有接口）"""
+def get_films(cinema_id: str, token: str) -> Dict[str, Any]:
+    """获取电影列表（兼容原有接口） - 必须提供token"""
     service = get_womei_film_service(token)
     return service.get_movies(cinema_id)

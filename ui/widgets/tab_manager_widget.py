@@ -1732,17 +1732,9 @@ class TabManagerWidget(QWidget):
             # 获取沃美电影服务实例
             from services.womei_film_service import get_womei_film_service
 
-            # 使用当前账号的token或默认token
-            token = "47794858a832916d8eda012e7cabd269"  # 默认token
-            if hasattr(self, 'current_account') and self.current_account:
-                account_token = self.current_account.get('token')
-                if account_token:
-                    token = account_token
-                    print(f"[Tab管理器] 使用当前账号token: {token[:20]}...")
-                else:
-                    print(f"[Tab管理器] 当前账号无token，使用默认token")
-            else:
-                print(f"[Tab管理器] 无当前账号，使用默认token")
+            # 🔧 修正：使用统一的token获取方法
+            token = self._get_current_token()
+            print(f"[Tab管理器] 使用token: {token[:20]}...")
 
             film_service = get_womei_film_service(token)
 
@@ -2119,7 +2111,8 @@ class TabManagerWidget(QWidget):
 
             # 获取沃美电影服务实例
             from services.womei_film_service import get_womei_film_service
-            film_service = get_womei_film_service("47794858a832916d8eda012e7cabd269")
+            token = self._get_current_token()
+            film_service = get_womei_film_service(token)
 
             # 调用场次API
             shows_result = film_service.get_shows(cinema_id, str(movie_id))
@@ -3579,6 +3572,34 @@ class TabManagerWidget(QWidget):
             import traceback
             traceback.print_exc()
 
+    def _get_current_token(self):
+        """从accounts.json文件获取当前token"""
+        try:
+            import json
+            import os
+
+            # 优先使用当前账号的token
+            if hasattr(self, 'current_account') and self.current_account:
+                account_token = self.current_account.get('token')
+                if account_token:
+                    return account_token
+
+            # 从accounts.json文件加载token
+            accounts_file = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'accounts.json')
+            if os.path.exists(accounts_file):
+                with open(accounts_file, "r", encoding="utf-8") as f:
+                    accounts = json.load(f)
+
+                if accounts and len(accounts) > 0:
+                    return accounts[0].get('token', '1bb7e07bb7c832f17322b61c790aeed2')
+
+            # 备用token
+            return '1bb7e07bb7c832f17322b61c790aeed2'
+
+        except Exception as e:
+            print(f"[Tab管理器] 获取token失败: {e}")
+            return '1bb7e07bb7c832f17322b61c790aeed2'
+
     def _load_cities_for_womei(self):
         """加载沃美系统的城市列表"""
         try:
@@ -3593,17 +3614,9 @@ class TabManagerWidget(QWidget):
             # 使用沃美电影服务获取城市列表
             from services.womei_film_service import get_womei_film_service
 
-            # 🔧 获取当前账号token或使用默认token
-            token = "47794858a832916d8eda012e7cabd269"  # 默认token
-            if hasattr(self, 'current_account') and self.current_account:
-                account_token = self.current_account.get('token')
-                if account_token:
-                    token = account_token
-                    print(f"[城市调试] 使用当前账号token: {token[:20]}...")
-                else:
-                    print(f"[城市调试] 当前账号无token，使用默认token")
-            else:
-                print(f"[城市调试] 无当前账号，使用默认token: {token[:20]}...")
+            # 🔧 修正：从accounts.json文件获取最新token
+            token = self._get_current_token()
+            print(f"[城市调试] 使用token: {token[:20]}...")
 
             # 🔧 详细的API调用调试
             print(f"[城市调试] 创建沃美电影服务实例...")
@@ -3846,7 +3859,8 @@ class TabManagerWidget(QWidget):
                 print(f"[Tab管理器] 城市数据中无影院，尝试调用影院API")
 
                 from services.womei_film_service import get_womei_film_service
-                film_service = get_womei_film_service("47794858a832916d8eda012e7cabd269")
+                token = self._get_current_token()
+                film_service = get_womei_film_service(token)
 
                 # 获取所有影院，然后筛选该城市的影院
                 cinemas_result = film_service.get_cinemas()

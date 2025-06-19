@@ -21,7 +21,7 @@ except ImportError as e:
 from patterns.order_observer import get_order_subject, setup_order_observers, OrderStatus
 from patterns.payment_strategy import get_payment_context, PaymentContext
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
-
+å
 # 导入插件系统
 from ui.interfaces.plugin_interface import (
     IWidgetInterface, plugin_manager
@@ -87,8 +87,8 @@ class ModularCinemaMainWindow(QMainWindow):
         self.auth_service = AuthService()
         self.cinema_manager = CinemaManager()
         self.member_service = MemberService()
-        # 初始化沃美电影服务
-        self.film_service = get_womei_film_service()
+        # 初始化沃美电影服务 - 延迟初始化，等待token加载
+        self.film_service = None
 
         # 🆕 初始化订单详情管理器
         from modules.order_display import OrderDetailManager
