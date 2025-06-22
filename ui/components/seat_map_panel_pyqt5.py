@@ -290,7 +290,17 @@ class SeatMapPanelPyQt5(QWidget):
 
             # 🔧 创建座位按钮 - 使用物理位置显示，保存逻辑位置信息
             seat_btn = QPushButton()
-            seat_btn.setFixedSize(36, 36)
+
+            # 🆕 检查是否为情侣座位
+            seat_type = seat.get('type', 0)
+            is_couple_seat = seat_type in [1, 2]
+
+            if is_couple_seat:
+                # 情侣座位使用更宽的尺寸
+                seat_btn.setFixedSize(40, 36)
+            else:
+                # 普通座位
+                seat_btn.setFixedSize(36, 36)
 
             # 🔧 显示逻辑座位号（用于用户识别）
             display_seat_num = seat.get('num', str(logical_col))
@@ -300,8 +310,8 @@ class SeatMapPanelPyQt5(QWidget):
             area_name = seat.get('area_name', '')
             area_price = seat.get('area_price', 0)
 
-            # 设置样式（包含区域边框）
-            self._update_seat_button_style(seat_btn, status, area_name)
+            # 设置样式（包含区域边框和情侣座位样式）
+            self._update_seat_button_style(seat_btn, status, area_name, seat_type)
 
             # 🔧 保存完整的座位信息到按钮
             seat_btn.area_name = area_name
@@ -343,30 +353,69 @@ class SeatMapPanelPyQt5(QWidget):
         # 初始化按钮文字
         self._update_submit_button_text()
     
-    def _update_seat_button_style(self, button: QPushButton, status: str, area_name: str = ''):
-        """更新座位按钮样式 - 现代化设计，支持区域边框"""
+    def _update_seat_button_style(self, button: QPushButton, status: str, area_name: str = '', seat_type: int = 0):
+        """更新座位按钮样式 - 现代化设计，支持区域边框和情侣座位"""
         # 🆕 获取区域边框颜色
         area_border_color = self._get_area_border_color(area_name)
 
+        # 🆕 检查是否为情侣座位
+        is_couple_seat = seat_type in [1, 2]
+        couple_left = seat_type == 1
+        couple_right = seat_type == 2
+
+        # 🆕 情侣座位的特殊边框样式
+        if is_couple_seat:
+            if couple_left:
+                # 情侣座位左座 - 右边圆角较小，与右座连接
+                border_radius = "6px 2px 2px 6px"
+                couple_indicator = "💕"  # 爱心符号
+            else:  # couple_right
+                # 情侣座位右座 - 左边圆角较小，与左座连接
+                border_radius = "2px 6px 6px 2px"
+                couple_indicator = "💕"  # 爱心符号
+        else:
+            border_radius = "6px"
+            couple_indicator = ""
+
         if status == "available":
-            # 可选座位 - 清新的蓝色，外边框显示区域颜色（更精致的2px边框）
-            button.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: #e3f2fd;
-                    border: 2px solid {area_border_color};
-                    color: #1976d2;
-                    font: bold 10px "Microsoft YaHei";
-                    border-radius: 6px;
-                }}
-                QPushButton:hover {{
-                    background-color: #bbdefb;
-                    border: 2px solid {area_border_color};
-                }}
-                QPushButton:pressed {{
-                    background-color: #90caf9;
-                    border: 2px solid {area_border_color};
-                }}
-            """)
+            if is_couple_seat:
+                # 情侣座位可选 - 特殊的粉色系
+                button.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #fce4ec;
+                        border: 2px solid #e91e63;
+                        color: #ad1457;
+                        font: bold 9px "Microsoft YaHei";
+                        border-radius: {border_radius};
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f8bbd9;
+                        border: 2px solid #e91e63;
+                    }}
+                    QPushButton:pressed {{
+                        background-color: #f48fb1;
+                        border: 2px solid #e91e63;
+                    }}
+                """)
+            else:
+                # 普通座位可选 - 清新的蓝色，外边框显示区域颜色
+                button.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #e3f2fd;
+                        border: 2px solid {area_border_color};
+                        color: #1976d2;
+                        font: bold 10px "Microsoft YaHei";
+                        border-radius: {border_radius};
+                    }}
+                    QPushButton:hover {{
+                        background-color: #bbdefb;
+                        border: 2px solid {area_border_color};
+                    }}
+                    QPushButton:pressed {{
+                        background-color: #90caf9;
+                        border: 2px solid {area_border_color};
+                    }}
+                """)
         elif status == "sold":
             # 已售座位 - 明显的红色，让用户一眼看出不可选择
             button.setStyleSheet(f"""
@@ -375,29 +424,41 @@ class SeatMapPanelPyQt5(QWidget):
                     border: 2px solid #d32f2f;
                     color: #ffffff;
                     font: bold 10px "Microsoft YaHei";
-                    border-radius: 6px;
+                    border-radius: {border_radius};
                 }}
             """)
         elif status == "selected":
-            # 选中座位 - 鲜明的绿色，外边框显示区域颜色（更精致的2px边框）
-            button.setStyleSheet(f"""
-                QPushButton {{
-                    background-color: #4caf50;
-                    border: 2px solid {area_border_color};
-                    color: #fff;
-                    font: bold 10px "Microsoft YaHei";
-                    border-radius: 6px;
-                }}
-            """)
+            if is_couple_seat:
+                # 情侣座位选中 - 特殊的深粉色
+                button.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #e91e63;
+                        border: 2px solid #ad1457;
+                        color: #fff;
+                        font: bold 9px "Microsoft YaHei";
+                        border-radius: {border_radius};
+                    }}
+                """)
+            else:
+                # 普通座位选中 - 鲜明的绿色，外边框显示区域颜色
+                button.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #4caf50;
+                        border: 2px solid {area_border_color};
+                        color: #fff;
+                        font: bold 10px "Microsoft YaHei";
+                        border-radius: {border_radius};
+                    }}
+                """)
         else:
-            # 其他状态 - 默认样式，外边框显示区域颜色（更精致的2px边框）
+            # 其他状态 - 默认样式，外边框显示区域颜色
             button.setStyleSheet(f"""
                 QPushButton {{
                     background-color: #fafafa;
                     border: 2px solid {area_border_color};
                     color: #bdbdbd;
                     font: 10px "Microsoft YaHei";
-                    border-radius: 6px;
+                    border-radius: {border_radius};
                 }}
             """)
     
@@ -426,8 +487,9 @@ class SeatMapPanelPyQt5(QWidget):
             seat['status'] = "selected"
             print(f"[座位面板] 选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
 
-        # 🔧 更新按钮样式时传递区域信息
-        self._update_seat_button_style(seat_btn, seat['status'], area_name)
+        # 🔧 更新按钮样式时传递区域信息和座位类型
+        seat_type = seat.get('type', 0)
+        self._update_seat_button_style(seat_btn, seat['status'], area_name, seat_type)
 
         # 触发选座回调
         if self.on_seat_selected:
@@ -661,7 +723,9 @@ class SeatMapPanelPyQt5(QWidget):
             
             if (r, c) in self.seat_buttons:
                 seat_btn = self.seat_buttons[(r, c)]
-                self._update_seat_button_style(seat_btn, seat['status'])
+                seat_type = seat.get('type', 0)
+                area_name = seat.get('area_name', '')
+                self._update_seat_button_style(seat_btn, seat['status'], area_name, seat_type)
         
         self.selected_seats.clear()
         print(f"[座位面板] 座位状态已重置，已选座位已清空")

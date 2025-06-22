@@ -23,7 +23,7 @@
     "timeout": 30,
     "retry_count": 3,
     "verify_ssl": false,
-    "api_base_url": "http://43.142.19.28:5000"
+    "api_base_url": "http://47.117.162.183:5000"
   },
   "auth": {
     "auto_login": true,

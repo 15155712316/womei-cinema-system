@@ -487,10 +487,17 @@ class TabManagerWidget(QWidget):
         account = getattr(self, 'current_account', None)
         if hasattr(self, 'bind_account_info'):
             if account:
-                # 从沃美当前影院数据获取影院名称
+                # 获取影院名称
                 cinema_name = "未知影院"
-                if hasattr(self, 'current_cinema_data') and self.current_cinema_data:
-                    cinema_name = self.current_cinema_data.get('cinema_name', '未知影院')
+                try:
+                    from services.cinema_manager import cinema_manager
+                    cinemas = cinema_manager.load_cinema_list()
+                    for cinema in cinemas:
+                        if cinema.get('cinemaid') == account.get('cinemaid'):
+                            cinema_name = cinema.get('cinemaShortName', '未知影院')
+                            break
+                except:
+                    pass
 
                 # 适配沃美简化账号格式
                 phone = account.get('phone', '未知账号')
@@ -506,10 +513,17 @@ class TabManagerWidget(QWidget):
         account = getattr(self, 'current_account', None)
         if hasattr(self, 'exchange_account_info'):
             if account:
-                # 从沃美当前影院数据获取影院名称
+                # 获取影院名称
                 cinema_name = "未知影院"
-                if hasattr(self, 'current_cinema_data') and self.current_cinema_data:
-                    cinema_name = self.current_cinema_data.get('cinema_name', '未知影院')
+                try:
+                    from services.cinema_manager import cinema_manager
+                    cinemas = cinema_manager.load_cinema_list()
+                    for cinema in cinemas:
+                        if cinema.get('cinemaid') == account.get('cinemaid'):
+                            cinema_name = cinema.get('cinemaShortName', '未知影院')
+                            break
+                except:
+                    pass
 
                 # 适配沃美简化账号格式
                 phone = account.get('phone', '未知账号')
@@ -785,7 +799,7 @@ class TabManagerWidget(QWidget):
             print(f"[添加影院] ✅ 验证成功: {cinema_name}")
 
             # 🆕 检查影院是否已存在
-            # 🚫 移除对旧cinema_manager的依赖
+            from services.cinema_manager import cinema_manager
             cinemas = cinema_manager.load_cinema_list()
 
             for cinema in cinemas:
@@ -838,7 +852,7 @@ class TabManagerWidget(QWidget):
 
             # 发送全局事件通知主窗口刷新
             from utils.signals import event_bus
-            # 🚫 移除对旧cinema_manager的依赖
+            from services.cinema_manager import cinema_manager
 
             # 获取最新的影院列表并发送事件
             updated_cinemas = cinema_manager.load_cinema_list()
@@ -853,7 +867,7 @@ class TabManagerWidget(QWidget):
         """添加影院到数据文件 - 基于现有cinema_manager"""
         try:
             # 使用现有的cinema_manager
-            # 🚫 移除对旧cinema_manager的依赖
+            from services.cinema_manager import cinema_manager
             from datetime import datetime
             
             # 新影院数据
@@ -929,7 +943,7 @@ class TabManagerWidget(QWidget):
     def delete_cinema_from_list(self, cinema_id, cinema_name):
         """从数据文件中删除影院"""
         try:
-            # 🚫 移除对旧cinema_manager的依赖
+            from services.cinema_manager import cinema_manager
             
             # 加载影院列表
             cinemas = cinema_manager.load_cinema_list()
@@ -990,7 +1004,7 @@ class TabManagerWidget(QWidget):
     def _refresh_cinema_table_display(self):
         """刷新影院表格显示"""
         try:
-            # 🚫 移除对旧cinema_manager的依赖
+            from services.cinema_manager import cinema_manager
             cinemas = cinema_manager.load_cinema_list()
             
             # 清空表格
@@ -1020,7 +1034,7 @@ class TabManagerWidget(QWidget):
     def _update_cinema_stats(self):
         """更新影院统计信息"""
         try:
-            # 🚫 移除对旧cinema_manager的依赖
+            from services.cinema_manager import cinema_manager
             cinemas = cinema_manager.load_cinema_list()
             
             total_count = len(cinemas)
@@ -2083,7 +2097,7 @@ class TabManagerWidget(QWidget):
                 # 🆕 尝试从影院管理器重新加载数据
                 try:
                     print(f"[Tab管理器] 🔄 尝试重新加载影院数据...")
-                    # 🚫 移除对旧cinema_manager的依赖
+                    from services.cinema_manager import cinema_manager
                     cinemas = cinema_manager.load_cinema_list()
                     self.cinemas_data = cinemas
                     print(f"[Tab管理器] 重新加载了 {len(cinemas)} 个影院")

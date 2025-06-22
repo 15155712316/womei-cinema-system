@@ -21,7 +21,6 @@ except ImportError as e:
 from patterns.order_observer import get_order_subject, setup_order_observers, OrderStatus
 from patterns.payment_strategy import get_payment_context, PaymentContext
 from PyQt5.QtCore import Qt, pyqtSignal, pyqtSlot, QTimer
-å
 # 导入插件系统
 from ui.interfaces.plugin_interface import (
     IWidgetInterface, plugin_manager
@@ -2123,10 +2122,23 @@ class ModularCinemaMainWindow(QMainWindow):
             # 座位信息 - 按照重构前的格式
             seats = DataUtils.safe_get(order_detail, 'seats', [])
             if isinstance(seats, list) and seats:
-                if len(seats) == 1:
-                    info_lines.append(f"座位: {seats[0]}")
+                # 🔧 修复：确保座位数据是字符串格式
+                seat_strings = []
+                for seat in seats:
+                    if isinstance(seat, str):
+                        seat_strings.append(seat)
+                    elif isinstance(seat, dict):
+                        # 如果是字典，尝试提取座位信息
+                        seat_str = seat.get('num', seat.get('seat_name', f"{seat.get('row', '?')}排{seat.get('col', '?')}座"))
+                        seat_strings.append(str(seat_str))
+                    else:
+                        # 其他类型，转换为字符串
+                        seat_strings.append(str(seat))
+
+                if len(seat_strings) == 1:
+                    info_lines.append(f"座位: {seat_strings[0]}")
                 else:
-                    seat_str = " ".join(seats)
+                    seat_str = " ".join(seat_strings)
                     info_lines.append(f"座位: {seat_str}")
             else:
                 info_lines.append(f"座位: {seats}")
@@ -3029,9 +3041,10 @@ class ModularCinemaMainWindow(QMainWindow):
                 token = self.current_account.get('token', '')
 
                 if cinema_id:
-                    # 设置token并获取电影列表
-                    self.film_service.set_token(token)
-                    movies_result = self.film_service.get_movies(cinema_id)
+                    # 🔧 修复：使用get_womei_film_service获取服务实例，而不是使用未初始化的self.film_service
+                    from services.womei_film_service import get_womei_film_service
+                    film_service = get_womei_film_service(token)
+                    movies_result = film_service.get_movies(cinema_id)
 
                     if movies_result.get('success'):
                         movies = movies_result.get('movies', [])
@@ -3302,13 +3315,16 @@ class ModularCinemaMainWindow(QMainWindow):
             # 设置token并调用沃美座位图API
             token = account.get('token', '')
             print(f"[主窗口] 🔑 设置token: {token[:20]}...{token[-10:] if len(token) > 30 else token}")
-            self.film_service.set_token(token)
+
+            # 🔧 修复：使用get_womei_film_service获取服务实例，而不是使用未初始化的self.film_service
+            from services.womei_film_service import get_womei_film_service
+            film_service = get_womei_film_service(token)
 
             print(f"[主窗口] 🚀 调用沃美座位图API:")
             print(f"  - URL: cinema/{cinema_id}/hall/info/?hall_id={hall_id}&schedule_id={schedule_id}")
 
             # 调用沃美座位图API
-            seat_result = self.film_service.get_hall_info(cinema_id, hall_id, schedule_id)
+            seat_result = film_service.get_hall_info(cinema_id, hall_id, schedule_id)
 
             print(f"[主窗口] 📥 沃美座位图API响应:")
             print(f"  - 响应类型: {type(seat_result)}")
@@ -5837,6 +5853,17 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"  - 座位数: {len(selected_seats)}")
             print(f"  - 总价: {total_amount} 元")
             print(f"  - 会员价: {member_total_price/100.0:.2f} 元")
+
+            # 🔍 调试：打印订单数据
+            print(f"\n🔍 [订单调试] 订单数据详情:")
+            print(f"=" * 60)
+            print(f"订单号: {self.current_order.get('order_id', 'N/A')}")
+            print(f"座位数据类型: {type(self.current_order.get('seats', []))}")
+            print(f"座位数据内容: {self.current_order.get('seats', [])}")
+            if isinstance(self.current_order.get('seats', []), list) and self.current_order.get('seats', []):
+                print(f"第一个座位类型: {type(self.current_order['seats'][0])}")
+                print(f"第一个座位内容: {self.current_order['seats'][0]}")
+            print(f"=" * 60)
 
             # 显示订单详情
             self._show_order_detail(self.current_order)

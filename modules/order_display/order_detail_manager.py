@@ -219,10 +219,23 @@ class OrderDetailManager:
         # 座位信息
         seats = order_data.get('seats', [])
         if isinstance(seats, list) and seats:
-            if len(seats) == 1:
-                info_lines.append(f"座位: {seats[0]}")
+            # 🔧 修复：确保座位数据是字符串格式
+            seat_strings = []
+            for seat in seats:
+                if isinstance(seat, str):
+                    seat_strings.append(seat)
+                elif isinstance(seat, dict):
+                    # 如果是字典，尝试提取座位信息
+                    seat_str = seat.get('num', seat.get('seat_name', f"{seat.get('row', '?')}排{seat.get('col', '?')}座"))
+                    seat_strings.append(str(seat_str))
+                else:
+                    # 其他类型，转换为字符串
+                    seat_strings.append(str(seat))
+
+            if len(seat_strings) == 1:
+                info_lines.append(f"座位: {seat_strings[0]}")
             else:
-                seat_str = ", ".join(seats)
+                seat_str = ", ".join(seat_strings)
                 info_lines.append(f"座位: {seat_str}")
         else:
             info_lines.append(f"座位: {seats}")

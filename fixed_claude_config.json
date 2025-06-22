@@ -1,0 +1,48 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production"
+      }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking@latest"
+      ],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production"
+      }
+    },
+    "user-feedback": {
+      "command": "node",
+      "args": [
+        "/Users/jiang/data/沃美0617/user-feedback-mcp/remote-mcp-package/dist/cli.js"
+      ],
+      "env": {
+        "FEEDBACK_SERVICE_URL": "http://localhost:3000",
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

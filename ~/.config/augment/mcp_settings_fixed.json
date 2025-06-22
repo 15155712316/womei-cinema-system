@@ -1,0 +1,49 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production",
+        "HOME": "/Users/jiang"
+      },
+      "timeout": 30,
+      "autoApprove": ["search", "query", "context"]
+    },
+    "playwright": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production",
+        "HOME": "/Users/jiang"
+      },
+      "timeout": 60,
+      "autoApprove": ["navigate", "click", "type", "screenshot"]
+    },
+    "sequential-thinking": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@latest"],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production",
+        "HOME": "/Users/jiang"
+      },
+      "timeout": 30,
+      "autoApprove": ["think", "analyze", "plan"]
+    },
+    "user-feedback": {
+      "command": "/Users/jiang/data/沃美0617/user-feedback-mcp/.venv/bin/python",
+      "args": ["/Users/jiang/.config/augment/mcp_server.py"],
+      "env": {
+        "FEEDBACK_SERVICE_URL": "http://localhost:3000",
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "PYTHONPATH": "/Users/jiang/data/沃美0617/user-feedback-mcp/.venv/lib/python3.11/site-packages",
+        "HOME": "/Users/jiang"
+      },
+      "timeout": 600,
+      "autoApprove": ["user_feedback", "check_mcp_status"]
+    }
+  }
+}

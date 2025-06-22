@@ -386,14 +386,29 @@ class SeatOrderWidget(QWidget):
     def _update_order_detail(self, order_data: dict):
         """更新订单详情显示"""
         try:
+            # 🔧 修复：安全处理座位数据
+            seats = order_data.get('seats', [])
+            seat_strings = []
+            if isinstance(seats, list):
+                for seat in seats:
+                    if isinstance(seat, str):
+                        seat_strings.append(seat)
+                    elif isinstance(seat, dict):
+                        seat_str = seat.get('num', seat.get('seat_name', f"{seat.get('row', '?')}排{seat.get('col', '?')}座"))
+                        seat_strings.append(str(seat_str))
+                    else:
+                        seat_strings.append(str(seat))
+            else:
+                seat_strings = [str(seats)]
+
             detail_text = f"""订单详情：
-            
+
 订单号：{order_data.get('order_id', 'N/A')}
 状态：{order_data.get('status', 'N/A')}
 影院：{order_data.get('cinema', 'N/A')}
 影片：{order_data.get('movie', 'N/A')}
 场次：{order_data.get('session', 'N/A')}
-座位：{', '.join(order_data.get('seats', []))}
+座位：{', '.join(seat_strings)}
 金额：¥{order_data.get('amount', 0):.2f}
 创建时间：{order_data.get('create_time', 'N/A')}"""
             

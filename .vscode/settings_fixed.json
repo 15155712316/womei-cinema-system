@@ -1,0 +1,65 @@
+{
+  "augment.mcp.enabled": true,
+  "augment.mcp.autoStart": true,
+  "augment.mcp.servers": {
+    "context7": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production",
+        "HOME": "/Users/jiang",
+        "HOMEBREW_PREFIX": "/opt/homebrew",
+        "HOMEBREW_CELLAR": "/opt/homebrew/Cellar",
+        "HOMEBREW_REPOSITORY": "/opt/homebrew"
+      },
+      "timeout": 30,
+      "enabled": true,
+      "autoApprove": ["search", "query", "context"]
+    },
+    "playwright": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@playwright/mcp@latest"],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production",
+        "HOME": "/Users/jiang",
+        "HOMEBREW_PREFIX": "/opt/homebrew",
+        "HOMEBREW_CELLAR": "/opt/homebrew/Cellar",
+        "HOMEBREW_REPOSITORY": "/opt/homebrew"
+      },
+      "timeout": 60,
+      "enabled": true,
+      "autoApprove": ["navigate", "click", "type", "screenshot"]
+    },
+    "sequential-thinking": {
+      "command": "/opt/homebrew/bin/npx",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking@latest"],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "NODE_ENV": "production",
+        "HOME": "/Users/jiang",
+        "HOMEBREW_PREFIX": "/opt/homebrew",
+        "HOMEBREW_CELLAR": "/opt/homebrew/Cellar",
+        "HOMEBREW_REPOSITORY": "/opt/homebrew"
+      },
+      "timeout": 30,
+      "enabled": true,
+      "autoApprove": ["think", "analyze", "plan"]
+    },
+    "user-feedback": {
+      "command": "/Users/jiang/data/沃美0617/user-feedback-mcp/.venv/bin/python",
+      "args": ["/Users/jiang/.config/augment/mcp_server.py"],
+      "env": {
+        "FEEDBACK_SERVICE_URL": "http://localhost:3000",
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin",
+        "PYTHONPATH": "/Users/jiang/data/沃美0617/user-feedback-mcp/.venv/lib/python3.11/site-packages",
+        "HOME": "/Users/jiang",
+        "HOMEBREW_PREFIX": "/opt/homebrew"
+      },
+      "timeout": 600,
+      "enabled": true,
+      "autoApprove": ["user_feedback", "check_mcp_status"]
+    }
+  }
+}
