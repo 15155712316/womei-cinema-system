@@ -175,9 +175,7 @@ class SeatMapPanelPyQt5(QWidget):
                 max-height: 25px;
                 text-align: center;
             }
-            QPushButton:hover {
-                background-color: #0056b3;
-            }
+
             QPushButton:pressed {
                 background-color: #004085;
             }
@@ -393,10 +391,7 @@ class SeatMapPanelPyQt5(QWidget):
                         font: bold 9px "Microsoft YaHei";
                         border-radius: {border_radius};
                     }}
-                    QPushButton:hover {{
-                        background-color: #f8bbd9;
-                        border: 2px solid #e91e63;
-                    }}
+
                     QPushButton:pressed {{
                         background-color: #f48fb1;
                         border: 2px solid #e91e63;
@@ -416,10 +411,7 @@ class SeatMapPanelPyQt5(QWidget):
                         font: bold 10px "Microsoft YaHei";
                         border-radius: {border_radius};
                     }}
-                    QPushButton:hover {{
-                        background-color: #bbdefb;
-                        border: 2px solid {area_border_color};
-                    }}
+
                     QPushButton:pressed {{
                         background-color: #90caf9;
                         border: 2px solid {area_border_color};

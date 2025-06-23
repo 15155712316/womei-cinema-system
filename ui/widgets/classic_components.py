@@ -307,9 +307,7 @@ class ClassicTableWidget(QTableWidget):
                 background-color: #0078d4;
                 color: white;
             }
-            QTableWidget::item:hover {
-                background-color: #e6f3ff;
-            }
+
             QHeaderView::section {
                 background-color: #f0f0f0;
                 border: 1px solid #cccccc;
@@ -496,9 +494,7 @@ class ClassicListWidget(QListWidget):
                 background-color: #0078d4;
                 color: white;
             }
-            QListWidget::item:hover {
-                background-color: #e6f3ff;
-            }
+
         """)
 
 

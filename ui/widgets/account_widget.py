@@ -92,25 +92,16 @@ class AccountWidget(QWidget):
         layout = QVBoxLayout(self.login_group)
         layout.setContentsMargins(10, 20, 10, 10)
         layout.setSpacing(8)
-        
+
         # 手机号输入
         phone_layout = QHBoxLayout()
         phone_label = ClassicLabel("手机号:")
         phone_label.setMinimumWidth(60)
-        self.phone_input = ClassicLineEdit("请输入手机号")
+        self.phone_input = ClassicLineEdit("请输入11位手机号")
         phone_layout.addWidget(phone_label)
         phone_layout.addWidget(self.phone_input)
         layout.addLayout(phone_layout)
-        
-        # OpenID输入
-        openid_layout = QHBoxLayout()
-        openid_label = ClassicLabel("OpenID:")
-        openid_label.setMinimumWidth(60)
-        self.openid_input = ClassicLineEdit("请输入OpenID")
-        openid_layout.addWidget(openid_label)
-        openid_layout.addWidget(self.openid_input)
-        layout.addLayout(openid_layout)
-        
+
         # Token输入
         token_layout = QHBoxLayout()
         token_label = ClassicLabel("Token:")
@@ -119,14 +110,14 @@ class AccountWidget(QWidget):
         token_layout.addWidget(token_label)
         token_layout.addWidget(self.token_input)
         layout.addLayout(token_layout)
-        
-        # 登录按钮
+
+        # 验证按钮
         button_layout = QHBoxLayout()
-        self.login_btn = ClassicButton("登录账号", "primary")
+        self.login_btn = ClassicButton("验证并保存账号", "primary")
         button_layout.addWidget(self.login_btn)
         button_layout.addStretch()
         layout.addLayout(button_layout)
-        
+
         layout.addStretch()
     
     def _build_account_list(self):
@@ -199,9 +190,9 @@ class AccountWidget(QWidget):
     def _connect_signals(self):
         """连接信号槽"""
         # 按钮事件
-        self.login_btn.clicked.connect(self._on_login_clicked)
+        self.login_btn.clicked.connect(self._on_verify_and_save_account)
         self.refresh_btn.clicked.connect(self.refresh_accounts)
-        
+
         # 表格选择事件
         self.account_table.itemSelectionChanged.connect(self._on_account_selection_changed)
         # 🆕 移除双击事件，避免快速登录功能
@@ -222,39 +213,173 @@ class AccountWidget(QWidget):
         if hasattr(event_bus, 'cinema_list_updated'):
             event_bus.cinema_list_updated.connect(self._on_cinema_list_updated)
     
-    def _on_login_clicked(self):
-        """登录按钮点击处理"""
+
+
+    def _on_verify_and_save_account(self):
+        """验证并保存账号"""
         try:
             # 获取输入数据
             phone = self.phone_input.text().strip()
-            openid = self.openid_input.text().strip()
             token = self.token_input.text().strip()
-            
-            # 验证输入
+
+            # 简单验证
             if not phone:
                 QMessageBox.warning(self, "输入错误", "请输入手机号")
                 return
-            
-            if not openid:
-                QMessageBox.warning(self, "输入错误", "请输入OpenID")
-                return
-            
+
             if not token:
                 QMessageBox.warning(self, "输入错误", "请输入Token")
                 return
-            
-            # 构建登录数据
-            login_data = {
-                "phone": phone,
-                "openid": openid,
-                "token": token
-            }
-            
-            # 发出登录请求信号
-            self.account_login_requested.emit(login_data)
-            
+
+            # 禁用按钮防止重复点击
+            self.login_btn.setEnabled(False)
+
+            # 执行Token验证
+            self._perform_token_verification(phone, token)
+
         except Exception as e:
-            QMessageBox.critical(self, "登录错误", f"处理登录请求失败: {str(e)}")
+            QMessageBox.critical(self, "验证错误", f"验证过程异常: {str(e)}")
+            self.login_btn.setEnabled(True)
+
+
+
+    def _perform_token_verification(self, phone: str, token: str):
+        """执行Token验证"""
+        try:
+            # 导入WomeiFilmService
+            from services.womei_film_service import WomeiFilmService
+
+            # 创建服务实例并验证Token
+            service = WomeiFilmService(token)
+            result = service.get_cinemas()
+
+            # 判断验证结果
+            if result.get('success') and result.get('error_type') != 'token_expired':
+                # Token验证成功
+                self._on_token_verification_success(phone, token)
+            else:
+                # Token验证失败
+                error_msg = result.get('error', 'Token验证失败')
+                QMessageBox.warning(self, "验证失败", f"Token验证失败：{error_msg}")
+                self.login_btn.setEnabled(True)
+
+        except Exception as e:
+            QMessageBox.critical(self, "验证错误", f"Token验证异常: {str(e)}")
+            self.login_btn.setEnabled(True)
+
+    def _on_token_verification_success(self, phone: str, token: str):
+        """Token验证成功处理"""
+        try:
+            # 保存账号到文件
+            save_result = self._save_account_to_file(phone, token)
+
+            if save_result['success']:
+                # 保存成功
+                if save_result['is_new']:
+                    QMessageBox.information(self, "操作成功", "新账号添加成功，Token验证通过")
+                else:
+                    QMessageBox.information(self, "操作成功", "账号Token已更新，验证通过")
+
+                # 刷新账号列表
+                self.refresh_accounts()
+
+                # 自动选择新添加或更新的账号
+                QTimer.singleShot(200, lambda: self._auto_select_account(phone))
+
+                # 清空输入框
+                self._clear_input_fields()
+            else:
+                # 保存失败
+                QMessageBox.warning(self, "保存失败", f"账号保存失败: {save_result['error']}")
+
+            # 重新启用按钮
+            self.login_btn.setEnabled(True)
+
+        except Exception as e:
+            QMessageBox.critical(self, "处理错误", f"验证成功处理异常: {str(e)}")
+            self.login_btn.setEnabled(True)
+
+
+
+    def _save_account_to_file(self, phone: str, token: str) -> dict:
+        """保存账号到文件"""
+        try:
+            accounts_file = "data/accounts.json"
+
+            # 确保data目录存在
+            os.makedirs("data", exist_ok=True)
+
+            # 读取现有账号数据
+            accounts = []
+            if os.path.exists(accounts_file):
+                try:
+                    with open(accounts_file, 'r', encoding='utf-8') as f:
+                        accounts = json.load(f)
+                    print(f"[账号保存] 📖 读取到 {len(accounts)} 个现有账号")
+                except (json.JSONDecodeError, FileNotFoundError) as e:
+                    print(f"[账号保存] ⚠️ 读取账号文件失败，创建新文件: {e}")
+                    accounts = []
+
+            # 查找是否已存在该手机号的账号
+            existing_account = None
+            for account in accounts:
+                if account.get('phone') == phone:
+                    existing_account = account
+                    break
+
+            is_new_account = existing_account is None
+
+            if existing_account:
+                # 更新现有账号的Token
+                existing_account['token'] = token
+                print(f"[账号保存] 🔄 更新现有账号Token: {phone}")
+            else:
+                # 添加新账号
+                new_account = {
+                    "phone": phone,
+                    "token": token
+                }
+                accounts.append(new_account)
+                print(f"[账号保存] ➕ 添加新账号: {phone}")
+
+            # 写回文件
+            with open(accounts_file, 'w', encoding='utf-8') as f:
+                json.dump(accounts, f, ensure_ascii=False, indent=2)
+
+            print(f"[账号保存] ✅ 账号保存成功，总计 {len(accounts)} 个账号")
+
+            return {
+                "success": True,
+                "is_new": is_new_account,
+                "total_accounts": len(accounts)
+            }
+
+        except Exception as e:
+            error_msg = f"文件操作失败: {str(e)}"
+            print(f"[账号保存] ❌ {error_msg}")
+            return {
+                "success": False,
+                "error": error_msg,
+                "is_new": False
+            }
+
+    def _auto_select_account(self, phone: str):
+        """自动选择指定的账号"""
+        try:
+            print(f"[账号验证] 🎯 自动选择账号: {phone}")
+            success = self.select_account_by_id(phone)
+            if success:
+                print(f"[账号验证] ✅ 账号自动选择成功: {phone}")
+            else:
+                print(f"[账号验证] ⚠️ 账号自动选择失败: {phone}")
+
+        except Exception as e:
+            print(f"[账号验证] ❌ 自动选择账号异常: {e}")
+
+    def _clear_input_fields(self):
+        """清空输入框"""
+        self.phone_input.clear()
+        self.token_input.clear()
     
     def _on_account_selection_changed(self):
         """账号选择变化处理"""
@@ -377,10 +502,13 @@ class AccountWidget(QWidget):
         try:
             from PyQt5.QtWidgets import QMessageBox
 
+            # 🔧 修复：使用phone字段而不是userid字段
+            phone = account_data.get('phone', 'N/A')
+
             # 确认对话框
             reply = QMessageBox.question(
                 self, "确认删除",
-                f"确定要删除账号 {account_data.get('userid', 'N/A')} 吗？\n此操作不可撤销！",
+                f"确定要删除账号 {phone} 吗？\n此操作不可撤销！",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No
             )
@@ -390,11 +518,16 @@ class AccountWidget(QWidget):
                 success = self._delete_account_from_file(account_data)
 
                 if success:
+                    # 🔧 如果删除的是当前选中账号，清空选择状态
+                    if self.current_account and self.current_account.get('phone') == phone:
+                        self.current_account = None
+                        self.account_table.clearSelection()
+
                     # 刷新账号列表
                     self.refresh_accounts()
 
                     QMessageBox.information(self, "操作成功", "账号删除成功")
-                    print(f"[账号组件] 删除账号: {account_data.get('userid', 'N/A')}")
+                    print(f"[账号组件] 删除账号: {phone}")
                 else:
                     QMessageBox.critical(self, "操作失败", "删除账号失败")
 
@@ -441,26 +574,40 @@ class AccountWidget(QWidget):
             accounts_file = "data/accounts.json"
 
             if not os.path.exists(accounts_file):
+                print(f"[账号组件] 账号文件不存在: {accounts_file}")
                 return False
 
             # 读取现有账号数据
             with open(accounts_file, 'r', encoding='utf-8') as f:
                 accounts = json.load(f)
 
-            # 删除账号
-            userid = account_data.get('userid', '')
-            cinemaid = account_data.get('cinemaid', '')
+            # 🔧 修复：基于phone字段删除账号（适配沃美账号格式）
+            phone = account_data.get('phone', '')
 
+            if not phone:
+                print(f"[账号组件] 账号手机号为空，无法删除")
+                return False
+
+            # 删除前记录账号数量
+            original_count = len(accounts)
+
+            # 删除匹配的账号
             accounts = [
                 account for account in accounts
-                if not (account.get('userid') == userid and
-                       account.get('cinemaid') == cinemaid)
+                if account.get('phone') != phone
             ]
+
+            # 检查是否真的删除了账号
+            new_count = len(accounts)
+            if original_count == new_count:
+                print(f"[账号组件] 未找到要删除的账号: {phone}")
+                return False
 
             # 写回文件
             with open(accounts_file, 'w', encoding='utf-8') as f:
                 json.dump(accounts, f, ensure_ascii=False, indent=2)
 
+            print(f"[账号组件] 成功删除账号: {phone} (原{original_count}个 -> 现{new_count}个)")
             return True
 
         except Exception as e:

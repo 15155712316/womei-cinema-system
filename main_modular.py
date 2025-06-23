@@ -93,6 +93,9 @@ class ModularCinemaMainWindow(QMainWindow):
         from modules.order_display import OrderDetailManager
         self.order_detail_manager = OrderDetailManager(self)
 
+        # 🔧 Token失效处理
+        self.last_token_popup_time = 0  # 防重复弹窗
+
         # ===== 第三步：复制关键数据属性（从源项目复制） =====
         self.current_user = None
         self.current_account = None
@@ -733,6 +736,7 @@ class ModularCinemaMainWindow(QMainWindow):
         self.tab_manager_widget.coupon_exchanged.connect(self._on_coupon_exchanged)
         self.tab_manager_widget.session_selected.connect(self._on_session_selected)
         self.tab_manager_widget.seat_load_requested.connect(self._on_seat_load_requested)  # 🆕 座位图加载请求
+        self.tab_manager_widget.token_expired.connect(self._on_token_expired)  # 🔧 Token失效信号
         
         # 座位选择信号
         self.seat_input.textChanged.connect(self._on_seat_input_changed)
@@ -6605,6 +6609,154 @@ class ModularCinemaMainWindow(QMainWindow):
         # 返回到影院选择或其他合适的界面
         if hasattr(self, 'show_cinema_selection'):
             self.show_cinema_selection()
+
+    def _on_token_expired(self, error_msg: str):
+        """
+        处理token失效信号
+
+        Args:
+            error_msg: 错误信息
+        """
+        try:
+            import time
+            current_time = time.time()
+
+            # 🔧 防重复弹窗：1分钟内只显示一次
+            if current_time - self.last_token_popup_time < 60:
+                print(f"[Token失效] ⚠️ 1分钟内已显示过弹窗，跳过重复显示")
+                return
+
+            self.last_token_popup_time = current_time
+
+            print(f"[Token失效] 🚨 收到token失效信号: {error_msg}")
+
+            # 🎯 显示居中弹窗提醒
+            self.show_token_expired_popup(error_msg)
+
+            # 🔧 更新状态栏
+            if hasattr(self, 'status_bar'):
+                self.status_bar.showMessage("Token失效，系统功能受限", 0)
+
+            print(f"[Token失效] ✅ Token失效处理完成")
+
+        except Exception as e:
+            print(f"[Token失效] ❌ 处理token失效信号异常: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def show_token_expired_popup(self, error_msg: str):
+        """
+        显示token失效弹窗提醒
+
+        Args:
+            error_msg: 错误信息
+        """
+        try:
+            from PyQt5.QtWidgets import QMessageBox
+            from PyQt5.QtCore import QTimer, Qt
+
+            print(f"[Token失效] 📢 显示弹窗提醒")
+
+            # 🎯 创建信息弹窗
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("系统提醒")
+
+            # 🔧 直接显示详细信息，不需要用户点击查看详情
+            main_text = "Token已失效，请及时更新"
+            detail_text = f"\n错误详情：{error_msg}"
+
+            # 🎯 将主要信息和详细信息合并显示
+            full_message = main_text + detail_text
+            msg_box.setText(full_message)
+
+            msg_box.setIcon(QMessageBox.Warning)  # 使用警告图标更醒目
+            msg_box.setStandardButtons(QMessageBox.Ok)
+
+            # 🔧 设置弹窗为模态，但不阻塞
+            msg_box.setModal(False)
+            msg_box.setWindowFlags(Qt.Dialog | Qt.WindowStaysOnTopHint)
+
+            # 🎯 先显示弹窗以获取正确的尺寸
+            msg_box.show()
+
+            # 🎯 等待弹窗完全显示后再计算位置
+            def center_popup():
+                try:
+                    # 🔧 使用frameGeometry()获取包含标题栏的完整窗口区域
+                    main_frame = self.frameGeometry()
+                    main_x = main_frame.x()
+                    main_y = main_frame.y()
+                    main_width = main_frame.width()
+                    main_height = main_frame.height()
+
+                    # 🔧 使用客户区域计算，排除标题栏影响
+                    main_client = self.geometry()
+                    client_x = main_client.x()
+                    client_y = main_client.y()
+                    client_width = main_client.width()
+                    client_height = main_client.height()
+
+                    # 获取弹窗的几何信息
+                    popup_geometry = msg_box.geometry()
+                    popup_width = popup_geometry.width()
+                    popup_height = popup_geometry.height()
+
+                    # 🎯 使用客户区域计算居中位置（更精确）
+                    center_x = client_x + (client_width - popup_width) // 2
+                    center_y = client_y + (client_height - popup_height) // 2
+
+                    print(f"[Token失效] 📋 位置计算:")
+                    print(f"[Token失效] 📋 主窗口框架: x={main_x}, y={main_y}, w={main_width}, h={main_height}")
+                    print(f"[Token失效] 📋 主窗口客户区: x={client_x}, y={client_y}, w={client_width}, h={client_height}")
+                    print(f"[Token失效] 📋 弹窗: w={popup_width}, h={popup_height}")
+                    print(f"[Token失效] 📋 居中位置: x={center_x}, y={center_y}")
+
+                    # 🎯 移动弹窗到居中位置
+                    msg_box.move(center_x, center_y)
+
+                    # 🔧 验证最终位置
+                    final_geometry = msg_box.geometry()
+                    final_x = final_geometry.x()
+                    final_y = final_geometry.y()
+
+                    # 计算中心点偏差
+                    expected_center_x = client_x + client_width // 2
+                    expected_center_y = client_y + client_height // 2
+                    actual_center_x = final_x + popup_width // 2
+                    actual_center_y = final_y + popup_height // 2
+
+                    offset_x = abs(actual_center_x - expected_center_x)
+                    offset_y = abs(actual_center_y - expected_center_y)
+
+                    print(f"[Token失效] 📋 中心点验证:")
+                    print(f"[Token失效] 📋 期望中心: x={expected_center_x}, y={expected_center_y}")
+                    print(f"[Token失效] 📋 实际中心: x={actual_center_x}, y={actual_center_y}")
+                    print(f"[Token失效] 📋 偏差: x={offset_x}px, y={offset_y}px")
+
+                    if offset_x <= 5 and offset_y <= 5:
+                        print(f"[Token失效] ✅ 弹窗居中成功！")
+                    else:
+                        print(f"[Token失效] ⚠️ 弹窗位置有轻微偏差，但在可接受范围内")
+
+                    print(f"[Token失效] ✅ 弹窗已居中显示")
+
+                except Exception as e:
+                    print(f"[Token失效] ❌ 居中计算异常: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+            # 🎯 延迟50ms后执行居中，确保弹窗已完全显示
+            QTimer.singleShot(50, center_popup)
+
+            # 🎯 2.5秒后自动关闭（内容更多，需要更多时间阅读）
+            QTimer.singleShot(2500, msg_box.close)
+
+            print(f"[Token失效] ✅ 弹窗显示完成，1.5秒后自动关闭")
+
+        except Exception as e:
+            print(f"[Token失效] ❌ 显示弹窗异常: {e}")
+            import traceback
+            traceback.print_exc()
 def main():
     """启动模块化应用程序"""
     app = QApplication(sys.argv)

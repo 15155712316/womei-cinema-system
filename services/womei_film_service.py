@@ -25,31 +25,117 @@ class WomeiFilmService:
         self.api = create_womei_api(token)
         self.current_cinema_id = None
         self.current_movie_id = None
+        self.token_expired = False  # 🔧 添加token失效标志
     
     def set_token(self, token: str):
         """设置认证令牌"""
         self.token = token
         self.api.set_token(token)
+        self.token_expired = False  # 重置token失效标志
+
+    def _check_token_validity(self, response: dict) -> dict:
+        """
+        统一检测token有效性
+
+        Args:
+            response: API响应数据
+
+        Returns:
+            dict: 如果token失效返回错误信息，否则返回None
+        """
+        if not isinstance(response, dict):
+            return None
+
+        ret_code = response.get('ret', -1)
+        sub_code = response.get('sub', 0)
+        msg = response.get('msg', '')
+
+        # 🎯 检测token失效的条件：ret=0 且 sub=408 且消息包含TOKEN超时
+        if ret_code == 0 and sub_code == 408 and 'TOKEN超时' in msg:
+            self.token_expired = True  # 设置token失效标志
+            print(f"[Token检测] ❌ 检测到token失效:")
+            print(f"[Token检测] 📋 ret: {ret_code}, sub: {sub_code}")
+            print(f"[Token检测] 📋 错误信息: {msg}")
+
+            return {
+                "success": False,
+                "error": f"Token已失效: {msg}",
+                "error_type": "token_expired",
+                "error_details": {
+                    "ret": ret_code,
+                    "sub": sub_code,
+                    "msg": msg,
+                    "detection_time": __import__('datetime').datetime.now().isoformat()
+                }
+            }
+
+        # 检查其他API错误
+        if ret_code != 0:
+            return {
+                "success": False,
+                "error": f"API错误: {msg}",
+                "error_type": "api_error",
+                "error_details": {"ret": ret_code, "sub": sub_code, "msg": msg}
+            }
+        elif sub_code != 0:
+            return {
+                "success": False,
+                "error": f"API子错误: {msg} (sub={sub_code})",
+                "error_type": "api_sub_error",
+                "error_details": {"ret": ret_code, "sub": sub_code, "msg": msg}
+            }
+
+        return None  # token有效，无错误
+
+    def is_token_expired(self) -> bool:
+        """检查token是否已失效"""
+        return self.token_expired
+
+    def reset_token_status(self):
+        """重置token状态（用于重新登录后）"""
+        self.token_expired = False
+        print(f"[Token检测] 🔄 Token状态已重置")
     
     def get_cities(self) -> Dict[str, Any]:
         """获取城市列表"""
         try:
-            response = self.api.get_cities()
-            
-            if response.get('ret') != 0:
-                return {
-                    "success": False,
-                    "error": response.get('msg', '获取城市失败'),
-                    "cities": []
-                }
-            
-            data = response.get('data', {})
+            # 🔧 检查token是否已失效，避免无效API调用
+            if self.token_expired:
+                print(f"[城市API] ⚠️ Token已失效，直接使用模拟数据")
+                data = None  # 使用模拟数据
+            else:
+                response = self.api.get_cities()
 
-            # 检查data是否为字典格式
-            if isinstance(data, list):
-                # 如果data是列表，说明API返回格式异常或token过期
-                print(f"[沃美电影服务] API返回data为列表格式，可能是token问题: {data}")
-                print(f"[沃美电影服务] 使用模拟数据进行测试")
+                print(f"[城市API调试] 📥 API原始响应:")
+                print(f"[城市API调试] 📋 响应内容: {response}")
+
+                # 🎯 使用统一的token检测机制
+                error_result = self._check_token_validity(response)
+                if error_result:
+                    if error_result.get('error_type') == 'token_expired':
+                        # Token失效，使用模拟数据继续运行
+                        print(f"[城市API调试] ❌ Token失效，使用模拟数据继续运行")
+                        data = None  # 标记使用模拟数据
+                    else:
+                        # 其他API错误，直接返回错误
+                        print(f"[城市API调试] ❌ API错误: {error_result.get('error')}")
+                        return {
+                            "success": False,
+                            "error": error_result.get('error'),
+                            "error_type": error_result.get('error_type'),
+                            "cities": []
+                        }
+                else:
+                    # API成功，获取真实数据
+                    data = response.get('data', {})
+                    print(f"[城市API调试] ✅ API成功，data类型: {type(data)}")
+
+            # 检查data是否为字典格式或需要使用模拟数据
+            if data is None or isinstance(data, list):
+                # 如果data是列表或为None，说明需要使用模拟数据
+                print(f"[城市API调试] 🔄 使用模拟数据进行测试")
+                if data is not None:
+                    print(f"[城市API调试] 📋 原始data: {data}")
 
                 # 返回模拟的10个城市数据用于测试
                 mock_cities = [
@@ -104,25 +190,72 @@ class WomeiFilmService:
     def get_cinemas(self, city_id: str = None) -> Dict[str, Any]:
         """获取影院列表"""
         try:
-            # 沃美系统的城市列表已包含影院信息
-            cities_response = self.api.get_cities()
-            
-            if cities_response.get('ret') != 0:
+            print(f"[影院API调试] 🚀 开始获取影院列表")
+            print(f"[影院API调试] 📋 请求参数: city_id={city_id}")
+
+            # 🔧 检查token是否已失效，避免无效API调用
+            if self.token_expired:
+                print(f"[影院API] ❌ Token已失效，停止API调用")
                 return {
                     "success": False,
-                    "error": cities_response.get('msg', '获取影院失败'),
+                    "error": "Token已失效，请重新登录",
+                    "error_type": "token_expired",
                     "cinemas": []
                 }
-            
+
+            # 沃美系统的城市列表已包含影院信息
+            cities_response = self.api.get_cities()
+
+            print(f"[影院API调试] 📥 API原始响应:")
+            print(f"[影院API调试] 📋 响应类型: {type(cities_response)}")
+            print(f"[影院API调试] 📋 响应内容: {cities_response}")
+
+            # 🎯 使用统一的token检测机制
+            error_result = self._check_token_validity(cities_response)
+            if error_result:
+                print(f"[影院API调试] ❌ API错误: {error_result.get('error')}")
+                return {
+                    "success": False,
+                    "error": error_result.get('error'),
+                    "error_type": error_result.get('error_type'),
+                    "cinemas": [],
+                    "debug_info": {
+                        "data_type": str(type(cities_response.get('data'))),
+                        "data_content": cities_response.get('data'),
+                        "cities_response": cities_response
+                    }
+                }
+
             data = cities_response.get('data', {})
+            print(f"[影院API调试] 📋 data字段:")
+            print(f"[影院API调试] 📋 data类型: {type(data)}")
+            print(f"[影院API调试] 📋 data内容: {data}")
 
             # 检查data是否为字典格式
             if isinstance(data, list):
-                print(f"[沃美电影服务] 影院API返回data为列表格式: {data}")
+                print(f"[影院API调试] ❌ data为列表格式，这通常表示token失效或API异常")
+                print(f"[影院API调试] 📋 列表长度: {len(data)}")
+                print(f"[影院API调试] 📋 列表内容: {data}")
+
+                # 🔧 增加详细分析
+                if len(data) == 0:
+                    print(f"[影院API调试] 📋 空列表，可能是token失效")
+                else:
+                    print(f"[影院API调试] 📋 非空列表，分析第一个元素:")
+                    if data:
+                        first_item = data[0]
+                        print(f"[影院API调试] 📋 第一个元素类型: {type(first_item)}")
+                        print(f"[影院API调试] 📋 第一个元素内容: {first_item}")
+
                 return {
                     "success": False,
                     "error": "影院API返回数据格式异常",
-                    "cinemas": []
+                    "cinemas": [],
+                    "debug_info": {
+                        "data_type": str(type(data)),
+                        "data_content": data,
+                        "cities_response": cities_response
+                    }
                 }
 
             # 🔧 修正：使用normal数组获取影院数据（根据真实API结构）
@@ -476,6 +609,37 @@ class WomeiFilmService:
 
             # 异常时回退到原始API
             return self.get_hall_info(cinema_id, hall_id, schedule_id)
+
+    def get_orders(self, offset: int = 0) -> Dict[str, Any]:
+        """获取订单列表"""
+        try:
+            response = self.api.get_orders(offset)
+
+            if response.get('ret') != 0:
+                return {
+                    "success": False,
+                    "error": response.get('msg', '获取订单失败'),
+                    "orders": []
+                }
+
+            data = response.get('data', {})
+            orders_list = data.get('orders', [])
+            next_offset = data.get('next_offset', 0)
+
+            return {
+                "success": True,
+                "orders": orders_list,
+                "next_offset": next_offset,
+                "total": len(orders_list)
+            }
+
+        except Exception as e:
+            print(f"[沃美电影服务] 获取订单列表失败: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "orders": []
+            }
 
     def create_order(self, cinema_id: str, seatlable: str, schedule_id: str) -> Dict[str, Any]:
         """创建订单"""

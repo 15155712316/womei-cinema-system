@@ -35,6 +35,7 @@ class TabManagerWidget(QWidget):
     coupon_exchanged = pyqtSignal(dict)  # 兑换券信号
     session_selected = pyqtSignal(dict)  # 🆕 场次选择信号，用于触发座位图加载
     seat_load_requested = pyqtSignal(dict)  # 🆕 座位图加载请求信号
+    token_expired = pyqtSignal(str)  # 🔧 Token失效信号
     
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -62,6 +63,10 @@ class TabManagerWidget(QWidget):
 
         # 添加数据缓存
         self.order_data_cache = []
+
+        # 🔧 Token失效状态管理
+        self.token_expired_flag = False
+        self.last_token_expired_time = 0  # 防重复弹窗
 
         # 实现IWidgetInterface接口
         self._widget_interface = IWidgetInterface()
@@ -519,9 +524,9 @@ class TabManagerWidget(QWidget):
         for i, code in enumerate(coupon_codes, 1):
             params = {
                 'couponcode': code,
-                'cinemaid': account['cinemaid'],
-                'userid': account['userid'],
-                'openid': account['openid'],
+                'cinemaid': account.get('cinemaid', ''),  # 🔧 修复：可能不存在
+                'userid': account.get('phone', ''),       # 🔧 修复：使用phone作为userid
+                'openid': account.get('openid', ''),      # 🔧 修复：openid可能不存在
                 'token': account['token'],
                 'CVersion': '3.9.12',
                 'OS': 'Windows',
@@ -1357,6 +1362,121 @@ class TabManagerWidget(QWidget):
         except Exception as e:
             print(f"[Tab管理器] 信号连接错误: {e}")
 
+    def _handle_token_expired(self, error_msg: str):
+        """
+        处理token失效事件
+
+        Args:
+            error_msg: 错误信息
+        """
+        try:
+            import time
+            current_time = time.time()
+
+            # 🔧 防重复处理：1分钟内只处理一次
+            if current_time - self.last_token_expired_time < 60:
+                print(f"[Token失效] ⚠️ 1分钟内已处理过token失效，跳过重复处理")
+                return
+
+            self.last_token_expired_time = current_time
+            self.token_expired_flag = True
+
+            print(f"[Token失效] ❌ 检测到token失效: {error_msg}")
+
+            # 🎯 发射token失效信号到主窗口
+            self.token_expired.emit(error_msg)
+
+            # 🔧 级联停止：重置所有UI状态
+            self._reset_ui_for_token_expired()
+
+            # 🔧 停止所有正在进行的API调用
+            self._stop_all_api_calls()
+
+            print(f"[Token失效] ✅ Token失效处理完成")
+
+        except Exception as e:
+            print(f"[Token失效] ❌ 处理token失效异常: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _reset_ui_for_token_expired(self):
+        """重置UI状态为token失效状态"""
+        try:
+            print(f"[Token失效] 🔄 重置UI状态")
+
+            # 🔧 重置下拉框状态
+            if hasattr(self, 'cinema_combo'):
+                self.cinema_combo.clear()
+                self.cinema_combo.addItem("Token已失效，请重新登录")
+                self.cinema_combo.setEnabled(False)
+
+            if hasattr(self, 'movie_combo'):
+                self.movie_combo.clear()
+                self.movie_combo.addItem("Token已失效，请重新登录")
+                self.movie_combo.setEnabled(False)
+
+            if hasattr(self, 'date_combo'):
+                self.date_combo.clear()
+                self.date_combo.addItem("Token已失效，请重新登录")
+                self.date_combo.setEnabled(False)
+
+            if hasattr(self, 'session_combo'):
+                self.session_combo.clear()
+                self.session_combo.addItem("Token已失效，请重新登录")
+                self.session_combo.setEnabled(False)
+
+            # 🔧 禁用所有依赖API的按钮
+            if hasattr(self, 'submit_order_btn'):
+                self.submit_order_btn.setEnabled(False)
+                self.submit_order_btn.setText("Token已失效")
+
+            # 🔧 清空券列表
+            if hasattr(self, 'coupon_list'):
+                self.coupon_list.clear()
+                self.coupon_list.addItem("Token已失效，无法加载券列表")
+
+            print(f"[Token失效] ✅ UI状态重置完成")
+
+        except Exception as e:
+            print(f"[Token失效] ❌ 重置UI状态异常: {e}")
+
+    def _stop_all_api_calls(self):
+        """停止所有正在进行的API调用"""
+        try:
+            print(f"[Token失效] 🛑 停止所有API调用")
+
+            # 🔧 设置API实例的token失效标志
+            if self.api_instance and hasattr(self.api_instance, 'token_expired'):
+                self.api_instance.token_expired = True
+                print(f"[Token失效] ✅ 已设置API实例token失效标志")
+
+            # 🔧 清理数据缓存
+            self.movies_data.clear()
+            self.dates_data.clear()
+            self.sessions_data.clear()
+
+            print(f"[Token失效] ✅ API调用停止完成")
+
+        except Exception as e:
+            print(f"[Token失效] ❌ 停止API调用异常: {e}")
+
+    def reset_token_status(self):
+        """重置token状态（用于重新登录后）"""
+        try:
+            print(f"[Token失效] 🔄 重置token状态")
+
+            self.token_expired_flag = False
+            self.last_token_expired_time = 0
+
+            # 重置API实例状态
+            if self.api_instance and hasattr(self.api_instance, 'reset_token_status'):
+                self.api_instance.reset_token_status()
+
+            print(f"[Token失效] ✅ Token状态重置完成")
+
+        except Exception as e:
+            print(f"[Token失效] ❌ 重置token状态异常: {e}")
+
     def _on_tab_changed(self, index: int):
         """Tab切换处理 - 🆕 实现订单Tab自动刷新"""
         try:
@@ -1639,7 +1759,7 @@ class TabManagerWidget(QWidget):
                 QTimer.singleShot(1000, lambda: self._final_check_and_load_movies(selected_cinema))
                 return
             
-            print(f"[Tab管理器] 账号已选择: {self.current_account.get('userid', 'N/A')}")
+            print(f"[Tab管理器] 账号已选择: {self.current_account.get('phone', 'N/A')}")
             
             # 调用影片API
             self._load_movies_for_cinema(selected_cinema)
@@ -1658,7 +1778,7 @@ class TabManagerWidget(QWidget):
                 self.movie_combo.addItem("请选择账号")
                 return
             
-            print(f"[Tab管理器] 最终检查：账号已选择: {self.current_account.get('userid', 'N/A')}")
+            print(f"[Tab管理器] 最终检查：账号已选择: {self.current_account.get('phone', 'N/A')}")
             
             # 调用影片API
             self._load_movies_for_cinema(selected_cinema)
@@ -1697,15 +1817,15 @@ class TabManagerWidget(QWidget):
                 return
                 
             openid = account.get('openid', '')
-            userid = account.get('userid', '')
+            phone = account.get('phone', '')      # 🔧 修复：使用phone替代userid
             token = account.get('token', '')
-            
+
             print(f"[Tab管理器] 账号数据检查:")
-            print(f"  - 用户ID: {userid}")
+            print(f"  - 手机号: {phone}")
             print(f"  - OpenID: {openid[:10]}..." if openid else "  - OpenID: 空")
             print(f"  - Token: {token[:10]}..." if token else "  - Token: 空")
-            
-            if not all([openid, userid, token]):
+
+            if not all([phone, token]):           # 🔧 修复：只检查必需的字段
                 print(f"[Tab管理器] 账号参数不完整")
                 self.movie_combo.clear()
                 self.movie_combo.addItem("账号信息不完整")
@@ -1715,7 +1835,7 @@ class TabManagerWidget(QWidget):
             print(f"[Tab管理器] API URL: https://{base_url}/MiniTicket/index.php/MiniFilm/getAllFilmsIndexNew")
             
             # 调用API获取影片数据
-            films_data = get_films(base_url, cinemaid, openid, userid, token)
+            films_data = get_films(base_url, cinemaid, openid, phone, token)  # 🔧 修复：使用phone替代userid
             
             print(f"[Tab管理器] API响应数据类型: {type(films_data)}")
             print(f"[Tab管理器] API响应数据长度: {len(str(films_data)) if films_data else 0}")
@@ -2419,120 +2539,53 @@ class TabManagerWidget(QWidget):
             traceback.print_exc()
     
     def _on_refresh_orders(self):
-        """刷新订单列表"""
+        """刷新订单列表 - 🆕 使用新的沃美订单接口"""
         try:
             account = getattr(self, 'current_account', None)
             if not account:
                 MessageManager.show_error(self, "未选择账号", "请先选择账号！", auto_close=False)
                 return
 
-            cinemaid = self.get_selected_cinemaid()
-            if not cinemaid:
-                MessageManager.show_error(self, "未选择影院", "请先选择影院！", auto_close=False)
+            # 🆕 沃美订单接口不需要影院ID，只需要token
+            token = account.get('token')
+            if not token:
+                MessageManager.show_error(self, "账号信息不完整", "账号缺少token信息！", auto_close=False)
                 return
 
             # 显示加载状态
             self.order_refresh_btn.setText("刷新中...")
             self.order_refresh_btn.setEnabled(False)
 
-            # 调用现有的订单API - 使用标准参数格式
-            from services.order_api import get_order_list
+            print(f"[沃美订单刷新] 🚀 开始刷新订单列表")
+            print(f"[沃美订单刷新] 📋 使用账号: {account.get('phone', 'N/A')}")
+            print(f"[沃美订单刷新] 📋 Token: {token[:10]}...")
 
-            # 🔧 修复：使用标准API参数格式
-            params = {
-                'pageNo': 1,                           # 标准参数名
-                'groupid': '',                         # 集团ID
-                'cinemaid': cinemaid,                  # 影院ID
-                'cardno': account.get('cardno', ''),   # 会员卡号
-                'userid': account['userid'],           # 用户ID
-                'openid': account['openid'],           # 微信openid
-                'CVersion': '3.9.12',                  # 客户端版本
-                'OS': 'Windows',                       # 操作系统
-                'token': account['token'],             # 访问令牌
-                'source': '2'                          # 来源：2=小程序
-            }
+            # 🆕 使用新的沃美订单服务
+            from services.womei_order_service import get_user_orders
 
-            print(f"[订单刷新] 请求参数: {params}")
-            result = get_order_list(params)
-            print(f"[订单刷新] API响应: {result}")
+            result = get_user_orders(token, offset=0)
 
-            if result.get('resultCode') == '0':
-                # 🔧 修复：详细分析API返回的数据结构
-                result_data = result.get('resultData', {})
+            print(f"[沃美订单刷新] 📥 API响应: success={result.get('success')}")
 
-                # 🔧 修复：检查result_data是否为None
-                if result_data is None:
-                    print("[订单刷新] resultData为None，使用空列表")
-                    orders = []
-                    self.update_order_table(orders)
-                    return
+            if result.get('success'):
+                orders = result.get('orders', [])
+                print(f"[沃美订单刷新] ✅ 获取成功: {len(orders)} 个订单")
 
-                print(f"[订单刷新] API返回数据结构分析:")
-                print(f"  - resultData类型: {type(result_data)}")
-                print(f"  - resultData内容: {result_data}")
-
-                if isinstance(result_data, dict):
-                    print(f"  - resultData字段: {list(result_data.keys())}")
-
-                # 🔧 尝试多种可能的数据路径
-                orders = None
-
-                # 路径1: resultData.orders
-                if isinstance(result_data, dict) and 'orders' in result_data:
-                    orders = result_data['orders']
-                    print(f"[订单刷新] 使用路径 resultData.orders，获取到 {len(orders)} 个订单")
-
-                # 路径2: resultData.orderList
-                elif isinstance(result_data, dict) and 'orderList' in result_data:
-                    orders = result_data['orderList']
-                    print(f"[订单刷新] 使用路径 resultData.orderList，获取到 {len(orders)} 个订单")
-
-                # 路径3: resultData.data.orders
-                elif isinstance(result_data, dict) and 'data' in result_data and isinstance(result_data['data'], dict):
-                    data = result_data['data']
-                    if 'orders' in data:
-                        orders = data['orders']
-                        print(f"[订单刷新] 使用路径 resultData.data.orders，获取到 {len(orders)} 个订单")
-                    elif 'orderList' in data:
-                        orders = data['orderList']
-                        print(f"[订单刷新] 使用路径 resultData.data.orderList，获取到 {len(orders)} 个订单")
-
-                # 路径4: 直接是数组
-                elif isinstance(result_data, list):
-                    orders = result_data
-                    print(f"[订单刷新] resultData直接是数组，获取到 {len(orders)} 个订单")
-
-                if orders is None:
-                    orders = []
-                    print(f"[订单刷新] 未找到订单数据，使用空数组")
-
-                # 🔧 分析第一个订单的数据结构（简化版）
-                if orders and len(orders) > 0:
-                    first_order = orders[0]
-                    print(f"[订单刷新] 第一个订单数据结构:")
-                    print(f"  - 订单类型: {type(first_order)}")
-                    if isinstance(first_order, dict):
-                        print(f"  - 订单字段: {list(first_order.keys())}")
-                        # 只显示关键字段的值
-                        key_fields = ['orderName', 'orderS', 'orderno']
-                        for field in key_fields:
-                            if field in first_order:
-                                print(f"  - {field}: {first_order[field]}")
-
-                self.update_order_table(orders)
+                # 🆕 使用新的订单数据格式更新表格
+                self.update_womei_order_table(orders)
 
                 # 不显示成功弹窗，只在控制台记录
-                print(f"[订单刷新] 订单列表刷新成功，共 {len(orders)} 个订单")
+                print(f"[沃美订单刷新] 订单列表刷新成功，共 {len(orders)} 个订单")
             else:
-                error_msg = result.get('resultDesc', '获取订单列表失败')
-                print(f"[订单刷新] 获取失败: {error_msg}")
+                error_msg = result.get('error', '获取订单列表失败')
+                print(f"[沃美订单刷新] ❌ 获取失败: {error_msg}")
                 MessageManager.show_error(self, "获取失败", error_msg, auto_close=False)
 
-                # 清空表格而不是显示示例数据
+                # 清空表格
                 self.order_table.setRowCount(0)
 
         except Exception as e:
-            print(f"[订单刷新] 异常: {e}")
+            print(f"[沃美订单刷新] ❌ 异常: {e}")
             import traceback
             traceback.print_exc()
             MessageManager.show_error(self, "刷新失败", f"刷新订单列表时出错：{str(e)}", auto_close=False)
@@ -2541,6 +2594,50 @@ class TabManagerWidget(QWidget):
             # 恢复按钮状态
             self.order_refresh_btn.setText("刷新")
             self.order_refresh_btn.setEnabled(True)
+
+    def update_womei_order_table(self, orders):
+        """🆕 更新沃美订单表格显示 - 基于新的数据格式"""
+        try:
+            print(f"[沃美订单表格] 🔄 开始更新订单表格，共 {len(orders)} 个订单")
+
+            self.order_table.setRowCount(len(orders))
+            self.order_data_cache = orders
+
+            for row, order in enumerate(orders):
+                print(f"[沃美订单表格] 📋 处理订单 {row+1}/{len(orders)}")
+
+                # 🆕 使用新的数据格式 - 4个关键字段
+                movie_name = order.get('movie_name', '未知影片')
+                cinema_name = order.get('cinema_name', '未知影院')
+                status_desc = order.get('status_desc', '未知状态')
+                order_id = order.get('order_id', '未知订单号')
+
+                print(f"[沃美订单表格] 📋 订单 {row+1}: {movie_name} | {status_desc} | {cinema_name} | {order_id}")
+
+                # 设置表格数据
+                self.order_table.setItem(row, 0, self.order_table.__class__.createItem(movie_name))
+                self.order_table.setItem(row, 1, self.order_table.__class__.createItem(cinema_name))
+
+                # 🆕 根据状态设置颜色
+                if '待支付' in status_desc or '待付款' in status_desc or '待使用' in status_desc:
+                    self.order_table.add_colored_item(row, 2, status_desc, "#ff9800")
+                elif '已支付' in status_desc or '已完成' in status_desc or '已付款' in status_desc or '已放映' in status_desc:
+                    self.order_table.add_colored_item(row, 2, status_desc, "#4caf50")
+                elif '已取票' in status_desc:
+                    self.order_table.add_colored_item(row, 2, status_desc, "#2196f3")
+                elif '已取消' in status_desc or '已退款' in status_desc:
+                    self.order_table.add_colored_item(row, 2, status_desc, "#f44336")
+                else:
+                    self.order_table.setItem(row, 2, self.order_table.__class__.createItem(status_desc))
+
+                self.order_table.setItem(row, 3, self.order_table.__class__.createItem(order_id))
+
+            print(f"[沃美订单表格] ✅ 成功更新 {len(orders)} 个订单到表格")
+
+        except Exception as e:
+            print(f"[沃美订单表格] ❌ 更新订单表格错误: {e}")
+            import traceback
+            traceback.print_exc()
 
     def update_order_table(self, orders):
         """更新订单表格显示"""
@@ -2642,7 +2739,7 @@ class TabManagerWidget(QWidget):
         return status_map.get(status_code, "未知状态")
 
     def _on_order_double_click(self, item):
-        """订单双击事件 - 查看订单二维码"""
+        """订单双击事件 - 查看订单二维码 - 🆕 兼容新的沃美订单格式"""
         try:
             if not item:
                 return
@@ -2652,47 +2749,276 @@ class TabManagerWidget(QWidget):
                 return
 
             order = self.order_data_cache[row]
-            print(f"[订单二维码] 双击查看订单二维码")
+            print(f"[沃美订单二维码] 双击查看订单二维码")
 
-            # 🎯 获取订单状态，只有已支付状态的订单才能查看二维码
-            status_text = order.get('orderS', '')
-            print(f"[订单二维码] 订单状态: {status_text}")
+            # 🆕 检测订单数据格式
+            is_new_format = 'movie_name' in order and 'status_desc' in order
+
+            if is_new_format:
+                print(f"[沃美订单二维码] 🆕 使用新的沃美订单格式")
+
+                # 🆕 获取订单状态（新格式）
+                status_text = order.get('status_desc', '')
+                order_no = order.get('order_id', '')
+
+                print(f"[沃美订单二维码] 订单状态: {status_text}")
+                print(f"[沃美订单二维码] 订单号: {order_no}")
+
+            else:
+                print(f"[沃美订单二维码] 🔄 使用旧的订单格式")
+
+                # 🔄 兼容旧格式
+                status_text = order.get('orderS', '')
+                order_no = order.get('orderno', '')
 
             # 🎯 状态限制：只有已支付状态的订单才能查看二维码
-            allowed_statuses = ['已完成', '待使用', '已支付', '已付款', '已取票']
+            allowed_statuses = ['已完成', '待使用', '已支付', '已付款', '已取票', '已放映']
 
-            # 🔧 临时修改：允许所有状态查看二维码（用于测试）
-            print(f"[订单二维码] 订单状态检查: '{status_text}'")
-            print(f"[订单二维码] 允许的状态: {allowed_statuses}")
+            print(f"[沃美订单二维码] 订单状态检查: '{status_text}'")
+            print(f"[沃美订单二维码] 允许的状态: {allowed_statuses}")
 
             status_check_passed = any(status in status_text for status in allowed_statuses)
-            print(f"[订单二维码] 状态检查结果: {status_check_passed}")
+            print(f"[沃美订单二维码] 状态检查结果: {status_check_passed}")
 
             if not status_check_passed:
-                print(f"[订单二维码] ⚠️ 订单状态 '{status_text}' 通常不支持查看二维码，但继续执行（测试模式）")
+                print(f"[沃美订单二维码] ⚠️ 订单状态 '{status_text}' 通常不支持查看二维码，但继续执行（测试模式）")
                 # return  # 注释掉这行，允许所有状态查看二维码
 
-            # 🎯 获取订单号
-            order_no = order.get('orderno')
+            # 🎯 验证订单号
             if not order_no:
-                print(f"[订单二维码] 订单号不存在")
+                print(f"[沃美订单二维码] ❌ 订单号不存在")
+                MessageManager.show_error(self, "订单信息错误", "订单号不存在，无法查看二维码", auto_close=True)
                 return
 
-            # 🎯 获取影院ID
-            cinemaid = self.get_selected_cinemaid()
-            if not cinemaid:
-                print(f"[订单二维码] 影院ID不存在")
-                return
+            # 🆕 对于新格式的沃美订单，显示订单信息而不是二维码
+            if is_new_format:
+                print(f"[沃美订单二维码] 🆕 显示沃美订单详细信息")
+                self._show_womei_order_info(order)
+            else:
+                # 🔄 旧格式继续使用原有的二维码逻辑
+                cinemaid = self.get_selected_cinemaid()
+                if not cinemaid:
+                    print(f"[沃美订单二维码] ❌ 影院ID不存在")
+                    return
 
-            print(f"[订单二维码] 开始获取订单 {order_no} 的二维码")
-
-            # 🎯 调用二维码API
-            self._get_and_show_qrcode(order_no, cinemaid)
+                print(f"[沃美订单二维码] 开始获取订单 {order_no} 的二维码")
+                self._get_and_show_qrcode(order_no, cinemaid)
 
         except Exception as e:
-            print(f"[订单二维码] 双击处理错误: {e}")
+            print(f"[沃美订单二维码] ❌ 双击处理错误: {e}")
             import traceback
             traceback.print_exc()
+
+    def _show_womei_order_info(self, order):
+        """🆕 显示沃美订单详细信息 - 集成订单详情API"""
+        try:
+            print(f"[沃美订单信息] 📋 开始获取订单详细信息")
+
+            # 获取订单ID和用户token
+            order_id = order.get('order_id', '')
+            if not order_id:
+                print(f"[沃美订单信息] ❌ 订单ID不存在")
+                return
+
+            # 获取当前账号token
+            account = getattr(self, 'current_account', None)
+            if not account or not account.get('token'):
+                print(f"[沃美订单信息] ❌ 缺少账号token")
+                return
+
+            token = account['token']
+            print(f"[沃美订单信息] 📋 订单ID: {order_id}")
+            print(f"[沃美订单信息] 📋 Token: {token[:10]}...")
+
+            # 获取影院ID
+            cinema_id = self.get_selected_cinemaid()
+            if not cinema_id:
+                print(f"[沃美订单信息] ❌ 缺少影院ID")
+                # 使用订单列表的基本数据
+                order_info = {
+                    'order_id': order.get('order_id', '未知订单号'),
+                    'movie_name': order.get('movie_name', '未知影片'),
+                    'cinema_name': order.get('cinema_name', '未知影院'),
+                    'status_desc': order.get('status_desc', '未知状态'),
+                    'show_date': order.get('show_date', ''),
+                    'hall_name': order.get('hall_name', ''),
+                    'seat_info': order.get('seat_info', ''),
+                    'ticket_num': order.get('ticket_num', 0),
+                    'qrCode': '',
+                    'ticketCode': '',
+                    'dsValidateCode': '',
+                    'display_type': 'womei_order_info',
+                    'error_message': '缺少影院ID'
+                }
+            else:
+                # 🆕 调用沃美订单详情API
+                from services.womei_order_service import get_order_detail
+
+                print(f"[沃美订单信息] 🚀 调用订单详情API")
+                print(f"[沃美订单信息] 📋 影院ID: {cinema_id}")
+                result = get_order_detail(order_id, cinema_id, token)
+
+            if result.get('success'):
+                # API调用成功，使用详情数据
+                order_detail = result.get('order_detail', {})
+                print(f"[沃美订单信息] ✅ 获取订单详情成功")
+
+                # 🎯 生成取票码二维码
+                ticket_code = order_detail.get('ticket_code', '')
+                order_info_for_qr = order_detail.get('order_info', {})
+
+                print(f"[沃美订单信息] 📋 取票码信息:")
+                print(f"  - ticket_code: {ticket_code}")
+                print(f"  - order_info: {order_info_for_qr}")
+
+                if ticket_code and order_info_for_qr:
+                    # 🎯 生成二维码图片
+                    qr_bytes, qr_path = self._generate_ticket_qrcode(ticket_code, order_info_for_qr)
+
+                    if qr_bytes:
+                        # 🎯 构建包含二维码的订单信息（使用UI期望的字段名）
+                        order_info = {
+                            # UI期望的字段名
+                            'order_no': order_detail.get('order_no', order_id),
+                            'ticket_code': ticket_code,
+                            'film_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),
+                            'cinema_name': order_detail.get('cinema_name', order.get('cinema_name', '未知影院')),
+                            'show_time': order_detail.get('show_time', order.get('show_date', '')),
+                            'hall_name': order_detail.get('hall_name', order.get('hall_name', '')),
+                            'seat_info': order_detail.get('seat_info', order.get('seat_info', '')),
+
+                            # 🎯 二维码相关字段
+                            'qr_bytes': qr_bytes,
+                            'qr_path': qr_path,
+                            'data_size': len(qr_bytes),
+                            'data_format': 'PNG',
+                            'source': 'womei_order_detail',
+                            'is_generated': True,
+
+                            # 🎯 显示类型（使用generated_qrcode）
+                            'display_type': 'generated_qrcode'
+                        }
+
+                        print(f"[沃美订单信息] ✅ 二维码生成成功: {len(qr_bytes)} bytes")
+                    else:
+                        # 二维码生成失败，使用文本显示
+                        order_info = {
+                            'order_no': order_detail.get('order_no', order_id),
+                            'ticket_code': ticket_code,
+                            'film_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),
+                            'cinema_name': order_detail.get('cinema_name', order.get('cinema_name', '未知影院')),
+                            'show_time': order_detail.get('show_time', order.get('show_date', '')),
+                            'hall_name': order_detail.get('hall_name', order.get('hall_name', '')),
+                            'seat_info': order_detail.get('seat_info', order.get('seat_info', '')),
+                            'display_type': 'ticket_code'  # 降级为文本显示
+                        }
+                        print(f"[沃美订单信息] ⚠️ 二维码生成失败，使用文本显示")
+                else:
+                    # 无取票码信息，使用基本显示
+                    order_info = {
+                        'order_no': order_detail.get('order_no', order_id),
+                        'ticket_code': '无取票码',
+                        'film_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),
+                        'cinema_name': order_detail.get('cinema_name', order.get('cinema_name', '未知影院')),
+                        'show_time': order_detail.get('show_time', order.get('show_date', '')),
+                        'hall_name': order_detail.get('hall_name', order.get('hall_name', '')),
+                        'seat_info': order_detail.get('seat_info', order.get('seat_info', '')),
+                        'display_type': 'ticket_code'
+                    }
+                    print(f"[沃美订单信息] ⚠️ 无取票码信息")
+
+            else:
+                # API调用失败，使用列表数据
+                error_msg = result.get('error', '未知错误')
+                print(f"[沃美订单信息] ❌ 获取订单详情失败: {error_msg}")
+                print(f"[沃美订单信息] 🔄 使用订单列表数据")
+
+                # 使用订单列表的基本数据
+                order_info = {
+                    'order_id': order.get('order_id', '未知订单号'),
+                    'movie_name': order.get('movie_name', '未知影片'),
+                    'cinema_name': order.get('cinema_name', '未知影院'),
+                    'status_desc': order.get('status_desc', '未知状态'),
+                    'show_date': order.get('show_date', ''),
+                    'hall_name': order.get('hall_name', ''),
+                    'seat_info': order.get('seat_info', ''),
+                    'ticket_num': order.get('ticket_num', 0),
+
+                    # 无取票码信息
+                    'qrCode': '',
+                    'ticketCode': '',
+                    'dsValidateCode': '',
+
+                    'display_type': 'womei_order_info',  # 标识为基本订单信息
+                    'error_message': error_msg  # 添加错误信息
+                }
+
+            print(f"[沃美订单信息] 📤 发送订单信息到主窗口:")
+            print(f"  - 订单号: {order_info['order_id']}")
+            print(f"  - 影片: {order_info['movie_name']}")
+            print(f"  - 影院: {order_info['cinema_name']}")
+            print(f"  - 状态: {order_info['status_desc']}")
+
+            if order_info['show_date']:
+                print(f"  - 放映时间: {order_info['show_date']}")
+            if order_info['hall_name']:
+                print(f"  - 影厅: {order_info['hall_name']}")
+            if order_info['seat_info']:
+                print(f"  - 座位: {order_info['seat_info']}")
+
+            # 🎯 通过事件总线发送订单信息
+            from utils.signals import event_bus
+            event_bus.show_qrcode.emit(order_info)
+
+            print(f"[沃美订单信息] ✅ 订单信息已发送到主窗口显示")
+
+        except Exception as e:
+            print(f"[沃美订单信息] ❌ 显示订单信息错误: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _generate_ticket_qrcode(self, ticket_code: str, order_info: dict) -> tuple:
+        """
+        生成取票码二维码
+
+        Args:
+            ticket_code: 取票码
+            order_info: 订单信息
+
+        Returns:
+            tuple: (qr_bytes, qr_path) 二维码字节数据和保存路径
+        """
+        try:
+            print(f"[二维码生成] 🎯 开始生成取票码二维码")
+            print(f"[二维码生成] 📋 取票码: {ticket_code}")
+            print(f"[二维码生成] 📋 订单信息: {order_info}")
+
+            # 导入二维码生成器
+            from utils.qrcode_generator import generate_ticket_qrcode, save_qrcode_image
+
+            # 生成二维码字节数据
+            qr_bytes = generate_ticket_qrcode(ticket_code, order_info)
+
+            if qr_bytes:
+                # 保存二维码图片
+                order_no = order_info.get('orderNo', 'UNKNOWN')
+                cinema_id = self.get_selected_cinemaid() or 'UNKNOWN'
+                qr_path = save_qrcode_image(qr_bytes, order_no, cinema_id)
+
+                print(f"[二维码生成] ✅ 二维码生成成功")
+                print(f"[二维码生成] 📋 数据大小: {len(qr_bytes)} bytes")
+                print(f"[二维码生成] 📋 保存路径: {qr_path}")
+
+                return qr_bytes, qr_path
+            else:
+                print(f"[二维码生成] ❌ 二维码生成失败")
+                return None, None
+
+        except Exception as e:
+            print(f"[二维码生成] ❌ 生成异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return None, None
 
     def _get_and_show_qrcode(self, order_no, cinemaid):
         """获取并显示订单二维码 - 修复：先获取订单详情，再生成取票码二维码"""
@@ -2707,7 +3033,7 @@ class TabManagerWidget(QWidget):
                 print(f"[订单二维码] ❌ 当前账号为空，无法获取取票码")
                 return
 
-            print(f"[订单二维码] 📋 使用账号认证: {account.get('userid', 'N/A')}")
+            print(f"[订单二维码] 📋 使用账号认证: {account.get('phone', 'N/A')}")
 
             # 🎯 第一步：获取订单详情，提取取票码
             print(f"[订单二维码] 📋 步骤1: 获取订单详情...")
@@ -2716,8 +3042,8 @@ class TabManagerWidget(QWidget):
                 'groupid': '',
                 'cinemaid': cinemaid,
                 'cardno': account.get('cardno', ''),
-                'userid': account['userid'],
-                'openid': account['openid'],
+                'userid': account.get('phone', ''),    # 🔧 修复：使用phone作为userid
+                'openid': account.get('openid', ''),   # 🔧 修复：openid可能不存在
                 'CVersion': '3.9.12',
                 'OS': 'Windows',
                 'token': account['token'],
@@ -3001,8 +3327,8 @@ class TabManagerWidget(QWidget):
                 'groupid': '',
                 'cinemaid': cinemaid,
                 'cardno': account.get('cardno', ''),
-                'userid': account['userid'],
-                'openid': account['openid'],
+                'userid': account.get('phone', ''),    # 🔧 修复：使用phone作为userid
+                'openid': account.get('openid', ''),   # 🔧 修复：openid可能不存在
                 'CVersion': '3.9.12',
                 'OS': 'Windows',
                 'token': account['token'],
@@ -3065,8 +3391,8 @@ class TabManagerWidget(QWidget):
                 'groupid': '',
                 'cinemaid': cinemaid,
                 'cardno': account.get('cardno', ''),
-                'userid': account['userid'],
-                'openid': account['openid'],
+                'userid': account.get('phone', ''),    # 🔧 修复：使用phone作为userid
+                'openid': account.get('openid', ''),   # 🔧 修复：openid可能不存在
                 'CVersion': '3.9.12',
                 'OS': 'Windows',
                 'token': account['token'],
@@ -3670,6 +3996,25 @@ class TabManagerWidget(QWidget):
                         self._set_cinema_combo_error("该城市暂无影院")
                 else:
                     error = cinemas_result.get('error', '未知错误')
+                    debug_info = cinemas_result.get('debug_info', {})
+
+                    print(f"[影院API调试] ❌ 影院API调用失败")
+                    print(f"[影院API调试] 📋 错误信息: {error}")
+                    print(f"[影院API调试] 📋 完整响应: {cinemas_result}")
+
+                    # 🎯 检测token失效并处理
+                    error_type = cinemas_result.get('error_type', '')
+                    if error_type == 'token_expired':
+                        print(f"[影院API调试] 🚨 检测到token失效，触发处理流程")
+                        self._handle_token_expired(error)
+                        return  # 直接返回，不再继续处理
+
+                    if debug_info:
+                        print(f"[影院API调试] 📋 调试信息:")
+                        print(f"[影院API调试] 📋 数据类型: {debug_info.get('data_type', 'N/A')}")
+                        print(f"[影院API调试] 📋 数据内容: {debug_info.get('data_content', 'N/A')}")
+                        print(f"[影院API调试] 📋 原始响应: {debug_info.get('cities_response', 'N/A')}")
+
                     print(f"[Tab管理器] ❌ 影院API失败: {error}")
                     self._set_cinema_combo_error(f"加载影院失败: {error}")
 

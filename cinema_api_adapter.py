@@ -163,7 +163,12 @@ class WomeiAPIAdapter:
         headers = WomeiConfig.build_request_headers(self.token)
 
         try:
-            print(f"[沃美] 请求API: {url}")
+            print(f"[沃美API调试] 🚀 发起API请求")
+            print(f"[沃美API调试] 📋 请求URL: {url}")
+            print(f"[沃美API调试] 📋 请求方法: {method}")
+            print(f"[沃美API调试] 📋 请求头: {headers}")
+            if data:
+                print(f"[沃美API调试] 📋 请求数据: {data}")
 
             if method.upper() == 'GET':
                 response = self.session.get(url, headers=headers, verify=False)
@@ -175,10 +180,16 @@ class WomeiAPIAdapter:
             else:
                 raise ValueError(f"不支持的请求方法: {method}")
 
+            print(f"[沃美API调试] 📡 HTTP响应状态: {response.status_code}")
+            print(f"[沃美API调试] 📋 响应头: {dict(response.headers)}")
+            print(f"[沃美API调试] 📋 原始响应文本: {response.text[:1000]}...")  # 只显示前1000字符
+
             response.raise_for_status()
 
             result = response.json()
-            print(f"[沃美] API响应成功")
+            print(f"[沃美API调试] ✅ JSON解析成功")
+            print(f"[沃美API调试] 📋 解析后数据类型: {type(result)}")
+            print(f"[沃美API调试] 📋 解析后数据: {result}")
 
             return result
 
