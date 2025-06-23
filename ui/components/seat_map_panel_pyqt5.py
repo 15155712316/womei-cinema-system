@@ -334,7 +334,12 @@ class SeatMapPanelPyQt5(QWidget):
                 seat_btn.mousePressEvent = lambda event, r=array_row, c=array_col: self._seat_button_mouse_press(event, r, c)
                 seat_btn.mouseMoveEvent = lambda event, r=array_row, c=array_col: self._seat_button_mouse_move(event, r, c)
                 seat_btn.mouseReleaseEvent = lambda event, r=array_row, c=array_col: self._seat_button_mouse_release(event, r, c)
+            elif status == "unavailable":
+                # 🆕 不可选择座位 - 完全禁用，无法点击
+                seat_btn.setEnabled(False)
+                seat_btn.setCursor(Qt.ForbiddenCursor)
             else:
+                # 其他状态（已售、锁定等）- 禁用但保持可见
                 seat_btn.setEnabled(False)
 
             # 🔧 添加到布局 - 使用物理位置确定网格位置
@@ -379,7 +384,7 @@ class SeatMapPanelPyQt5(QWidget):
 
         if status == "available":
             if is_couple_seat:
-                # 情侣座位可选 - 特殊的粉色系
+                # 情侣座位可选 - 特殊的粉色系，添加爱心图标
                 button.setStyleSheet(f"""
                     QPushButton {{
                         background-color: #fce4ec;
@@ -397,6 +402,10 @@ class SeatMapPanelPyQt5(QWidget):
                         border: 2px solid #e91e63;
                     }}
                 """)
+                # 为可选的情侣座位添加爱心图标
+                current_text = button.text()
+                if not current_text.startswith('💕'):
+                    button.setText(f"💕{current_text}")
             else:
                 # 普通座位可选 - 清新的蓝色，外边框显示区域颜色
                 button.setStyleSheet(f"""
@@ -427,18 +436,35 @@ class SeatMapPanelPyQt5(QWidget):
                     border-radius: {border_radius};
                 }}
             """)
+        elif status == "unavailable":
+            # 🆕 不可选择座位 - 柔和的浅灰色，清晰但不突兀
+            button.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #e0e0e0;
+                    border: 2px solid #bdbdbd;
+                    color: #757575;
+                    font: bold 10px "Microsoft YaHei";
+                    border-radius: {border_radius};
+                }}
+            """)
+            # 设置简洁的斜杠符号标识不可选择状态
+            button.setText("/")
         elif status == "selected":
             if is_couple_seat:
-                # 情侣座位选中 - 特殊的深粉色
+                # 情侣座位选中 - 特殊的深粉色，添加爱心图标
                 button.setStyleSheet(f"""
                     QPushButton {{
                         background-color: #e91e63;
-                        border: 2px solid #ad1457;
+                        border: 3px solid #ad1457;
                         color: #fff;
                         font: bold 9px "Microsoft YaHei";
                         border-radius: {border_radius};
                     }}
                 """)
+                # 为情侣座位添加爱心图标
+                current_text = button.text()
+                if not current_text.startswith('💕'):
+                    button.setText(f"💕{current_text}")
             else:
                 # 普通座位选中 - 鲜明的绿色，外边框显示区域颜色
                 button.setStyleSheet(f"""
@@ -463,7 +489,7 @@ class SeatMapPanelPyQt5(QWidget):
             """)
     
     def toggle_seat(self, r: int, c: int):
-        """切换座位选中状态 - 支持逻辑位置和物理位置的区分"""
+        """切换座位选中状态 - 支持逻辑位置和物理位置的区分，支持情侣座自动连选"""
         if (r, c) not in self.seat_buttons:
             return
 
@@ -471,25 +497,29 @@ class SeatMapPanelPyQt5(QWidget):
         key = (r, c)
         seat_btn = self.seat_buttons[key]
 
+        # 🆕 检查座位状态，如果是不可选择状态则直接返回
+        seat_status = seat.get('status', 'available')
+        if seat_status == 'unavailable':
+            print(f"[座位面板] 🚫 座位不可选择: {seat.get('row', r + 1)}排{seat.get('col', c + 1)}座")
+            return
+
+        # 检查其他不可选择状态
+        if seat_status in ['sold', 'locked']:
+            print(f"[座位面板] ⚠️ 座位不可选择: {seat.get('row', r + 1)}排{seat.get('col', c + 1)}座 (状态: {seat_status})")
+            return
+
         # 🔧 获取座位的逻辑位置信息（用于显示和订单）
         logical_row = getattr(seat_btn, 'logical_row', seat.get('row', r + 1))
         logical_col = getattr(seat_btn, 'logical_col', seat.get('col', c + 1))
         area_name = seat.get('area_name', '')
-
-        if key in self.selected_seats:
-            # 取消选中
-            self.selected_seats.remove(key)
-            seat['status'] = 'available'
-            print(f"[座位面板] 取消选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
-        else:
-            # 选中
-            self.selected_seats.add(key)
-            seat['status'] = "selected"
-            print(f"[座位面板] 选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
-
-        # 🔧 更新按钮样式时传递区域信息和座位类型
         seat_type = seat.get('type', 0)
-        self._update_seat_button_style(seat_btn, seat['status'], area_name, seat_type)
+
+        # 🆕 情侣座位自动连选逻辑
+        if seat_type in [1, 2]:  # 情侣座位
+            self._handle_couple_seat_selection(r, c, seat, key, logical_row, logical_col, area_name, seat_type)
+        else:
+            # 普通座位处理
+            self._handle_normal_seat_selection(r, c, seat, key, logical_row, logical_col, area_name, seat_type)
 
         # 触发选座回调
         if self.on_seat_selected:
@@ -504,7 +534,154 @@ class SeatMapPanelPyQt5(QWidget):
 
         # 更新提交按钮文字
         self._update_submit_button_text()
-    
+
+    def _handle_couple_seat_selection(self, r: int, c: int, seat: dict, key: tuple, logical_row: int, logical_col: int, area_name: str, seat_type: int):
+        """处理情侣座位选择逻辑"""
+        from PyQt5.QtWidgets import QMessageBox
+
+        # 查找配对的情侣座位
+        partner_seat_info = self._find_couple_partner(r, c, seat, seat_type)
+
+        if not partner_seat_info:
+            QMessageBox.warning(self, "情侣座选择", f"无法找到 {logical_row}排{logical_col}座 的配对座位")
+            return
+
+        partner_r, partner_c, partner_seat, partner_key = partner_seat_info
+        partner_logical_row = partner_seat.get('row', partner_r + 1)
+        partner_logical_col = partner_seat.get('col', partner_c + 1)
+
+        # 检查两个座位的状态
+        if key in self.selected_seats and partner_key in self.selected_seats:
+            # 两个座位都已选中，取消选择
+            self._deselect_couple_seats(key, partner_key, seat, partner_seat, logical_row, logical_col, partner_logical_row, partner_logical_col, area_name)
+        elif key not in self.selected_seats and partner_key not in self.selected_seats:
+            # 两个座位都未选中，检查是否可选
+            if self._can_select_couple_seats(seat, partner_seat, logical_row, logical_col, partner_logical_row, partner_logical_col):
+                self._select_couple_seats(key, partner_key, seat, partner_seat, logical_row, logical_col, partner_logical_row, partner_logical_col, area_name, seat_type)
+        else:
+            # 只有一个座位被选中，这种情况不应该发生，但为了安全起见进行处理
+            QMessageBox.warning(self, "情侣座选择", f"情侣座 {logical_row}排{logical_col}座 状态异常，请重新选择")
+            # 重置两个座位的状态
+            self._reset_couple_seats_status(key, partner_key, seat, partner_seat)
+
+    def _handle_normal_seat_selection(self, r: int, c: int, seat: dict, key: tuple, logical_row: int, logical_col: int, area_name: str, seat_type: int):
+        """处理普通座位选择逻辑"""
+        seat_btn = self.seat_buttons[key]
+
+        if key in self.selected_seats:
+            # 取消选中
+            self.selected_seats.remove(key)
+            seat['status'] = 'available'
+            print(f"[座位面板] 取消选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
+        else:
+            # 选中
+            self.selected_seats.add(key)
+            seat['status'] = "selected"
+            print(f"[座位面板] 选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
+
+        # 🔧 更新按钮样式时传递区域信息和座位类型
+        self._update_seat_button_style(seat_btn, seat['status'], area_name, seat_type)
+
+    def _find_couple_partner(self, r: int, c: int, seat: dict, seat_type: int):
+        """查找情侣座位的配对座位"""
+        # 获取当前座位的物理位置
+        current_x = seat.get('x', c + 1)
+        current_y = seat.get('y', r + 1)
+
+        # 根据座位类型确定配对座位的位置
+        if seat_type == 1:  # 左座，查找右座 (type=2)
+            target_x = current_x + 1
+            target_type = 2
+        elif seat_type == 2:  # 右座，查找左座 (type=1)
+            target_x = current_x - 1
+            target_type = 1
+        else:
+            return None
+
+        # 在座位矩阵中查找配对座位
+        for row_idx, row in enumerate(self.seat_data):
+            for col_idx, partner_seat in enumerate(row):
+                if partner_seat and partner_seat.get('x') == target_x and partner_seat.get('y') == current_y:
+                    # 验证座位类型是否匹配
+                    if partner_seat.get('type') == target_type:
+                        partner_key = (row_idx, col_idx)
+                        return row_idx, col_idx, partner_seat, partner_key
+
+        return None
+
+    def _can_select_couple_seats(self, seat1: dict, seat2: dict, row1: int, col1: int, row2: int, col2: int) -> bool:
+        """检查情侣座位是否可以选择"""
+        # 检查两个座位的状态
+        status1 = seat1.get('status', 'available')
+        status2 = seat2.get('status', 'available')
+
+        if status1 != 'available':
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "情侣座选择", f"{row1}排{col1}座 不可选择（状态：{status1}）")
+            return False
+
+        if status2 != 'available':
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "情侣座选择", f"{row2}排{col2}座 不可选择（状态：{status2}）")
+            return False
+
+        return True
+
+    def _select_couple_seats(self, key1: tuple, key2: tuple, seat1: dict, seat2: dict,
+                           row1: int, col1: int, row2: int, col2: int, area_name: str, seat_type: int):
+        """选择情侣座位"""
+        # 选中两个座位
+        self.selected_seats.add(key1)
+        self.selected_seats.add(key2)
+        seat1['status'] = 'selected'
+        seat2['status'] = 'selected'
+
+        # 更新按钮样式
+        btn1 = self.seat_buttons[key1]
+        btn2 = self.seat_buttons[key2]
+        self._update_seat_button_style(btn1, 'selected', area_name, seat1.get('type', 0))
+        self._update_seat_button_style(btn2, 'selected', area_name, seat2.get('type', 0))
+
+        print(f"[座位面板] 💕 选择情侣座位: {row1}排{col1}座 + {row2}排{col2}座，区域: {area_name}")
+
+    def _deselect_couple_seats(self, key1: tuple, key2: tuple, seat1: dict, seat2: dict,
+                             row1: int, col1: int, row2: int, col2: int, area_name: str):
+        """取消选择情侣座位"""
+        # 取消选中两个座位
+        self.selected_seats.discard(key1)
+        self.selected_seats.discard(key2)
+        seat1['status'] = 'available'
+        seat2['status'] = 'available'
+
+        # 更新按钮样式
+        btn1 = self.seat_buttons[key1]
+        btn2 = self.seat_buttons[key2]
+        self._update_seat_button_style(btn1, 'available', area_name, seat1.get('type', 0))
+        self._update_seat_button_style(btn2, 'available', area_name, seat2.get('type', 0))
+
+        print(f"[座位面板] 💔 取消选择情侣座位: {row1}排{col1}座 + {row2}排{col2}座，区域: {area_name}")
+
+    def _reset_couple_seats_status(self, key1: tuple, key2: tuple, seat1: dict, seat2: dict):
+        """重置情侣座位状态"""
+        # 强制重置两个座位的状态
+        self.selected_seats.discard(key1)
+        self.selected_seats.discard(key2)
+        seat1['status'] = 'available'
+        seat2['status'] = 'available'
+
+        # 更新按钮样式
+        if key1 in self.seat_buttons:
+            btn1 = self.seat_buttons[key1]
+            area_name = seat1.get('area_name', '')
+            self._update_seat_button_style(btn1, 'available', area_name, seat1.get('type', 0))
+
+        if key2 in self.seat_buttons:
+            btn2 = self.seat_buttons[key2]
+            area_name = seat2.get('area_name', '')
+            self._update_seat_button_style(btn2, 'available', area_name, seat2.get('type', 0))
+
+        print(f"[座位面板] 🔄 重置情侣座位状态")
+
     def update_seat_data(self, seat_data: List[List]):
         """更新座位数据并重绘"""
         self.seat_data = seat_data or []
@@ -743,8 +920,10 @@ class SeatMapPanelPyQt5(QWidget):
         total = 0
         available = 0
         sold = 0
+        unavailable = 0
+        locked = 0
         selected = len(self.selected_seats)
-        
+
         for row in self.seat_data:
             for seat in row:
                 if seat is not None and seat.get('status') != 'empty':
@@ -754,11 +933,17 @@ class SeatMapPanelPyQt5(QWidget):
                         available += 1
                     elif status == 'sold':
                         sold += 1
-        
+                    elif status == 'unavailable':
+                        unavailable += 1
+                    elif status == 'locked':
+                        locked += 1
+
         return {
             'total': total,
             'available': available,
             'sold': sold,
+            'unavailable': unavailable,
+            'locked': locked,
             'selected': selected
         }
 

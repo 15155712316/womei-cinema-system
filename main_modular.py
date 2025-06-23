@@ -2421,19 +2421,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 schedule_id=order_params['sessionid']
             )
 
-            # 🔍 详细打印API返回数据
-            print(f"\n🔍 [订单调试] 沃美API返回数据详情:")
-            print(f"=" * 60)
-            if result:
-                print(f"返回数据类型: {type(result)}")
-                if isinstance(result, dict):
-                    for key, value in result.items():
-                        print(f"  {key}: {value}")
-                else:
-                    print(f"返回数据: {result}")
-            else:
-                print(f"返回数据: None")
-            print(f"=" * 60)
+            # 🔍 格式化打印订单接口返回信息
+            self._print_order_api_response(result, "沃美订单创建API")
 
             # 🔧 修复：适配沃美系统的返回格式
             if not result or not result.get('success'):
@@ -2492,7 +2481,8 @@ class ModularCinemaMainWindow(QMainWindow):
 
             result = film_service.create_order(cinema_id, seatlable, schedule_id)
 
-            print(f"[沃美订单] 📥 API返回: {result}")
+            # 🔍 格式化打印订单接口返回信息
+            self._print_order_api_response(result, "沃美订单直接创建API")
 
             # 🔧 沃美系统：处理返回结果
             if result and result.get('success'):
@@ -2565,9 +2555,16 @@ class ModularCinemaMainWindow(QMainWindow):
     def _handle_womei_order_success(self, result, selected_seats, session_info):
         """沃美系统专用：处理订单成功"""
         try:
+            # 🔍 格式化打印订单成功处理信息
+            self._print_order_api_response(result, "沃美订单成功处理")
+
             # 获取沃美订单数据
             order_id = result.get('order_id', f"WOMEI{int(__import__('time').time())}")
             order_info = result.get('order_info', {})
+
+            # 🆕 查询并打印详细的订单信息
+            if order_id and order_id != f"WOMEI{int(__import__('time').time())}":
+                self._query_and_print_order_detail(order_id, session_info)
 
             # 从session_info获取显示数据
             cinema_data = session_info.get('cinema_data', {})
@@ -2657,7 +2654,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     "area_no_usage": "区域ID应该使用area_no字段，不是固定的1",
                     "seat_no_format": "seat_no应该是类似11051771#09#06的格式",
                     "coordinate_mapping": "row/col是逻辑位置，x/y是物理位置",
-                    "status_meaning": "0=可选，1=已售，2=锁定",
+                    "status_meaning": "0=可选，1=已售，2=锁定，6=不可选择",
                     "file_location": "data/座位调试数据.json（固定文件名，每次覆盖）",
                     "enhanced_features": [
                         "包含完整的影院、影片、场次信息",
@@ -3621,6 +3618,10 @@ class ModularCinemaMainWindow(QMainWindow):
             elif seat_status == 2:
                 status = 'locked'     # 锁定
                 status_desc = "锁定"
+            elif seat_status == 6:
+                status = 'unavailable'  # 完全不可选择
+                status_desc = "不可选择"
+                print(f"[主窗口] 🚫 发现不可选择座位: {seat_no} status={seat_status}")
             else:
                 status = 'available'  # 默认可选
                 status_desc = f"未知状态({seat_status})->默认可选"
@@ -3643,7 +3644,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     # 🔧 状态不一致时的详细分析
                     print(f"  🔍 状态不一致分析:")
                     print(f"     API返回状态码: {seat_status}")
-                    print(f"     当前映射规则: 0=可选, 1=已售, 2=锁定")
+                    print(f"     当前映射规则: 0=可选, 1=已售, 2=锁定, 6=不可选择")
 
                     if seat_status == 1:
                         print(f"     ⚠️ 状态码1应该映射为已售，但可能UI显示有问题")
@@ -5589,19 +5590,8 @@ class ModularCinemaMainWindow(QMainWindow):
 
             result = create_order(order_params)
 
-            # 🔍 详细打印API返回数据
-            print(f"\n🔍 [订单调试-完整流程] API返回数据详情:")
-            print(f"=" * 60)
-            if result:
-                print(f"返回数据类型: {type(result)}")
-                if isinstance(result, dict):
-                    for key, value in result.items():
-                        print(f"  {key}: {value}")
-                else:
-                    print(f"返回数据: {result}")
-            else:
-                print(f"返回数据: None")
-            print(f"=" * 60)
+            # 🔍 格式化打印订单接口返回信息
+            self._print_order_api_response(result, "完整流程订单创建API")
 
             if not result or result.get('resultCode') != '0':
                 error_msg = result.get('resultDesc', '创建订单失败') if result else '网络错误'
@@ -5734,6 +5724,197 @@ class ModularCinemaMainWindow(QMainWindow):
             traceback.print_exc()
             print(f"[订单参数] 构建失败: {e}")
             return None
+
+    def _print_order_api_response(self, result, api_name="订单API"):
+        """格式化打印订单接口返回信息，方便调试"""
+        import json
+        from datetime import datetime
+
+        print(f"\n" + "🔍" * 3 + f" [{api_name}] 接口返回数据详情 " + "🔍" * 3)
+        print(f"{'=' * 80}")
+        print(f"⏰ 时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"🔗 接口: {api_name}")
+        print(f"{'=' * 80}")
+
+        if result is None:
+            print(f"❌ 返回数据: None (可能是网络错误或接口异常)")
+        else:
+            print(f"📊 数据类型: {type(result).__name__}")
+
+            if isinstance(result, dict):
+                # 格式化字典数据
+                print(f"📋 字段总数: {len(result)}")
+                print(f"🔑 字段列表: {list(result.keys())}")
+                print(f"{'-' * 80}")
+
+                # 按重要性排序显示字段 - 🔧 修复：添加沃美API字段
+                important_fields = ['ret', 'sub', 'msg', 'data', 'success', 'resultCode', 'resultDesc', 'error', 'order_id', 'orderno']
+                other_fields = [k for k in result.keys() if k not in important_fields]
+
+                # 先显示重要字段
+                for key in important_fields:
+                    if key in result:
+                        value = result[key]
+                        if isinstance(value, (dict, list)) and len(str(value)) > 200:
+                            print(f"📌 {key}: {type(value).__name__} (长度: {len(value) if isinstance(value, (list, dict)) else len(str(value))})")
+                            if isinstance(value, dict):
+                                for sub_key, sub_value in list(value.items())[:3]:
+                                    print(f"   └─ {sub_key}: {str(sub_value)[:100]}{'...' if len(str(sub_value)) > 100 else ''}")
+                                if len(value) > 3:
+                                    print(f"   └─ ... 还有 {len(value) - 3} 个字段")
+                            elif isinstance(value, list):
+                                for i, item in enumerate(value[:2]):
+                                    print(f"   └─ [{i}]: {str(item)[:100]}{'...' if len(str(item)) > 100 else ''}")
+                                if len(value) > 2:
+                                    print(f"   └─ ... 还有 {len(value) - 2} 个项目")
+                        else:
+                            print(f"📌 {key}: {value}")
+
+                # 再显示其他字段
+                if other_fields:
+                    print(f"{'-' * 40} 其他字段 {'-' * 40}")
+                    for key in other_fields:
+                        value = result[key]
+                        if isinstance(value, (dict, list)) and len(str(value)) > 200:
+                            print(f"🔸 {key}: {type(value).__name__} (长度: {len(value) if isinstance(value, (list, dict)) else len(str(value))})")
+                        else:
+                            print(f"🔸 {key}: {value}")
+
+                # 判断接口调用结果 - 🔧 修复：支持沃美API的ret字段
+                print(f"{'-' * 80}")
+
+                # 沃美API使用ret字段：ret=0表示成功，ret!=0表示失败
+                if result.get('ret') == 0:
+                    print(f"✅ 接口调用状态: 成功")
+                    # 🆕 如果有data字段，显示其内容
+                    data = result.get('data')
+                    if data and isinstance(data, dict):
+                        print(f"📦 返回数据内容 (共 {len(data)} 个字段):")
+                        for key, value in data.items():  # 显示所有字段
+                            if isinstance(value, (dict, list)) and len(str(value)) > 100:
+                                print(f"   └─ {key}: {type(value).__name__} (长度: {len(value) if isinstance(value, (list, dict)) else len(str(value))})")
+                                # 如果是字典，显示其前3个子字段
+                                if isinstance(value, dict):
+                                    for sub_key, sub_value in list(value.items())[:3]:
+                                        print(f"      ├─ {sub_key}: {str(sub_value)[:80]}{'...' if len(str(sub_value)) > 80 else ''}")
+                                    if len(value) > 3:
+                                        print(f"      └─ ... 还有 {len(value) - 3} 个子字段")
+                                # 如果是列表，显示其前2个项目
+                                elif isinstance(value, list):
+                                    for i, item in enumerate(value[:2]):
+                                        print(f"      ├─ [{i}]: {str(item)[:80]}{'...' if len(str(item)) > 80 else ''}")
+                                    if len(value) > 2:
+                                        print(f"      └─ ... 还有 {len(value) - 2} 个项目")
+                            else:
+                                print(f"   └─ {key}: {value}")
+                elif result.get('ret') is not None and result.get('ret') != 0:
+                    error_msg = result.get('msg') or result.get('error') or result.get('resultDesc') or '未知错误'
+                    print(f"❌ 接口调用状态: 失败")
+                    print(f"🚨 错误信息: {error_msg}")
+                    print(f"🔢 错误代码: {result.get('ret')}")
+                # 兼容其他API格式
+                elif result.get('success') is True or result.get('resultCode') == '0':
+                    print(f"✅ 接口调用状态: 成功")
+                elif result.get('success') is False or result.get('resultCode') != '0':
+                    error_msg = result.get('error') or result.get('resultDesc') or '未知错误'
+                    print(f"❌ 接口调用状态: 失败")
+                    print(f"🚨 错误信息: {error_msg}")
+                else:
+                    print(f"⚠️ 接口调用状态: 未知 (无明确的成功/失败标识)")
+
+            elif isinstance(result, (list, tuple)):
+                print(f"📋 数组长度: {len(result)}")
+                for i, item in enumerate(result[:3]):
+                    print(f"🔸 [{i}]: {str(item)[:200]}{'...' if len(str(item)) > 200 else ''}")
+                if len(result) > 3:
+                    print(f"🔸 ... 还有 {len(result) - 3} 个项目")
+            else:
+                print(f"📄 返回内容: {str(result)[:500]}{'...' if len(str(result)) > 500 else ''}")
+
+        print(f"{'=' * 80}")
+        print(f"🔍" * 3 + f" [{api_name}] 数据详情结束 " + "🔍" * 3 + "\n")
+
+    def _query_and_print_order_detail(self, order_id: str, session_info: dict):
+        """查询并打印沃美订单详细信息"""
+        try:
+            print(f"\n🔍 [订单详情查询] 开始查询订单详情: {order_id}")
+
+            # 获取影院ID和token
+            cinema_data = session_info.get('cinema_data', {})
+            account_data = session_info.get('account', {})
+
+            cinema_id = cinema_data.get('cinema_id', '')
+            token = account_data.get('token', '')
+
+            if not cinema_id or not token:
+                print(f"[订单详情查询] ❌ 缺少必要参数: cinema_id={cinema_id}, token={'存在' if token else '缺失'}")
+                return
+
+            # 创建API适配器并查询订单详情
+            from cinema_api_adapter import create_womei_api
+            api = create_womei_api(token)
+
+            print(f"[订单详情查询] 📡 调用沃美订单信息接口...")
+            order_detail = api.get_order_info(cinema_id, order_id)
+
+            # 🔍 格式化打印订单详情
+            self._print_order_api_response(order_detail, f"沃美订单详情查询 (订单号: {order_id})")
+
+            # 🎯 提取关键信息并格式化显示
+            if order_detail and order_detail.get('ret') == 0:
+                data = order_detail.get('data', {})
+                self._print_order_summary(data, order_id)
+            else:
+                error_msg = order_detail.get('msg', '查询失败') if order_detail else '网络错误'
+                print(f"[订单详情查询] ❌ 查询失败: {error_msg}")
+
+        except Exception as e:
+            print(f"[订单详情查询] ❌ 查询异常: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _print_order_summary(self, order_data: dict, order_id: str):
+        """打印订单摘要信息"""
+        try:
+            print(f"\n" + "📋" * 3 + f" 订单摘要 (订单号: {order_id}) " + "📋" * 3)
+            print(f"{'=' * 80}")
+
+            # 基本信息
+            print(f"🎫 订单状态: {order_data.get('status_desc', 'N/A')} ({order_data.get('status', 'N/A')})")
+            print(f"🏪 影院: {order_data.get('cinema_name', 'N/A')}")
+            print(f"🎬 影片: {order_data.get('movie_name', 'N/A')}")
+            print(f"🕐 场次: {order_data.get('show_date_style', 'N/A')}")
+
+            # 座位信息
+            ticket_items = order_data.get('ticket_items', {})
+            if ticket_items:
+                print(f"🎭 影厅: {ticket_items.get('hall_name', 'N/A')}")
+                print(f"🪑 座位: {ticket_items.get('seat_info', 'N/A')}")
+                print(f"🎟️ 票数: {ticket_items.get('ticket_num', 0)}")
+
+            # 价格信息
+            print(f"💰 票价: ¥{order_data.get('ticket_total_price', 0)}")
+            print(f"💳 总价: ¥{order_data.get('order_total_price', 0)}")
+            print(f"💸 实付: ¥{order_data.get('order_payment_price', 0)}")
+            print(f"🔢 手续费: ¥{order_data.get('order_total_fee', 0)}")
+
+            # 联系信息
+            print(f"📱 手机: {order_data.get('phone', 'N/A')}")
+            print(f"💳 支付方式: {order_data.get('pay_way', 'N/A')}")
+
+            # 取票信息
+            ticket_code_arr = order_data.get('ticket_code_arr', [])
+            if ticket_code_arr:
+                for ticket_code_info in ticket_code_arr:
+                    code_name = ticket_code_info.get('name', '取票码')
+                    code_value = ticket_code_info.get('code', '暂无')
+                    print(f"🎫 {code_name}: {code_value}")
+
+            print(f"{'=' * 80}")
+            print(f"📋" * 3 + f" 订单摘要结束 " + "📋" * 3 + "\n")
+
+        except Exception as e:
+            print(f"[订单摘要] ❌ 打印摘要失败: {e}")
 
     def _handle_order_creation_success(self, result, selected_seats, cinema_data):
         """处理订单创建成功 - 复用现有实现"""

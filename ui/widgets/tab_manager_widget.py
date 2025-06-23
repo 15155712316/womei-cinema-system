@@ -310,13 +310,13 @@ class TabManagerWidget(QWidget):
         self.bind_account_info.setWordWrap(True)
         input_layout.addWidget(self.bind_account_info)
         
-        # 提示标签
-        input_layout.addWidget(ClassicLabel("每行一个券号："))
-        
-        # 券号输入框
+        # 提示标签 - 🆕 更新为沃美格式
+        input_layout.addWidget(ClassicLabel("券码和密码输入（支持沃美格式）："))
+
+        # 券号输入框 - 🆕 更新提示文本为沃美格式
         self.coupon_text = ClassicTextEdit()
         self.coupon_text.setFixedHeight(200)
-        self.coupon_text.setPlaceholderText("请在此输入券号，每行一个\n例如：\nAB1234567890\nCD2345678901\nEF3456789012")
+        self.coupon_text.setPlaceholderText("请输入券码和密码，每行一个，支持以下格式：\n\n沃美格式（推荐）：\n卡号：GZJY01002948416827;密码：2034\n卡号：GZJY01002948425042;密码：3594\n\n传统格式：\nAB1234567890\nCD2345678901")
         input_layout.addWidget(self.coupon_text)
         
         # 绑定按钮
@@ -361,33 +361,150 @@ class TabManagerWidget(QWidget):
         main_layout.setStretch(1, 1)  # 右侧占1份
 
     def on_bind_coupons(self):
-        """绑券功能 - 直接从源代码复制核心逻辑"""
+        """绑券功能 - 🆕 集成沃美绑券接口"""
         account = getattr(self, 'current_account', None)
         if not account:
             MessageManager.show_error(self, "未选中账号", "请先在左侧账号列表选择要绑定的账号！", auto_close=False)
             return
-        
-        # 验证账号信息完整性
-        required_fields = ['cinemaid', 'userid', 'openid', 'token']
+
+        # 🆕 沃美系统需要的字段
+        required_fields = ['token']
         for field in required_fields:
             if not account.get(field):
                 MessageManager.show_error(self, "账号信息不完整", f"当前账号缺少{field}字段，请重新登录！", auto_close=False)
                 return
-        
-        print(f"[券绑定] 使用账号: {account.get('userid')} @ {account.get('cinemaid')}")
-        print(f"[券绑定] Token: {account.get('token', '')[:10]}...")
-        
-        coupon_codes = self.coupon_text.toPlainText().strip().split('\n')
-        coupon_codes = [c.strip() for c in coupon_codes if c.strip()]
-        if not coupon_codes:
-            MessageManager.show_error(self, "无券号", "请输入至少一个券号！", auto_close=False)
+
+        # 🆕 获取影院ID
+        cinema_id = self.get_selected_cinemaid()
+        if not cinema_id:
+            MessageManager.show_error(self, "未选择影院", "请先选择影院！", auto_close=False)
             return
-        
-        # 不显示进度提示，直接开始绑定
-        print(f"[券绑定] 即将绑定{len(coupon_codes)}张券")
-        
-        # 执行绑定
-        self.perform_batch_bind(account, coupon_codes)
+
+        print(f"[沃美绑券] 使用账号: {account.get('phone', 'N/A')} @ 影院ID: {cinema_id}")
+        print(f"[沃美绑券] Token: {account.get('token', '')[:10]}...")
+
+        # 🆕 获取输入文本并解析
+        input_text = self.coupon_text.toPlainText().strip()
+        if not input_text:
+            MessageManager.show_error(self, "无输入内容", "请输入券码和密码！", auto_close=False)
+            return
+
+        # 🆕 使用沃美绑券服务解析输入
+        from services.womei_voucher_service import get_womei_voucher_service
+        voucher_service = get_womei_voucher_service()
+
+        # 尝试解析沃美格式
+        vouchers = voucher_service.parse_voucher_input(input_text)
+
+        # 如果没有解析到沃美格式，尝试传统格式
+        if not vouchers:
+            lines = input_text.split('\n')
+            lines = [line.strip() for line in lines if line.strip()]
+            if lines:
+                MessageManager.show_warning(self, "格式提示",
+                    "未检测到沃美格式（卡号：xxx;密码：xxx）\n"
+                    "将使用传统格式处理，但可能无法绑定成功。\n"
+                    "建议使用沃美格式输入。")
+                # 传统格式作为券码，密码为空
+                vouchers = [(line, '') for line in lines]
+
+        if not vouchers:
+            MessageManager.show_error(self, "解析失败", "无法解析输入的券码信息！", auto_close=False)
+            return
+
+        print(f"[沃美绑券] 解析到 {len(vouchers)} 张券")
+
+        # 🆕 执行沃美绑券
+        self.perform_womei_batch_bind(account, cinema_id, vouchers)
+
+    def perform_womei_batch_bind(self, account, cinema_id, vouchers):
+        """🆕 执行沃美批量绑券"""
+        log_lines = []
+        success, fail = 0, 0
+        fail_codes = []
+
+        # 导入沃美绑券服务
+        from services.womei_voucher_service import get_womei_voucher_service
+        from PyQt5.QtWidgets import QApplication
+
+        voucher_service = get_womei_voucher_service()
+        token = account.get('token', '')
+
+        log_lines.append(f"=== 开始沃美绑券 ===")
+        log_lines.append(f"影院ID: {cinema_id}")
+        log_lines.append(f"账号: {account.get('phone', 'N/A')}")
+        log_lines.append(f"券数量: {len(vouchers)}")
+        log_lines.append("")
+
+        for i, (voucher_code, voucher_password) in enumerate(vouchers, 1):
+            print(f"[沃美绑券] 正在绑定第{i}/{len(vouchers)}张券: {voucher_code}")
+
+            try:
+                # 调用沃美绑券接口
+                result = voucher_service.bind_voucher(cinema_id, token, voucher_code, voucher_password)
+
+                # 格式化结果
+                is_success, message = voucher_service.format_bind_result(result)
+                log_lines.append(f"[{i}/{len(vouchers)}] {message}")
+
+                if is_success:
+                    success += 1
+                else:
+                    fail += 1
+                    fail_codes.append(voucher_code)
+
+                    # 特殊错误处理
+                    if 'token' in message.lower() or 'TOKEN_INVALID' in message:
+                        log_lines.append(f"  -> Token可能已失效，建议重新登录账号")
+                    elif '已被绑定' in message:
+                        log_lines.append(f"  -> 该券已绑定，无需重复操作")
+
+            except Exception as e:
+                error_msg = f"券 {voucher_code} 绑定异常: {str(e)}"
+                log_lines.append(f"[{i}/{len(vouchers)}] {error_msg}")
+                fail += 1
+                fail_codes.append(voucher_code)
+                print(f"[沃美绑券] {error_msg}")
+
+            # 添加0.3秒延迟（除了最后一张券）
+            if i < len(vouchers):
+                print(f"[沃美绑券] 等待0.3秒后绑定下一张券...")
+                QApplication.processEvents()  # 处理界面事件
+                import time
+                time.sleep(0.3)
+
+        # 更新UI并显示总结
+        self.update_womei_bind_log(log_lines, success, fail, fail_codes, len(vouchers))
+
+    def update_womei_bind_log(self, log_lines, success, fail, fail_codes, total):
+        """🆕 更新沃美绑定日志显示"""
+        log_lines.append("")
+        log_lines.append(f"=== 沃美绑券完成 ===")
+        log_lines.append(f"共{total}张券，绑定成功{success}，失败{fail}")
+        if fail_codes:
+            log_lines.append(f"失败券号：{', '.join(fail_codes)}")
+
+        # 成功率统计
+        success_rate = (success / total * 100) if total > 0 else 0
+        log_lines.append(f"成功率：{success_rate:.1f}%")
+
+        # 如果全部失败，给出建议
+        if fail == total:
+            log_lines.append("")
+            log_lines.append("*** 绑券建议 ***")
+            log_lines.append("所有券都绑定失败，请检查：")
+            log_lines.append("1. 账号token是否有效（重新登录）")
+            log_lines.append("2. 券码和密码格式是否正确")
+            log_lines.append("3. 券是否已被其他账号绑定")
+            log_lines.append("4. 网络连接是否正常")
+        elif success > 0:
+            log_lines.append("")
+            log_lines.append("🎉 部分或全部券绑定成功！")
+
+        self.bind_log_text.setPlainText("\n".join(log_lines))
+
+        # 控制台记录
+        print(f"[沃美绑券] 绑定完成：成功{success}张券，失败{fail}张券，成功率{success_rate:.1f}%")
 
     def perform_batch_bind(self, account, coupon_codes):
         """执行批量绑券 - 基于现有API"""
