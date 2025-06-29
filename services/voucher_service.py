@@ -12,6 +12,10 @@ from datetime import datetime, timezone
 import json
 import logging
 
+# 🔧 修复：禁用SSL证书验证警告
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 logger = logging.getLogger(__name__)
 
 class VoucherStatus:
@@ -145,7 +149,8 @@ class VoucherService:
         
         try:
             # ⚡ 性能优化：减少超时时间，提升响应速度
-            response = requests.get(url, params=params, headers=headers, timeout=15)
+            # 🔧 修复：禁用SSL证书验证，解决证书验证失败问题
+            response = requests.get(url, params=params, headers=headers, timeout=15, verify=False)
             response.raise_for_status()
 
             data = response.json()

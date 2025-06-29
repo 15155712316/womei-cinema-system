@@ -98,42 +98,90 @@ QRCODE_AVAILABLE, qrcode = ensure_qrcode_import()
 
 def get_cinema_name_by_id(cinema_id: str) -> str:
     """
-    根据影院ID获取影院名称
+    根据影院ID获取影院名称 - 🔧 修复：优先从沃美系统获取影院名称
     :param cinema_id: 影院ID
     :return: 影院名称
     """
     try:
-        # 导入影院管理器
-        from services.cinema_manager import CinemaManager
-
-        # 获取影院管理器实例
-        cinema_manager = CinemaManager()
-
-        # 获取所有影院数据
-        cinemas = cinema_manager.load_cinema_list()
-
-        # 查找匹配的影院
-        for cinema in cinemas:
-            if cinema.get('cinemaid') == cinema_id or cinema.get('id') == cinema_id:
-                # 🔧 修复：使用正确的字段名 cinemaShortName
-                cinema_name = (cinema.get('cinemaShortName') or
-                              cinema.get('cinemaname') or
-                              cinema.get('name', '未知影院'))
-                print(f"[影院名称] 找到影院: {cinema_id} -> {cinema_name}")
+        # 🎯 第一优先级：从沃美系统的全局影院数据获取
+        try:
+            from utils.signals import event_bus
+            # 使用新的方法从事件总线获取沃美影院数据
+            cinema_info = event_bus.find_womei_cinema_by_id(cinema_id)
+            if cinema_info:
+                cinema_name = cinema_info.get('cinema_name', '未知影院')
+                print(f"[影院名称] ✅ 从沃美系统获取: {cinema_id} -> {cinema_name}")
                 return cinema_name
 
-        print(f"[影院名称] 未找到影院ID {cinema_id}，使用默认名称")
+            # 如果没有找到，尝试从所有沃美影院数据中查找
+            womei_cinemas = event_bus.get_womei_cinemas()
+            for cinema in womei_cinemas:
+                if cinema.get('cinema_id') == cinema_id:
+                    cinema_name = cinema.get('cinema_name', '未知影院')
+                    print(f"[影院名称] ✅ 从沃美影院列表获取: {cinema_id} -> {cinema_name}")
+                    return cinema_name
+        except Exception as e:
+            print(f"[影院名称] 从沃美系统获取失败: {e}")
+
+        # 🎯 第二优先级：从本地影院管理器获取（华联系统）
+        try:
+            from services.cinema_manager import CinemaManager
+            cinema_manager = CinemaManager()
+            cinemas = cinema_manager.load_cinema_list()
+
+            for cinema in cinemas:
+                if cinema.get('cinemaid') == cinema_id or cinema.get('id') == cinema_id:
+                    cinema_name = (cinema.get('cinemaShortName') or
+                                  cinema.get('cinemaname') or
+                                  cinema.get('name', '未知影院'))
+                    print(f"[影院名称] ✅ 从本地数据获取: {cinema_id} -> {cinema_name}")
+                    return cinema_name
+        except Exception as e:
+            print(f"[影院名称] 从本地数据获取失败: {e}")
+
+        # 🎯 第三优先级：沃美系统硬编码映射
+        womei_cinema_map = {
+            "400028": "北京沃美世界城店",
+            "400115": "沃美北京龙湖店",
+            "400295": "沃美影城北京顺义鲁能店",
+            "400357": "沃美总部尊享卡中心",
+            "8065": "北京沃美影城(常营店)",
+            "9647": "北京沃美影城(回龙观店)",
+            "400296": "沃美影城武汉龙湖白沙店",
+            "400031": "南宁沃美影城（大唐天城店）",
+            "400127": "沃美合肥银泰店",
+            "1402": "贵阳沃美影城(世纪金源购物中心店)",
+            "2678": "东莞沃美影城（光大店）",
+            "400308": "沃美影城泰安爱琴海店",
+            "9934": "慈溪沃美影城"
+        }
+
+        if cinema_id in womei_cinema_map:
+            cinema_name = womei_cinema_map[cinema_id]
+            print(f"[影院名称] ✅ 从沃美映射获取: {cinema_id} -> {cinema_name}")
+            return cinema_name
+
+        # 🎯 第四优先级：华联系统硬编码映射
+        huanlian_cinema_map = {
+            "35fec8259e74": "华夏优加荟大都荟",
+            "11b7e4bcc265": "深影国际影城(佐阾虹湾购物中心店)",
+            "72f496f05710": "中影星美国际影城（郓城店）",
+            "c71994bd3279": "1929电影公园"
+        }
+
+        if cinema_id in huanlian_cinema_map:
+            cinema_name = huanlian_cinema_map[cinema_id]
+            print(f"[影院名称] ✅ 从华联映射获取: {cinema_id} -> {cinema_name}")
+            return cinema_name
+
+        print(f"[影院名称] ❌ 未找到影院ID {cinema_id}，使用默认名称")
         return "未知影院"
 
     except Exception as e:
-        print(f"[影院名称] 获取影院名称错误: {e}")
-        # 降级使用硬编码映射
-        cinema_name_map = {
-            "35fec8259e74": "华夏优加荟大都荟",
-            "b8e8b8b8b8b8": "其他影院1",
-            "c9f9c9f9c9f9": "其他影院2"
-        }
-        return cinema_name_map.get(cinema_id, "未知影院")
+        print(f"[影院名称] ❌ 获取影院名称错误: {e}")
+        import traceback
+        traceback.print_exc()
+        return "未知影院"
 
 def create_fallback_qrcode(ticket_code: str, size: tuple = (200, 200)) -> Image.Image:
     """
@@ -382,39 +430,47 @@ def create_qrcode_with_info(qr_img, ticket_code: str, order_info: dict) -> Image
 
 def save_qrcode_image(qr_bytes: bytes, order_no: str, cinema_id: str) -> str:
     """
-    保存二维码图片到本地
+    保存二维码图片到本地 - 🔧 修复：保存到上级目录的"票根"文件夹
     :param qr_bytes: 二维码图片字节数据
     :param order_no: 订单号
     :param cinema_id: 影院ID
     :return: 保存的文件路径
     """
     try:
-        # 🎯 获取影院名称 - 从影院管理器中获取真实名称
+        # 🎯 获取影院名称 - 从沃美系统或本地数据获取真实名称
         cinema_name = get_cinema_name_by_id(cinema_id)
-        
+
         # 🎯 生成日期字符串 (MMDD格式)
         current_date = datetime.now().strftime("%m%d")
-        
-        # 🎯 构建文件名：影院+日期+订单号.png
+
+        # 🎯 构建文件名：影院+日期+订单号_取票码.png
         filename = f"{cinema_name}_{current_date}_{order_no}_取票码.png"
-        
-        # 🎯 确保data/img目录存在
-        img_dir = os.path.join("data", "img")
-        os.makedirs(img_dir, exist_ok=True)
-        
+
+        # 🔧 修复：使用相对路径保存到上级目录的"票根"文件夹
+        # 获取当前脚本所在目录的上级目录
+        current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        parent_dir = os.path.dirname(current_dir)
+        ticket_dir = os.path.join(parent_dir, "票根")
+
+        # 🎯 确保"票根"目录存在
+        os.makedirs(ticket_dir, exist_ok=True)
+        print(f"[图片保存] 📁 票根目录: {ticket_dir}")
+
         # 🎯 完整文件路径
-        file_path = os.path.join(img_dir, filename)
-        
+        file_path = os.path.join(ticket_dir, filename)
+
         # 🎯 保存图片
         with open(file_path, 'wb') as f:
             f.write(qr_bytes)
-        
+
         print(f"[图片保存] ✅ 取票码二维码保存成功:")
         print(f"[图片保存] 📁 路径: {file_path}")
         print(f"[图片保存] 📏 大小: {len(qr_bytes)} bytes")
-        
+        print(f"[图片保存] 🎬 影院: {cinema_name}")
+        print(f"[图片保存] 🎫 订单: {order_no}")
+
         return file_path
-        
+
     except Exception as e:
         print(f"[图片保存] ❌ 保存失败: {e}")
         import traceback

@@ -78,6 +78,10 @@ class EventBus(QObject):
         self._max_history = 100  # 最大历史记录数
         self._lock = threading.Lock()  # 线程锁
 
+        # 🆕 沃美系统数据存储
+        self._current_womei_cinemas = []  # 当前沃美影院列表
+        self._current_womei_cinema = None  # 当前选中的沃美影院
+
     def subscribe(self, event_name: str, callback: Callable):
         """订阅事件"""
         with self._lock:
@@ -158,6 +162,38 @@ class EventBus(QObject):
                 self._subscribers[event_name] = valid_refs
                 return len(valid_refs)
             return 0
+
+    # 🆕 沃美系统数据管理方法
+    def set_womei_cinemas(self, cinemas: list):
+        """设置沃美影院列表"""
+        with self._lock:
+            self._current_womei_cinemas = cinemas
+            print(f"[事件总线] 设置沃美影院列表: {len(cinemas)} 个影院")
+
+    def get_womei_cinemas(self) -> list:
+        """获取沃美影院列表"""
+        with self._lock:
+            return self._current_womei_cinemas.copy()
+
+    def set_current_womei_cinema(self, cinema: dict):
+        """设置当前选中的沃美影院"""
+        with self._lock:
+            self._current_womei_cinema = cinema
+            cinema_name = cinema.get('cinema_name', '未知影院') if cinema else None
+            print(f"[事件总线] 设置当前沃美影院: {cinema_name}")
+
+    def get_current_womei_cinema(self) -> dict:
+        """获取当前选中的沃美影院"""
+        with self._lock:
+            return self._current_womei_cinema
+
+    def find_womei_cinema_by_id(self, cinema_id: str) -> dict:
+        """根据影院ID查找沃美影院信息"""
+        with self._lock:
+            for cinema in self._current_womei_cinemas:
+                if cinema.get('cinema_id') == cinema_id:
+                    return cinema
+            return None
 
 
 # 全局事件总线实例

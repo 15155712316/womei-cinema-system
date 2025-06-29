@@ -1,0 +1,153 @@
+{
+  "order_creation": {
+    "success": true,
+    "order_id": "250624181210000925",
+    "response_time": 695.1308250427246,
+    "data": {
+      "ret": 0,
+      "sub": 0,
+      "msg": "successfully",
+      "data": {
+        "order_id": "250624181210000925",
+        "server_time": 1750759968
+      }
+    }
+  },
+  "dual_mode_test": {
+    "success": true,
+    "price_calculation": {
+      "success": true,
+      "response_time": 208.4524631500244,
+      "data": {
+        "ret": 0,
+        "sub": 1000,
+        "msg": "参数错误",
+        "data": {}
+      }
+    },
+    "voucher_binding": {
+      "success": true,
+      "response_time": 352.384090423584,
+      "data": {
+        "ret": 0,
+        "sub": 4004,
+        "msg": "获取兑换券验券异常，请联系影院",
+        "data": {}
+      }
+    },
+    "total_response_time": 560.8365535736084,
+    "request_count": 2
+  },
+  "single_mode_test": {
+    "success": true,
+    "voucher_binding": {
+      "success": true,
+      "response_time": 279.3269157409668,
+      "data": {
+        "ret": 0,
+        "sub": 4004,
+        "msg": "获取兑换券验券异常，请联系影院",
+        "data": {}
+      }
+    },
+    "total_response_time": 279.3269157409668,
+    "request_count": 1
+  },
+  "error_scenarios": [
+    {
+      "scenario": "无效券码",
+      "code": "INVALID123456789",
+      "success": true,
+      "message": "兑换券数据异常，请重新添加",
+      "response_time": 282.2282314300537,
+      "response": {
+        "ret": 0,
+        "sub": 4004,
+        "msg": "兑换券数据异常，请重新添加",
+        "data": {}
+      }
+    },
+    {
+      "scenario": "可能已使用的券码",
+      "code": "GZJY01002948425042",
+      "success": true,
+      "message": "兑换券数据异常，请重新添加",
+      "response_time": 302.3085594177246,
+      "response": {
+        "ret": 0,
+        "sub": 4004,
+        "msg": "兑换券数据异常，请重新添加",
+        "data": {}
+      }
+    },
+    {
+      "scenario": "空券码",
+      "code": "",
+      "success": true,
+      "message": "successfully",
+      "response_time": 270.92647552490234,
+      "response": {
+        "ret": 0,
+        "sub": 0,
+        "msg": "successfully",
+        "data": {
+          "order_id": "250624181210000925",
+          "order_total_price": 71.8,
+          "order_unfee_total_price": 71.8,
+          "order_payment_price": 71.8,
+          "order_payment_limit_balance": 0,
+          "order_payment_after_limit_balance": 0,
+          "limit_sub_card_pay": true,
+          "ticket_total_price": 71.8,
+          "ticket_unfee_total_price": 71.8,
+          "ticket_bis_fee": 1.8,
+          "ticket_payment_total_price": 71.8,
+          "ticket_total_fee": 0,
+          "ticket_single_price": [
+            35.9,
+            35.9
+          ],
+          "ticket_single_fee": 0,
+          "ticket_num": 2,
+          "fee_ticket_num": 2,
+          "limit_card_use": {},
+          "marketing_use": {},
+          "voucher_use": {},
+          "voucher_use_goods": {},
+          "coupon_use": {},
+          "rewards_use": {},
+          "marketing_discounts": [],
+          "voucher_discounts": [],
+          "coupon_discounts": [],
+          "rewards_discounts": {
+            "usable_rewards": [],
+            "unusable_rewards": []
+          },
+          "goods": {},
+          "order_msg": "",
+          "evgc_voucher_use": [],
+          "evgc_limit_use": [],
+          "ticket_package_goods": [],
+          "is_match_gift_coupon_activity": false
+        }
+      }
+    }
+  ],
+  "performance_comparison": {
+    "dual_mode_time": 560.8365535736084,
+    "single_mode_time": 279.3269157409668,
+    "time_saved": 281.5096378326416,
+    "time_saved_percent": 50.1945952058373,
+    "request_reduction": 50,
+    "dual_mode_features": {
+      "price_preview": true,
+      "user_confirmation": true,
+      "step_by_step_error": true
+    },
+    "single_mode_features": {
+      "direct_binding": true,
+      "unified_error_handling": true,
+      "faster_response": true
+    }
+  }
+}

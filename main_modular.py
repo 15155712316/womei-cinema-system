@@ -2204,41 +2204,76 @@ class ModularCinemaMainWindow(QMainWindow):
             else:
                 info_lines.append(f"原价: ¥{original_amount:.2f}")
 
-            # ⚠️ 【同步维护点2】券抵扣信息 - 必须与OrderDetailManager第335行保持一致
+            # ⚠️ 【同步维护点2】券抵扣信息 - 🆕 支持沃美券绑定结果格式
             if hasattr(self, 'current_coupon_info') and self.current_coupon_info and hasattr(self, 'selected_coupons') and self.selected_coupons:
-                coupon_data = DataUtils.safe_get(self.current_coupon_info, 'resultData', {})
+                # 🆕 检查是否为沃美券绑定结果
+                womei_bind_result = self.current_coupon_info.get('womei_bind_result')
 
-                if coupon_data:
-                    # 获取券抵扣金额（分）
-                    discount_price_fen = int(DataUtils.safe_get(coupon_data, 'discountprice', '0'))
-                    discount_price_yuan = discount_price_fen / 100.0
+                if womei_bind_result and womei_bind_result.get('success'):
+                    # 🆕 使用沃美券绑定结果的价格信息
+                    price_info = womei_bind_result.get('price_info', {})
+                    voucher_info = womei_bind_result.get('voucher_info', {})
 
-                    # 获取实付金额（分）
-                    pay_amount_fen = int(DataUtils.safe_get(coupon_data, 'paymentAmount', '0'))
-
-                    # 检查会员支付金额
-                    has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
-                    if has_member_card:
-                        mem_payment_fen = int(DataUtils.safe_get(coupon_data, 'mempaymentAmount', '0'))
-                        if mem_payment_fen != 0:
-                            pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
-
-                    pay_amount_yuan = pay_amount_fen / 100.0
+                    # 获取价格信息（元）
+                    original_price = price_info.get('order_total_price', 0)
+                    payment_price = price_info.get('order_payment_price', 0)
+                    voucher_discount = voucher_info.get('use_total_price', 0)
 
                     # 显示券信息
                     coupon_count = len(self.selected_coupons)
+                    used_codes = voucher_info.get('use_codes', [])
                     info_lines.append(f"使用券: {coupon_count}张")
-                    if discount_price_yuan > 0:
-                        info_lines.append(f"券优惠: -¥{discount_price_yuan:.2f}")
+
+                    if voucher_discount > 0:
+                        info_lines.append(f"券优惠: -¥{voucher_discount:.2f}")
 
                     # 显示实付金额
-                    if pay_amount_yuan == 0:
+                    if payment_price == 0:
                         info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
                     else:
-                        final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
-                        if has_member_card and mem_payment_fen != 0:
-                            final_amount += " (会员价)"
-                        info_lines.append(final_amount)
+                        info_lines.append(f"实付金额: ¥{payment_price:.2f}")
+
+                    # 🆕 显示券使用详情
+                    if used_codes:
+                        info_lines.append(f"券码: {', '.join(used_codes[:2])}{'...' if len(used_codes) > 2 else ''}")
+
+                    print(f"[订单详情] 🆕 沃美券信息: 原价={original_price}, 支付={payment_price}, 优惠={voucher_discount}")
+
+                else:
+                    # 🔄 兼容原有格式（传统券系统）
+                    coupon_data = DataUtils.safe_get(self.current_coupon_info, 'resultData', {})
+
+                    if coupon_data:
+                        # 获取券抵扣金额（分）
+                        discount_price_fen = int(DataUtils.safe_get(coupon_data, 'discountprice', '0'))
+                        discount_price_yuan = discount_price_fen / 100.0
+
+                        # 获取实付金额（分）
+                        pay_amount_fen = int(DataUtils.safe_get(coupon_data, 'paymentAmount', '0'))
+
+                        # 检查会员支付金额
+                        has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
+                        if has_member_card:
+                            mem_payment_fen = int(DataUtils.safe_get(coupon_data, 'mempaymentAmount', '0'))
+                            if mem_payment_fen != 0:
+                                pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
+
+                        pay_amount_yuan = pay_amount_fen / 100.0
+
+                        # 显示券信息
+                        coupon_count = len(self.selected_coupons)
+                        info_lines.append(f"使用券: {coupon_count}张")
+                        if discount_price_yuan > 0:
+                            info_lines.append(f"券优惠: -¥{discount_price_yuan:.2f}")
+
+                        # 显示实付金额
+                        if pay_amount_yuan == 0:
+                            info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
+                        else:
+                            final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
+                            if has_member_card and mem_payment_fen != 0:
+                                final_amount += " (会员价)"
+                            info_lines.append(final_amount)
             else:
                 # 无券抵扣，显示原价或会员价
                 has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
@@ -2512,9 +2547,7 @@ class ModularCinemaMainWindow(QMainWindow):
 
             seat_parts = []
             for i, seat in enumerate(selected_seats):
-                print(f"[沃美座位] 座位{i+1}完整数据: {seat}")
-
-                # 🔧 修复：从original_data获取真实的座位图API数据
+                # 从original_data获取真实的座位图API数据
                 original_data = seat.get('original_data', {})
 
                 # 优先使用original_data中的真实数据
@@ -2522,12 +2555,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 real_area_no = original_data.get('area_no', '')
                 real_row = original_data.get('row', '')
                 real_col = original_data.get('col', '')
-
-                print(f"[沃美座位] 座位{i+1}原始数据:")
-                print(f"  - seat_no: {real_seat_no}")
-                print(f"  - area_no: {real_area_no}")
-                print(f"  - row: {real_row}")
-                print(f"  - col: {real_col}")
 
                 # 验证数据完整性
                 if not real_seat_no or '#' not in real_seat_no:
@@ -2602,6 +2629,16 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 显示订单详情
             self._show_order_detail(self.current_order)
+
+            # 🆕 获取可用券列表 - 修复参数传递
+            cinema_id = cinema_data.get('cinema_id', '') or cinema_data.get('cinemaid', '') or cinema_data.get('id', '')
+            print(f"[优惠券调用] 🔍 影院参数检查:")
+            print(f"  - cinema_data类型: {type(cinema_data)}")
+            print(f"  - cinema_data内容: {cinema_data}")
+            print(f"  - 提取的cinema_id: {cinema_id}")
+            print(f"  - order_id: {order_id}")
+
+            self._load_available_coupons(order_id, cinema_id)
 
             # 发布全局事件
             if hasattr(self, 'event_bus'):
@@ -2699,9 +2736,7 @@ class ModularCinemaMainWindow(QMainWindow):
             # 解析：区域ID:行号:列号:seat_no
             # 其中 seat_no = 11051771#09#06 (座位唯一标识)
 
-            print(f"[订单调试] 🔍 分析座位数据:")
-            for i, seat in enumerate(seat_info_list[:2]):  # 只打印前2个座位
-                print(f"  座位{i+1}: {seat}")
+            # 分析座位数据
 
             seat_parts = []
             for seat in seat_info_list:
@@ -2710,15 +2745,8 @@ class ModularCinemaMainWindow(QMainWindow):
                 col_num = seat.get("columnNum", 1)
                 area_id = seat.get("areaId", 1)  # 从座位数据获取区域ID
 
-                # 🔧 关键修复：使用真实的seat_no
                 # 从座位数据的original_data中获取真实的sn字段
                 original_data = seat.get("original_data", {})
-                seat_no_from_original = original_data.get("sn", "")
-                seat_no_from_seat = seat.get("seatNo", "")
-
-                print(f"[订单调试] 🔍 座位{row_num}-{col_num}完整数据分析:")
-                print(f"  - original_data: {original_data}")
-                print(f"  - seat完整数据: {seat}")
 
                 # 🔍 尝试多种可能的seat_no字段名
                 possible_seat_no_fields = ['sn', 'seat_no', 'seatNo', 'seat_id', 'id', 'code']
@@ -3356,7 +3384,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _display_seat_map(self, seat_data: dict, session_info: dict):
         """显示座位图"""
         try:
-            print(f"[主窗口] 座位数据字段: {list(seat_data.keys()) if seat_data else '空数据'}")
+            # print(f"[主窗口] 座位数据字段: {list(seat_data.keys()) if seat_data else '空数据'}")
             
             # 🆕 解析座位图数据结构 - 使用实际API返回的数据格式
             seat_matrix = None
@@ -3374,15 +3402,15 @@ class ModularCinemaMainWindow(QMainWindow):
                 room_seat = seat_data.get('room_seat', [])
                 if room_seat:
                     seat_matrix, area_data = self._parse_womei_room_seat(room_seat, hall_info)
-                    print(f"[主窗口] 沃美座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行, {len(area_data) if area_data else 0} 个区域")
+                    # print(f"[主窗口] 沃美座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行, {len(area_data) if area_data else 0} 个区域")
                 else:
                     # 兼容旧格式
                     seats_array = seat_data.get('seats', [])
                     if seats_array:
                         seat_matrix = self._parse_seats_array(seats_array, hall_info)
-                        print(f"[主窗口] 座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行")
+                        # print(f"[主窗口] 座位矩阵解析完成: {len(seat_matrix) if seat_matrix else 0} 行")
                     else:
-                        print(f"[主窗口] 未找到座位数据，可用字段: {list(seat_data.keys())}")
+                        print(f"[主窗口] 未找到座位数据333，可用字段: {list(seat_data.keys())}")
             
             # 🆕 创建或更新座位图面板
             if seat_matrix and len(seat_matrix) > 0:
@@ -3457,13 +3485,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _parse_womei_room_seat(self, room_seat: List[Dict], hall_info: dict) -> tuple[List[List[Dict]], List[Dict]]:
         """解析沃美room_seat数据为座位矩阵和区域数据（增强调试功能）"""
         try:
-            print(f"[座位调试] ==================== 开始解析沃美座位数据 ====================")
-            print(f"[座位调试] 原始数据区域数量: {len(room_seat)}")
-
-            # 🔧 输出完整的原始API响应数据
-            import json
-            print(f"[座位调试] 完整原始API响应数据:")
-            print(json.dumps(room_seat, indent=2, ensure_ascii=False))
+            # 座位数据解析（已移除详细调试输出）
 
             # 收集所有座位和区域信息
             all_seats = []
@@ -3516,27 +3538,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     print(f"[座位调试] ⚠️ 未知的座位数据格式: {type(seats_data)}")
                     continue
 
-            # 🔧 统计座位状态分布
-            status_count = {'available': 0, 'sold': 0, 'locked': 0, 'other': 0}
-            for seat in all_seats:
-                status = seat.get('status', 'other')
-                if status in status_count:
-                    status_count[status] += 1
-                else:
-                    status_count['other'] += 1
-
-            print(f"[座位调试] ==================== 座位数据统计 ====================")
-            print(f"[座位调试] 总座位数: {len(all_seats)}")
-            print(f"[座位调试] 座位图尺寸: {max_row}行 x {max_col}列")
-            print(f"[座位调试] 🎯 座位状态分布:")
-            print(f"  - 可选座位: {status_count['available']} 个")
-            print(f"  - 已售座位: {status_count['sold']} 个")
-            print(f"  - 锁定座位: {status_count['locked']} 个")
-            print(f"  - 其他状态: {status_count['other']} 个")
-
-            # 🔧 座位矩阵构建过程调试
-            print(f"[座位调试] ==================== 开始构建座位矩阵 ====================")
-            print(f"[座位调试] 矩阵尺寸: {max_row} 行 x {max_col} 列")
+            # 座位矩阵构建
             seat_matrix = []
             for row in range(1, max_row + 1):
                 row_seats = []
@@ -3572,23 +3574,11 @@ class ModularCinemaMainWindow(QMainWindow):
             hall_info['col_count'] = max_col
             hall_info['name'] = hall_info.get('hall_name', '未知影厅')
 
-            print(f"[主窗口] 沃美座位矩阵构建完成: {len(seat_matrix)} 行 x {max_col} 列")
-            print(f"[主窗口] 区域信息收集完成: {len(area_data)} 个区域")
+            # 座位矩阵构建完成
             return seat_matrix, area_data
 
         except Exception as e:
             print(f"[座位调试] ❌ 解析沃美座位数据失败: {e}")
-            print(f"[座位调试] ==================== 错误诊断信息 ====================")
-            print(f"[座位调试] 原始数据类型: {type(room_seat)}")
-            print(f"[座位调试] 原始数据长度: {len(room_seat) if isinstance(room_seat, (list, dict)) else 'N/A'}")
-
-            # 尝试输出部分原始数据用于诊断
-            try:
-                import json
-                print(f"[座位调试] 原始数据前100字符: {str(room_seat)[:100]}...")
-            except:
-                print(f"[座位调试] 无法输出原始数据")
-
             import traceback
             traceback.print_exc()
             return [], []
@@ -3606,11 +3596,11 @@ class ModularCinemaMainWindow(QMainWindow):
             is_target_seat = (seat_row == 1 and seat_col in [6, 7])
 
             if is_target_seat:
-                print(f"\n🎯 [座位状态验证] 发现目标座位: {seat_row}排{seat_col}座")
-                print(f"  座位编号: {seat_no}")
-                print(f"  原始状态码: {seat_status}")
+                # print(f"\n🎯 [座位状态验证] 发现目标座位: {seat_row}排{seat_col}座")
+                # print(f"  座位编号: {seat_no}")
+                # print(f"  原始状态码: {seat_status}")
                 print(f"  区域: {area_name}")
-                print(f"  完整数据: {seat_detail}")
+                # print(f"  完整数据: {seat_detail}")
 
             # 详细的状态映射调试
             if seat_status == 0:
@@ -3658,17 +3648,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     elif seat_status == 2:
                         print(f"     ⚠️ API返回锁定状态，可能需要映射为已售")
 
-            # 🔧 打印前10个座位的详细信息示例
-            if len(all_seats) < 10:
-                row_info = seat_detail.get('row', row_num or 1)
-                col_info = seat_detail.get('col', 1)
-                x_info = seat_detail.get('x', 1)
-                y_info = seat_detail.get('y', row_num or 1)
-                type_info = seat_detail.get('type', 0)
-                print(f"[座位调试] 座位 {len(all_seats) + 1}: {seat_no}")
-                print(f"  - 位置: 第{row_info}行第{col_info}列 (x={x_info}, y={y_info})")
-                print(f"  - 状态: {seat_status} → {status}")
-                print(f"  - 类型: {type_info}, 价格: {area_price}元")
+            # 座位信息处理（已移除详细调试输出）
 
             # 🔧 修复：沃美座位数据格式，确保original_data包含正确的沃美数据
             seat = {
@@ -3712,36 +3692,12 @@ class ModularCinemaMainWindow(QMainWindow):
     def _parse_seats_array(self, seats_array: List[Dict], hall_info: dict) -> List[List[Dict]]:
         """解析seats数组为座位矩阵"""
         try:
-            print(f"[主窗口] 座位数据量: {len(seats_array)}")
-            
+            # 座位数据处理（已移除详细调试输出）
             if not seats_array:
                 return []
-            
-            # 🆕 分析seats数组结构，使用正确的字段名
+
             max_row = 0
             max_col = 0
-            
-            # 🆕 详细打印前几个座位数据以调试座位号问题
-            print(f"[座位调试] 🔍 座位图API返回的原始数据分析:")
-            for i, seat in enumerate(seats_array[:3]):  # 只打印前3个，但显示完整数据
-                print(f"  座位{i+1}完整数据: {seat}")
-                rn = seat.get('rn', 'N/A')
-                cn = seat.get('cn', 'N/A')
-                sn = seat.get('sn', 'N/A')
-                r = seat.get('r', 'N/A')  # 🆕 逻辑排号
-                c = seat.get('c', 'N/A')  # 🆕 逻辑列数
-                s = seat.get('s', 'N/A')
-                print(f"    - rn(物理行): {rn}, cn(物理列): {cn}")
-                print(f"    - r(逻辑行): {r}, c(逻辑列): {c}")
-                print(f"    - sn(座位号): {sn}, s(状态): {s}")
-
-                # 🔍 检查是否有其他可能的座位编号字段
-                other_fields = {}
-                for key, value in seat.items():
-                    if key not in ['rn', 'cn', 'sn', 'r', 'c', 's'] and isinstance(value, (str, int)):
-                        other_fields[key] = value
-                if other_fields:
-                    print(f"    - 其他字段: {other_fields}")
             
             for seat in seats_array:
                 # 🆕 使用物理座位号（rn, cn）来确定座位图的最大尺寸
@@ -3816,28 +3772,12 @@ class ModularCinemaMainWindow(QMainWindow):
 
                     seat_matrix[physical_row][physical_col] = seat_data
             
-            # 打印前几行座位数据用于调试，显示物理间隔
-            for i, row in enumerate(seat_matrix[:3]):  # 只打印前3行
-                valid_seats = [seat['num'] if seat else 'None' for seat in row[:20]]  # 显示前20列以看到间隔
-
-            # 🆕 专门检查5排的物理间隔
-            if len(seat_matrix) >= 5:
-                row_5 = seat_matrix[4]  # 第5排（0基索引）
-                for col_idx, seat in enumerate(row_5):
-                    if seat:
-                        original_data = seat.get('original_data', {})
-                        logical_r = original_data.get('r', '?')
-                        logical_c = original_data.get('c', '?')
-                        physical_cn = original_data.get('cn', '?')
-                        physical_rn = original_data.get('rn', '?')
-                    else:
-                        pass
+            # 座位矩阵构建完成
             
             return seat_matrix
             
         except Exception as e:
-            import traceback
-            traceback.print_exc()
+            print(f"[座位调试] 解析seats数组失败: {e}")
             return []
 
     def _on_seat_map_selection_changed(self, selected_seats: List[Dict]):
@@ -3892,7 +3832,7 @@ class ModularCinemaMainWindow(QMainWindow):
 
             else:
                 # 兼容旧格式：只有座位数据
-                print(f"[主窗口] 座位面板提交订单（兼容模式）: {len(order_data)} 个座位")
+                # print(f"[主窗口] 座位面板提交订单（兼容模式）: {len(order_data)} 个座位")
                 self.on_submit_order(order_data)
 
         except Exception as e:
@@ -6053,8 +5993,15 @@ class ModularCinemaMainWindow(QMainWindow):
             # 显示订单详情
             self._show_order_detail(self.current_order)
 
-            # 获取可用券列表
-            self._load_available_coupons(order_id, cinema_data.get('cinemaid', ''))
+            # 获取可用券列表 - 修复参数传递
+            cinema_id = cinema_data.get('cinemaid', '') or cinema_data.get('cinema_id', '') or cinema_data.get('id', '')
+            print(f"[优惠券调用] 🔍 影院参数检查:")
+            print(f"  - cinema_data类型: {type(cinema_data)}")
+            print(f"  - cinema_data内容: {cinema_data}")
+            print(f"  - 提取的cinema_id: {cinema_id}")
+            print(f"  - order_id: {order_id}")
+
+            self._load_available_coupons(order_id, cinema_id)
 
             # 发布订单创建事件（应用观察者模式）
             if hasattr(self, 'order_subject'):
@@ -6075,75 +6022,84 @@ class ModularCinemaMainWindow(QMainWindow):
     def _load_available_coupons(self, order_id: str, cinema_id: str):
         """获取订单可用券列表 - 复用现有实现"""
         try:
-            if not self.current_account or not order_id or not cinema_id:
-                print("[优惠券] 券列表加载失败：缺少必要参数")
-                self._show_coupon_error_message("参数不完整，无法加载券列表")
+            print(f"[优惠券] 🔍 参数验证:")
+            print(f"  - current_account存在: {bool(self.current_account)}")
+            print(f"  - order_id: '{order_id}' (长度: {len(order_id) if order_id else 0})")
+            print(f"  - cinema_id: '{cinema_id}' (长度: {len(cinema_id) if cinema_id else 0})")
+
+            if not self.current_account:
+                print("[优惠券] ❌ 券列表加载失败：缺少账号信息")
+                self._show_coupon_error_message("缺少账号信息，无法加载券列表")
                 return
 
-            # 获取订单可用券
-            from services.order_api import get_coupons_by_order
+            if not order_id:
+                print("[优惠券] ❌ 券列表加载失败：缺少订单号")
+                self._show_coupon_error_message("缺少订单号，无法加载券列表")
+                return
 
-            coupon_params = {
-                'orderno': order_id,
-                'cinemaid': cinema_id,
-                'userid': DataUtils.safe_get(self.current_account, 'userid', ''),
-                'openid': DataUtils.safe_get(self.current_account, 'openid', ''),
-                'token': DataUtils.safe_get(self.current_account, 'token', ''),
-                'CVersion': '3.9.12',
-                'OS': 'Windows',
-                'source': '2',
-                'groupid': '',
-                'cardno': DataUtils.safe_get(self.current_account, 'cardno', '')
-            }
+            if not cinema_id:
+                print("[优惠券] ❌ 券列表加载失败：缺少影院ID")
+                self._show_coupon_error_message("缺少影院ID，无法加载券列表")
+                return
 
-            print(f"[优惠券] 开始获取券列表，订单号: {order_id}")
+            # 🆕 获取订单可用券 - 使用沃美新API
+            from api.voucher_api import get_order_available_vouchers
 
-            # 调用API获取券列表
-            coupon_result = get_coupons_by_order(coupon_params)
+            # 提取必要参数
+            token = DataUtils.safe_get(self.current_account, 'token', '')
 
-            # 检查API响应
+            print(f"[优惠券] 🚀 开始获取订单可用券列表，订单号: {order_id}")
+            print(f"[优惠券] 🏢 影院ID: {cinema_id}")
+            print(f"[优惠券] 🎫 Token: {token[:20]}...")
+
+            # 🆕 调用沃美订单可用券API
+            coupon_result = get_order_available_vouchers(cinema_id, token)
+
+            # 🆕 检查沃美API响应
             if coupon_result is None:
-                print("[优惠券] 券列表API返回None，可能是网络异常")
+                print("[优惠券] 沃美券API返回None，可能是网络异常")
                 self._show_coupon_error_message("网络异常，无法获取券列表")
                 return
 
             if not isinstance(coupon_result, dict):
-                print(f"[优惠券] 券列表API返回格式错误，类型: {type(coupon_result)}")
+                print(f"[优惠券] 沃美券API返回格式错误，类型: {type(coupon_result)}")
                 self._show_coupon_error_message("数据格式错误，无法解析券列表")
                 return
 
-            # 检查API响应状态
-            result_code = coupon_result.get('resultCode')
-            if result_code == '0':
+            # 🆕 检查沃美API响应状态 (success字段)
+            if coupon_result.get('success'):
                 # 成功获取券列表
-                result_data = coupon_result.get('resultData')
+                result_data = coupon_result.get('data')
 
                 if result_data is None:
-                    print("[优惠券] 券列表数据为空")
+                    print("[优惠券] 沃美券列表数据为空")
                     self._show_coupon_list([])
                     return
 
                 if not isinstance(result_data, dict):
-                    print(f"[优惠券] 券列表数据格式错误，类型: {type(result_data)}")
+                    print(f"[优惠券] 沃美券列表数据格式错误，类型: {type(result_data)}")
                     self._show_coupon_error_message("券数据格式错误")
                     return
 
-                # 获取券列表
+                # 🆕 获取沃美券列表 (vouchers字段)
                 coupons = DataUtils.safe_get(result_data, 'vouchers', [])
 
                 if not isinstance(coupons, list):
-                    print(f"[优惠券] 券列表不是数组格式，类型: {type(coupons)}")
+                    print(f"[优惠券] 沃美券列表不是数组格式，类型: {type(coupons)}")
                     coupons = []
 
-                print(f"[优惠券] 获取到 {len(coupons)} 张可用券")
+                print(f"[优惠券] 🎉 获取到 {len(coupons)} 张订单可用券")
+
+                # 🆕 转换沃美券数据格式以兼容现有UI
+                converted_coupons = self._convert_womei_vouchers_to_ui_format(coupons)
 
                 # 显示券列表
-                self._show_coupon_list(coupons)
+                self._show_coupon_list(converted_coupons)
 
             else:
-                # API返回错误
-                error_desc = DataUtils.safe_get(coupon_result, 'resultDesc', '未知错误')
-                print(f"[优惠券] 券列表API返回错误: {error_desc}")
+                # 沃美API返回错误
+                error_desc = coupon_result.get('message', '未知错误')
+                print(f"[优惠券] 沃美券API返回错误: {error_desc}")
                 self._show_coupon_error_message(f"获取券列表失败: {error_desc}")
 
         except Exception as e:
@@ -6151,6 +6107,62 @@ class ModularCinemaMainWindow(QMainWindow):
             traceback.print_exc()
             print(f"[优惠券] 券列表加载异常: {e}")
             self._show_coupon_error_message("券列表加载异常，请重试")
+
+    def _convert_womei_vouchers_to_ui_format(self, womei_vouchers: list) -> list:
+        """
+        🆕 转换沃美券数据格式以兼容现有UI显示逻辑
+
+        Args:
+            womei_vouchers: 沃美API返回的券列表
+
+        Returns:
+            list: 转换后的券列表，兼容现有UI格式
+        """
+        try:
+            converted_vouchers = []
+
+            for voucher in womei_vouchers:
+                if not isinstance(voucher, dict):
+                    continue
+
+                # 🆕 沃美券字段 → 现有UI字段映射
+                converted_voucher = {
+                    # 券名称映射
+                    'couponname': voucher.get('voucher_name', '未知券'),
+                    'voucherName': voucher.get('voucher_name', '未知券'),
+                    'name': voucher.get('voucher_name', '未知券'),
+
+                    # 券号映射
+                    'couponcode': voucher.get('voucher_code', ''),
+                    'voucherCode': voucher.get('voucher_code', ''),
+                    'code': voucher.get('voucher_code', ''),
+
+                    # 有效期映射
+                    'expireddate': voucher.get('expire_time_string', '未知'),
+                    'expiredDate': voucher.get('expire_time_string', '未知'),
+                    'expireDate': voucher.get('expire_time_string', '未知'),
+
+                    # 券类型映射
+                    'voucherType': '订单可用券',
+                    'coupontype': '订单可用券',
+
+                    # 状态映射
+                    'status': voucher.get('status', 'UN_USE'),
+
+                    # 保留原始沃美数据
+                    '_womei_original': voucher
+                }
+
+                converted_vouchers.append(converted_voucher)
+
+            print(f"[券格式转换] 🔄 转换完成: {len(womei_vouchers)} → {len(converted_vouchers)}")
+            return converted_vouchers
+
+        except Exception as e:
+            print(f"[券格式转换] ❌ 转换失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return []
 
     def _show_coupon_error_message(self, error_message: str):
         """显示券列表错误信息"""
@@ -6378,52 +6390,88 @@ class ModularCinemaMainWindow(QMainWindow):
                 print(f"[券选择事件] 缺少影院信息")
                 return
 
-            cinema_id = DataUtils.safe_get(cinema_data, 'cinemaid', '')
-            print(f"[券选择事件] 影院ID: {cinema_id}")
+            # 🔧 修复：沃美系统使用cinema_id字段，华联系统使用cinemaid字段
+            cinema_id = (DataUtils.safe_get(cinema_data, 'cinema_id', '') or
+                        DataUtils.safe_get(cinema_data, 'cinemaid', '') or
+                        DataUtils.safe_get(cinema_data, 'id', ''))
+            print(f"[券选择事件] 🔍 影院ID获取: cinema_data={cinema_data}")
+            print(f"[券选择事件] 🔍 提取的影院ID: {cinema_id}")
 
-            # 处理券选择
+            # 处理券选择 - 🆕 使用优化后的单接口模式券绑定
             if selected_codes and selected_codes[0]:  # 确保券号不为空
                 try:
                     couponcode = ','.join(selected_codes)
-                    print(f"[券选择事件] 开始验证券: {couponcode}")
+                    print(f"[券选择事件] 🚀 开始单接口模式券绑定: {couponcode}")
 
-                    # 构建API参数
-                    prepay_params = {
-                        'orderno': order_id,
-                        'couponcode': couponcode,
-                        'groupid': '',
-                        'cinemaid': cinema_id,
-                        'cardno': DataUtils.safe_get(account, 'cardno', ''),
-                        'userid': account['userid'],
-                        'openid': account['openid'],
-                        'CVersion': '3.9.12',
-                        'OS': 'Windows',
-                        'token': account['token'],
-                        'source': '2'
-                    }
+                    # 🆕 使用沃美订单券绑定服务
+                    from services.womei_order_voucher_service import get_womei_order_voucher_service
+                    voucher_service = get_womei_order_voucher_service()
 
-                    # 调用券价格查询API
-                    from services.order_api import get_coupon_prepay_info
-                    coupon_info = get_coupon_prepay_info(prepay_params)
+                    # 🆕 调用单接口模式券绑定（跳过价格计算步骤）
+                    bind_result = voucher_service.bind_voucher_to_order(
+                        cinema_id=cinema_id,
+                        token=account['token'],
+                        order_id=order_id,
+                        voucher_code=couponcode,
+                        voucher_type='VGC_T'
+                    )
 
-                    if coupon_info.get('resultCode') == '0':
-                        # 保存券价格信息
-                        self.current_coupon_info = coupon_info
+                    print(f"[券选择事件] 📥 券绑定结果: success={bind_result.get('success')}")
+
+                    if bind_result.get('success'):
+                        # 🆕 券绑定成功，保存券信息（兼容现有格式）
+                        self.current_coupon_info = {
+                            'resultCode': '0',
+                            'resultData': bind_result.get('data', {}),
+                            'womei_bind_result': bind_result  # 保存完整的绑定结果
+                        }
                         self.selected_coupons = selected_codes
-                        print(f"[券选择事件] 券验证成功，券数: {len(selected_codes)}")
+
+                        print(f"[券选择事件] ✅ 券绑定成功，券数: {len(selected_codes)}")
+
+                        # 🆕 获取更新后的订单信息
+                        updated_order = voucher_service.get_updated_order_info(
+                            cinema_id=cinema_id,
+                            token=account['token'],
+                            order_id=order_id
+                        )
+
+                        if updated_order.get('success'):
+                            # 更新当前订单数据
+                            self.current_order.update(updated_order.get('data', {}))
+                            print(f"[券选择事件] 🔄 订单信息已同步更新")
 
                         # 刷新订单详情显示，包含券抵扣信息
                         self._update_order_detail_with_coupon_info()
 
+                        # 🆕 显示券绑定成功消息
+                        from services.ui_utils import MessageManager
+                        savings = bind_result.get('savings', 0)
+                        if savings > 0:
+                            MessageManager.show_success(
+                                self, "券绑定成功",
+                                f"券绑定成功！节省金额: {savings}元"
+                            )
+                        else:
+                            MessageManager.show_success(self, "券绑定成功", "券已成功绑定到订单")
+
                     else:
-                        # 查询失败，清空选择
+                        # 🆕 券绑定失败，清空选择
                         self.current_coupon_info = None
                         self.selected_coupons = []
-                        error_desc = DataUtils.safe_get(coupon_info, 'resultDesc', '未知错误')
-                        print(f"[券选择事件] 券验证失败: {error_desc}")
+                        error_msg = bind_result.get('msg', '券绑定失败')
+                        print(f"[券选择事件] ❌ 券绑定失败: {error_msg}")
 
                         from services.ui_utils import MessageManager
-                        MessageManager.show_warning(self, "选券失败", error_desc)
+
+                        # 🔧 修复：特殊处理Token超时问题
+                        if bind_result.get('is_token_timeout'):
+                            MessageManager.show_error(
+                                self, "Token超时",
+                                f"用户Token已超时，请重新登录账号\n错误详情: {error_msg}"
+                            )
+                        else:
+                            MessageManager.show_warning(self, "券绑定失败", error_msg)
 
                         # 取消选择
                         for item in selected_items:

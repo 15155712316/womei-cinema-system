@@ -103,15 +103,126 @@ class VoucherAPI:
     def get_valid_vouchers_only(self, cinema_id: str, token: str) -> Dict[str, Any]:
         """
         只获取有效券列表（快捷方法）
-        
+
         Args:
             cinema_id: 影院ID
             token: 用户token
-            
+
         Returns:
             有效券列表
         """
         return self.get_user_vouchers(cinema_id, token, only_valid=True)
+
+    def get_order_available_vouchers(self, cinema_id: str, token: str) -> Dict[str, Any]:
+        """
+        获取当前订单可用的优惠券列表（沃美新API）
+
+        Args:
+            cinema_id: 影院ID
+            token: 用户token
+
+        Returns:
+            订单可用券列表
+        """
+        try:
+            print(f"[券API] 🚀 调用沃美订单可用券API")
+            print(f"[券API] 🏢 影院ID: {cinema_id}")
+            print(f"[券API] 🎫 Token: {token[:20]}...")
+
+            # 调用沃美券服务的新接口
+            from services.womei_voucher_service import get_womei_voucher_service
+            womei_service = get_womei_voucher_service()
+
+            result = womei_service.get_order_available_vouchers(cinema_id, token)
+
+            print(f"[券API] 📥 沃美服务响应: ret={result.get('ret')}, msg={result.get('msg')}")
+
+            # 检查沃美API响应
+            if result.get('ret') == 0:
+                vouchers_data = result.get('data', {}).get('vouchers', [])
+                total_count = result.get('data', {}).get('total_count', 0)
+
+                print(f"[券API] ✅ 获取成功，订单可用券数量: {total_count}")
+
+                # 转换为VoucherInfo对象格式（保持与现有API兼容）
+                from services.voucher_service import VoucherInfo
+                voucher_objects = []
+
+                for voucher_data in vouchers_data:
+                    try:
+                        voucher_obj = VoucherInfo(voucher_data)
+                        voucher_objects.append(voucher_obj)
+                    except Exception as e:
+                        logger.error(f"转换券对象失败: {e}")
+                        continue
+
+                # 转换为字典格式
+                vouchers_dict = []
+                for voucher in voucher_objects:
+                    try:
+                        if hasattr(voucher, 'to_dict'):
+                            vouchers_dict.append(voucher.to_dict())
+                        else:
+                            # 如果没有to_dict方法，手动构建字典
+                            vouchers_dict.append({
+                                'voucher_code': voucher.voucher_code,
+                                'voucher_code_mask': voucher.voucher_code_mask,
+                                'voucher_name': voucher.voucher_name,
+                                'expire_time': voucher.expire_time,
+                                'expire_time_string': voucher.expire_time_string,
+                                'status': voucher.status
+                            })
+                    except Exception as e:
+                        logger.error(f"转换券字典失败: {e}")
+                        continue
+
+                # 生成统计信息
+                statistics = {
+                    'total_count': len(vouchers_dict),
+                    'valid_count': len(vouchers_dict),  # 订单可用券都是有效的
+                    'used_count': 0,
+                    'disabled_count': 0,
+                    'expired_count': 0,
+                    'valid_rate': 100.0 if vouchers_dict else 0,
+                    'source': 'womei_order_api'
+                }
+
+                return {
+                    'success': True,
+                    'code': 200,
+                    'message': '获取订单可用券列表成功',
+                    'data': {
+                        'vouchers': vouchers_dict,
+                        'statistics': statistics,
+                        'page_info': {'total_page': 1, 'current_page': 1},
+                        'filters_applied': {
+                            'only_valid': True,
+                            'order_available': True,
+                            'api_source': 'womei_voucher_list'
+                        }
+                    }
+                }
+            else:
+                error_msg = result.get('msg', '获取订单可用券失败')
+                print(f"[券API] ❌ 沃美API错误: {error_msg}")
+                return {
+                    'success': False,
+                    'code': 500,
+                    'message': error_msg,
+                    'data': None
+                }
+
+        except Exception as e:
+            logger.error(f"获取订单可用券列表失败: {e}")
+            print(f"[券API] ❌ 异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                'success': False,
+                'code': 500,
+                'message': f'获取订单可用券失败: {str(e)}',
+                'data': None
+            }
     
     def get_voucher_statistics_only(self, cinema_id: str, token: str) -> Dict[str, Any]:
         """
@@ -321,6 +432,10 @@ def get_user_vouchers(cinema_id: str, token: str, **kwargs) -> Dict[str, Any]:
 def get_valid_vouchers(cinema_id: str, token: str) -> Dict[str, Any]:
     """获取有效券列表的便捷函数"""
     return voucher_api.get_valid_vouchers_only(cinema_id, token)
+
+def get_order_available_vouchers(cinema_id: str, token: str) -> Dict[str, Any]:
+    """获取订单可用券列表的便捷函数（沃美新API）"""
+    return voucher_api.get_order_available_vouchers(cinema_id, token)
 
 def search_vouchers(cinema_id: str, token: str, search_term: str) -> Dict[str, Any]:
     """搜索券的便捷函数"""

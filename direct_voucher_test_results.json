@@ -1,0 +1,13 @@
+{
+  "test_info": {
+    "voucher_code": "GZJY01002948416827",
+    "order_id": "250629142310002208",
+    "phone": "15155712316",
+    "test_time": "2025-06-29 14:26:29"
+  },
+  "voucher_available": true,
+  "voucher_cinema": "400028",
+  "binding_success": false,
+  "success_cinema": null,
+  "result": null
+}

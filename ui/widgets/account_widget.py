@@ -392,17 +392,36 @@ class AccountWidget(QWidget):
                     account_data = account_item.data(Qt.UserRole)
                     if account_data:
                         self.current_account = account_data
-                        
+
+                        # 🆕 自动填充功能：将选中账号的信息填入登录区域
+                        self._auto_fill_login_form(account_data)
+
                         # 发出账号选择信号
                         self.account_selected.emit(account_data)
-                        
+
                         # 发布全局事件
                         event_bus.account_changed.emit(account_data)
-                        
+
                         print(f"[账号组件] 选择账号: {account_data.get('phone', 'N/A')}")
-        
+
         except Exception as e:
             print(f"[账号组件] 选择处理错误: {e}")
+
+    def _auto_fill_login_form(self, account_data: dict):
+        """自动填充登录表单"""
+        try:
+            # 提取账号信息
+            phone = account_data.get('phone', '')
+            token = account_data.get('token', '')
+
+            # 自动填入输入框
+            self.phone_input.setText(phone)
+            self.token_input.setText(token)
+
+            print(f"[账号组件] 自动填充完成: {phone}")
+
+        except Exception as e:
+            print(f"[账号组件] 自动填充错误: {e}")
     
     # 🆕 移除双击处理方法，避免快速登录功能
 

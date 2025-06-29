@@ -1602,6 +1602,9 @@ class TabManagerWidget(QWidget):
             from utils.signals import event_bus
             event_bus.cinema_selected.emit(selected_cinema)
 
+            # 🆕 将当前选中的影院存储到事件总线，供二维码生成器使用
+            event_bus.set_current_womei_cinema(selected_cinema)
+
             # 🆕 更新券管理组件的影院信息
             self.update_voucher_account_info()
 
@@ -2832,6 +2835,10 @@ class TabManagerWidget(QWidget):
 
             # 获取影院ID
             cinema_id = self.get_selected_cinemaid()
+
+            # 🔧 修复：初始化result变量，确保后续逻辑正常
+            result = None
+
             if not cinema_id:
                 print(f"[沃美订单信息] ❌ 缺少影院ID")
                 # 使用订单列表的基本数据
@@ -2858,7 +2865,8 @@ class TabManagerWidget(QWidget):
                 print(f"[沃美订单信息] 📋 影院ID: {cinema_id}")
                 result = get_order_detail(order_id, cinema_id, token)
 
-            if result.get('success'):
+            # 🔧 修复：确保result存在后再判断success
+            if result and result.get('success'):
                 # API调用成功，使用详情数据
                 order_detail = result.get('order_detail', {})
                 print(f"[沃美订单信息] ✅ 获取订单详情成功")
@@ -2878,14 +2886,18 @@ class TabManagerWidget(QWidget):
                     if qr_bytes:
                         # 🎯 构建包含二维码的订单信息（使用UI期望的字段名）
                         order_info = {
-                            # UI期望的字段名
-                            'order_no': order_detail.get('order_no', order_id),
+                            # 🔧 修复：统一字段名，同时保持兼容性
+                            'order_id': order_detail.get('order_no', order_id),  # 主字段
+                            'order_no': order_detail.get('order_no', order_id),  # 兼容字段
                             'ticket_code': ticket_code,
-                            'film_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),
+                            'movie_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),  # 主字段
+                            'film_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),  # 兼容字段
                             'cinema_name': order_detail.get('cinema_name', order.get('cinema_name', '未知影院')),
-                            'show_time': order_detail.get('show_time', order.get('show_date', '')),
+                            'show_date': order_detail.get('show_time', order.get('show_date', '')),  # 主字段
+                            'show_time': order_detail.get('show_time', order.get('show_date', '')),  # 兼容字段
                             'hall_name': order_detail.get('hall_name', order.get('hall_name', '')),
                             'seat_info': order_detail.get('seat_info', order.get('seat_info', '')),
+                            'status_desc': order.get('status_desc', '已放映'),  # 添加状态描述
 
                             # 🎯 二维码相关字段
                             'qr_bytes': qr_bytes,
@@ -2903,31 +2915,41 @@ class TabManagerWidget(QWidget):
                     else:
                         # 二维码生成失败，使用文本显示
                         order_info = {
+                            # 🔧 修复：统一字段名
+                            'order_id': order_detail.get('order_no', order_id),
                             'order_no': order_detail.get('order_no', order_id),
                             'ticket_code': ticket_code,
+                            'movie_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),
                             'film_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),
                             'cinema_name': order_detail.get('cinema_name', order.get('cinema_name', '未知影院')),
+                            'show_date': order_detail.get('show_time', order.get('show_date', '')),
                             'show_time': order_detail.get('show_time', order.get('show_date', '')),
                             'hall_name': order_detail.get('hall_name', order.get('hall_name', '')),
                             'seat_info': order_detail.get('seat_info', order.get('seat_info', '')),
+                            'status_desc': order.get('status_desc', '已放映'),
                             'display_type': 'ticket_code'  # 降级为文本显示
                         }
                         print(f"[沃美订单信息] ⚠️ 二维码生成失败，使用文本显示")
                 else:
                     # 无取票码信息，使用基本显示
                     order_info = {
+                        # 🔧 修复：统一字段名
+                        'order_id': order_detail.get('order_no', order_id),
                         'order_no': order_detail.get('order_no', order_id),
                         'ticket_code': '无取票码',
+                        'movie_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),
                         'film_name': order_detail.get('film_name', order.get('movie_name', '未知影片')),
                         'cinema_name': order_detail.get('cinema_name', order.get('cinema_name', '未知影院')),
+                        'show_date': order_detail.get('show_time', order.get('show_date', '')),
                         'show_time': order_detail.get('show_time', order.get('show_date', '')),
                         'hall_name': order_detail.get('hall_name', order.get('hall_name', '')),
                         'seat_info': order_detail.get('seat_info', order.get('seat_info', '')),
+                        'status_desc': order.get('status_desc', '已放映'),
                         'display_type': 'ticket_code'
                     }
                     print(f"[沃美订单信息] ⚠️ 无取票码信息")
 
-            else:
+            elif result:
                 # API调用失败，使用列表数据
                 error_msg = result.get('error', '未知错误')
                 print(f"[沃美订单信息] ❌ 获取订单详情失败: {error_msg}")
@@ -2953,18 +2975,44 @@ class TabManagerWidget(QWidget):
                     'error_message': error_msg  # 添加错误信息
                 }
 
-            print(f"[沃美订单信息] 📤 发送订单信息到主窗口:")
-            print(f"  - 订单号: {order_info['order_id']}")
-            print(f"  - 影片: {order_info['movie_name']}")
-            print(f"  - 影院: {order_info['cinema_name']}")
-            print(f"  - 状态: {order_info['status_desc']}")
+            # 🔧 修复：确保order_info在所有情况下都被定义
+            if 'order_info' not in locals():
+                print(f"[沃美订单信息] ⚠️ order_info未定义，使用默认数据")
+                order_info = {
+                    'order_id': order.get('order_id', '未知订单号'),
+                    'movie_name': order.get('movie_name', '未知影片'),
+                    'cinema_name': order.get('cinema_name', '未知影院'),
+                    'status_desc': order.get('status_desc', '未知状态'),
+                    'show_date': order.get('show_date', ''),
+                    'hall_name': order.get('hall_name', ''),
+                    'seat_info': order.get('seat_info', ''),
+                    'ticket_num': order.get('ticket_num', 0),
+                    'qrCode': '',
+                    'ticketCode': '',
+                    'dsValidateCode': '',
+                    'display_type': 'womei_order_info',
+                    'error_message': '数据处理异常'
+                }
 
-            if order_info['show_date']:
-                print(f"  - 放映时间: {order_info['show_date']}")
-            if order_info['hall_name']:
-                print(f"  - 影厅: {order_info['hall_name']}")
-            if order_info['seat_info']:
-                print(f"  - 座位: {order_info['seat_info']}")
+            print(f"[沃美订单信息] 📤 发送订单信息到主窗口:")
+            # 🔧 修复：兼容不同的字段名
+            order_no = order_info.get('order_no') or order_info.get('order_id', '未知订单号')
+            movie_name = order_info.get('film_name') or order_info.get('movie_name', '未知影片')
+            cinema_name = order_info.get('cinema_name', '未知影院')
+            show_time = order_info.get('show_time') or order_info.get('show_date', '')
+            hall_name = order_info.get('hall_name', '')
+            seat_info = order_info.get('seat_info', '')
+
+            print(f"  - 订单号: {order_no}")
+            print(f"  - 影片: {movie_name}")
+            print(f"  - 影院: {cinema_name}")
+
+            if show_time:
+                print(f"  - 放映时间: {show_time}")
+            if hall_name:
+                print(f"  - 影厅: {hall_name}")
+            if seat_info:
+                print(f"  - 座位: {seat_info}")
 
             # 🎯 通过事件总线发送订单信息
             from utils.signals import event_bus
@@ -3955,6 +4003,10 @@ class TabManagerWidget(QWidget):
                 self.cinemas_data = cinemas
                 self._update_cinema_combo()
                 print(f"[影院调试] ✅ 影院下拉框更新完成，共 {len(cinemas)} 个影院")
+
+                # 🆕 将沃美影院数据存储到事件总线，供二维码生成器使用
+                from utils.signals import event_bus
+                event_bus.set_womei_cinemas(cinemas)
 
                 # 🆕 启用自动选择第一个影院的机制
                 if len(cinemas) > 0:

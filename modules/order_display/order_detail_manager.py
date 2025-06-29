@@ -373,33 +373,59 @@ class OrderDetailManager:
             else:
                 print(f"[订单详情管理器] 未找到券信息")
 
-            # 获取券抵扣信息
+            # 获取券抵扣信息 - 🆕 支持沃美券绑定结果格式
             discount_price_yuan = 0
             pay_amount_yuan = 0
+            used_voucher_codes = []
 
             if has_coupon_info and hasattr(self.main_window, 'current_coupon_info') and self.main_window.current_coupon_info:
-                coupon_data = self.main_window.current_coupon_info.get('resultData', {})
-                if coupon_data:
-                    # 获取券抵扣金额（分转元）
-                    discount_price_fen = int(coupon_data.get('discountprice', '0') or '0')
-                    discount_price_yuan = discount_price_fen / 100.0
+                # 🆕 检查是否为沃美券绑定结果
+                womei_bind_result = self.main_window.current_coupon_info.get('womei_bind_result')
 
-                    # 获取实付金额（分转元）
-                    pay_amount_fen = int(coupon_data.get('paymentAmount', '0') or '0')
+                if womei_bind_result and womei_bind_result.get('success'):
+                    # 🆕 使用沃美券绑定结果的价格信息
+                    price_info = womei_bind_result.get('price_info', {})
+                    voucher_info = womei_bind_result.get('voucher_info', {})
 
-                    # 检查会员支付金额
-                    if has_member_card:
-                        mem_payment_fen = int(coupon_data.get('mempaymentAmount', '0') or '0')
-                        if mem_payment_fen != 0:
-                            pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
+                    # 获取价格信息（元）
+                    original_price = price_info.get('order_total_price', 0)
+                    pay_amount_yuan = price_info.get('order_payment_price', 0)
+                    discount_price_yuan = voucher_info.get('use_total_price', 0)
+                    used_voucher_codes = voucher_info.get('use_codes', [])
 
-                    pay_amount_yuan = pay_amount_fen / 100.0
+                    print(f"[订单详情管理器] 🆕 沃美券信息: 原价={original_price}, 支付={pay_amount_yuan}, 优惠={discount_price_yuan}")
+
+                else:
+                    # 🔄 兼容原有格式（传统券系统）
+                    coupon_data = self.main_window.current_coupon_info.get('resultData', {})
+                    if coupon_data:
+                        # 获取券抵扣金额（分转元）
+                        discount_price_fen = int(coupon_data.get('discountprice', '0') or '0')
+                        discount_price_yuan = discount_price_fen / 100.0
+
+                        # 获取实付金额（分转元）
+                        pay_amount_fen = int(coupon_data.get('paymentAmount', '0') or '0')
+
+                        # 检查会员支付金额
+                        if has_member_card:
+                            mem_payment_fen = int(coupon_data.get('mempaymentAmount', '0') or '0')
+                            if mem_payment_fen != 0:
+                                pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
+
+                        pay_amount_yuan = pay_amount_fen / 100.0
 
             # 显示券信息
             if coupon_count > 0:
                 info_lines.append(f"使用券: {coupon_count}张")
                 if discount_price_yuan > 0:
                     info_lines.append(f"券优惠: -¥{discount_price_yuan:.2f}")
+
+                # 🆕 显示券码信息（如果有）
+                if used_voucher_codes:
+                    if len(used_voucher_codes) <= 2:
+                        info_lines.append(f"券码: {', '.join(used_voucher_codes)}")
+                    else:
+                        info_lines.append(f"券码: {', '.join(used_voucher_codes[:2])}...")
 
             # 实付金额
             if coupon_count > 0 and has_coupon_info:

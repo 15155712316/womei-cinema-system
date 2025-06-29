@@ -96,7 +96,7 @@ class SeatMapPanelPyQt5(QWidget):
             self.area_info_layout.addWidget(area_label)
             self.area_info_labels[area_name] = area_label
 
-        print(f"[座位面板] 区域信息显示已更新: {list(area_info.keys())}")
+        # 区域信息显示已更新
 
     def _init_ui(self):
         """初始化用户界面"""
@@ -203,7 +203,7 @@ class SeatMapPanelPyQt5(QWidget):
             self.seat_layout.addWidget(empty_label, 0, 0)
             return
 
-        print(f"[座位面板] 开始绘制座位图，数据: {len(self.seat_data)} 行")
+        # print(f"[座位面板] 开始绘制座位图，数据: {len(self.seat_data)} 行")
 
         # 🔧 重新设计：使用物理位置(x,y)来确定座位在网格中的显示位置
         # 首先收集所有座位的物理位置信息
@@ -236,8 +236,7 @@ class SeatMapPanelPyQt5(QWidget):
                     max_physical_x = max(max_physical_x, physical_x)
                     max_physical_y = max(max_physical_y, physical_y)
 
-        print(f"[座位面板] 物理坐标范围: X(1-{max_physical_x}), Y(1-{max_physical_y})")
-        print(f"[座位面板] 总座位数: {len(all_seats)}")
+        # 物理坐标范围和总座位数统计完成
 
         # 🔧 创建行号标签（基于物理Y坐标）
         displayed_rows = set()
@@ -346,9 +345,9 @@ class SeatMapPanelPyQt5(QWidget):
             # 🔧 保存引用（使用数组索引作为键）
             self.seat_buttons[(array_row, array_col)] = seat_btn
 
-            print(f"[座位面板] 座位 {logical_row}排{logical_col}座 -> 网格位置({grid_row},{grid_col}), 物理位置({physical_x},{physical_y})")
+            # print(f"[座位面板] 座位 {logical_row}排{logical_col}座 -> 网格位置({grid_row},{grid_col}), 物理位置({physical_x},{physical_y})")
         
-        print(f"[座位面板] 座位图绘制完成，共{len(self.seat_buttons)}个座位")
+        # print(f"[座位面板] 座位图绘制完成，共{len(self.seat_buttons)}个座位")
 
         # 🆕 更新区域信息显示
         self._update_area_info_display()
@@ -489,15 +488,13 @@ class SeatMapPanelPyQt5(QWidget):
         key = (r, c)
         seat_btn = self.seat_buttons[key]
 
-        # 🆕 检查座位状态，如果是不可选择状态则直接返回
+        # 检查座位状态，如果是不可选择状态则直接返回
         seat_status = seat.get('status', 'available')
         if seat_status == 'unavailable':
-            print(f"[座位面板] 🚫 座位不可选择: {seat.get('row', r + 1)}排{seat.get('col', c + 1)}座")
             return
 
         # 检查其他不可选择状态
         if seat_status in ['sold', 'locked']:
-            print(f"[座位面板] ⚠️ 座位不可选择: {seat.get('row', r + 1)}排{seat.get('col', c + 1)}座 (状态: {seat_status})")
             return
 
         # 🔧 获取座位的逻辑位置信息（用于显示和订单）
@@ -522,7 +519,7 @@ class SeatMapPanelPyQt5(QWidget):
         selected_seats = [self.seat_data[r][c] for (r, c) in self.selected_seats]
         self.seat_selected.emit(selected_seats)
 
-        print(f"[座位面板] 当前已选座位数: {len(self.selected_seats)}")
+        # 座位选择状态已更新
 
         # 更新提交按钮文字
         self._update_submit_button_text()
@@ -564,12 +561,12 @@ class SeatMapPanelPyQt5(QWidget):
             # 取消选中
             self.selected_seats.remove(key)
             seat['status'] = 'available'
-            print(f"[座位面板] 取消选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
+            # 取消选择座位
         else:
             # 选中
             self.selected_seats.add(key)
             seat['status'] = "selected"
-            print(f"[座位面板] 选择座位 {logical_row}排{logical_col}座，区域: {area_name}")
+            # 选择座位
 
         # 🔧 更新按钮样式时传递区域信息和座位类型
         self._update_seat_button_style(seat_btn, seat['status'], area_name, seat_type)
@@ -634,7 +631,7 @@ class SeatMapPanelPyQt5(QWidget):
         self._update_seat_button_style(btn1, 'selected', area_name, seat1.get('type', 0))
         self._update_seat_button_style(btn2, 'selected', area_name, seat2.get('type', 0))
 
-        print(f"[座位面板] 💕 选择情侣座位: {row1}排{col1}座 + {row2}排{col2}座，区域: {area_name}")
+        # 选择情侣座位
 
     def _deselect_couple_seats(self, key1: tuple, key2: tuple, seat1: dict, seat2: dict,
                              row1: int, col1: int, row2: int, col2: int, area_name: str):
@@ -651,7 +648,7 @@ class SeatMapPanelPyQt5(QWidget):
         self._update_seat_button_style(btn1, 'available', area_name, seat1.get('type', 0))
         self._update_seat_button_style(btn2, 'available', area_name, seat2.get('type', 0))
 
-        print(f"[座位面板] 💔 取消选择情侣座位: {row1}排{col1}座 + {row2}排{col2}座，区域: {area_name}")
+        # 取消选择情侣座位
 
     def _reset_couple_seats_status(self, key1: tuple, key2: tuple, seat1: dict, seat2: dict):
         """重置情侣座位状态"""
@@ -672,14 +669,14 @@ class SeatMapPanelPyQt5(QWidget):
             area_name = seat2.get('area_name', '')
             self._update_seat_button_style(btn2, 'available', area_name, seat2.get('type', 0))
 
-        print(f"[座位面板] 🔄 重置情侣座位状态")
+        # 重置情侣座位状态
 
     def update_seat_data(self, seat_data: List[List]):
         """更新座位数据并重绘"""
         self.seat_data = seat_data or []
         self.selected_seats.clear()
         self._draw_seats()
-        print(f"[座位面板] 更新座位数据: {len(self.seat_data)} 行")
+        # 座位数据已更新
 
     def update_seat_data_with_areas(self, seat_data: List[List], area_data: List[Dict] = None):
         """更新座位数据并包含区域信息"""
@@ -692,7 +689,7 @@ class SeatMapPanelPyQt5(QWidget):
             self._enrich_seat_data_with_area_info()
 
         self._draw_seats()
-        print(f"[座位面板] 更新座位数据（含区域信息): {len(self.seat_data)} 行, {len(self.area_data)} 个区域")
+        # 座位数据（含区域信息）已更新
 
     def _enrich_seat_data_with_area_info(self):
         """为座位数据补充区域信息"""
@@ -816,7 +813,7 @@ class SeatMapPanelPyQt5(QWidget):
             seats_text = " ".join(selected_seats_info)
             self.submit_btn.setText(f"提交订单 {seats_text}")
 
-        print(f"[座位面板] 按钮文字已更新: '{self.submit_btn.text()}'")
+        # 按钮文字已更新
     
     def set_on_seat_selected(self, callback: Callable):
         """设置选座回调函数"""
@@ -841,7 +838,7 @@ class SeatMapPanelPyQt5(QWidget):
             QMessageBox.warning(self, "提交订单", "请先选择座位")
             return
 
-        print(f"[座位面板] 提交订单，选中座位: {self.get_selected_seats()}")
+        # 提交订单处理
 
         # 🔧 修复：构建完整的订单数据，包含session_info
         selected_seat_objects = self.get_selected_seat_objects()
@@ -858,23 +855,25 @@ class SeatMapPanelPyQt5(QWidget):
         cinema_data = session_info.get('cinema_data')
         account = session_info.get('account')
 
-        print(f"[座位面板] 订单数据验证:")
+        # 订单数据验证
         print(f"  - 座位数量: {len(selected_seat_objects)}")
         print(f"  - 影院数据: {'存在' if cinema_data else '缺失'}")
         print(f"  - 账号数据: {'存在' if account else '缺失'}")
         print(f"  - 场次数据: {'存在' if session_info.get('session_data') else '缺失'}")
 
         if not cinema_data:
-            print(f"[座位面板] ⚠️ 警告: 影院数据缺失，可能导致订单创建失败")
+            # 警告: 影院数据缺失
+            pass
 
         if not account:
-            print(f"[座位面板] ⚠️ 警告: 账号数据缺失，可能导致订单创建失败")
+            # 警告: 账号数据缺失
+            pass
 
         # 调用回调函数，传递完整的订单数据
         if self.on_submit_order:
             self.on_submit_order(order_data)  # 🔧 传递完整的订单数据而不只是座位数据
 
-        print(f"[座位面板] 订单提交回调已调用")
+        # 订单提交回调已调用
     
     def clear_selection(self):
         """清空选择"""
@@ -897,7 +896,7 @@ class SeatMapPanelPyQt5(QWidget):
                 self._update_seat_button_style(seat_btn, seat['status'], area_name, seat_type)
         
         self.selected_seats.clear()
-        print(f"[座位面板] 座位状态已重置，已选座位已清空")
+        # 座位状态已重置
 
         # 更新提交按钮文字
         self._update_submit_button_text()
@@ -948,7 +947,7 @@ class SeatMapPanelPyQt5(QWidget):
             self.drag_start_pos = event.pos()
             # 设置拖拽光标
             self.scroll_area.setCursor(Qt.ClosedHandCursor)
-            print(f"[座位面板] 开始拖拽滚动，起始位置: {event.pos()}")
+            # 开始拖拽滚动
 
     def _scroll_area_mouse_move(self, event: QMouseEvent):
         """滚动区域鼠标移动事件"""
@@ -987,9 +986,7 @@ class SeatMapPanelPyQt5(QWidget):
             # 恢复默认光标
             self.scroll_area.setCursor(Qt.ArrowCursor)
 
-            # 计算总的拖拽距离
-            total_delta = event.pos() - self.drag_start_pos
-            print(f"[座位面板] 结束拖拽滚动，总移动距离: {total_delta}")
+            # 结束拖拽滚动
 
             # 重置位置
             self.last_mouse_pos = QPoint()
@@ -1014,7 +1011,7 @@ class SeatMapPanelPyQt5(QWidget):
             if move_distance > 5 and not self.is_dragging:  # 5像素的拖拽阈值
                 self.is_dragging = True
                 self.scroll_area.setCursor(Qt.ClosedHandCursor)
-                print(f"[座位面板] 在座位按钮上开始拖拽滚动")
+                # 在座位按钮上开始拖拽滚动
 
             # 如果正在拖拽，执行滚动
             if self.is_dragging:
@@ -1047,7 +1044,7 @@ class SeatMapPanelPyQt5(QWidget):
                 # 如果是拖拽，结束拖拽状态
                 self.is_dragging = False
                 self.scroll_area.setCursor(Qt.ArrowCursor)
-                print(f"[座位面板] 在座位按钮上结束拖拽滚动")
+                # 在座位按钮上结束拖拽滚动
 
                 # 重置位置
                 self.last_mouse_pos = QPoint()
