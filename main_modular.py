@@ -153,11 +153,15 @@ class ModularCinemaMainWindow(QMainWindow):
             # 🔧 调试模式：加载实际账号数据
             self.current_user = self._load_actual_account()
             if not self.current_user:
-                # 如果没有找到实际账号，使用备用账号
+                # 如果没有找到实际账号，使用配置的测试账号
+                from config import config
+                if not config.validate():
+                    raise ValueError("配置验证失败，请检查 .env 文件")
+
                 self.current_user = {
-                    'phone': '15155712316',                      # 实际手机号
-                    'token': '47794858a832916d8eda012e7cabd269',  # 实际token
-                    'debug_mode': True                           # 调试标识
+                    'phone': config.TEST_PHONE,
+                    'token': config.DEFAULT_TOKEN,
+                    'debug_mode': config.DEBUG
                 }
             # 直接显示主窗口
             QTimer.singleShot(100, self._show_main_window_after_debug_login)
@@ -899,7 +903,12 @@ class ModularCinemaMainWindow(QMainWindow):
                 first_account = accounts[0]
 
                 print(f"🚧 [调试模式] 加载账号: {first_account.get('phone')}")
-                print(f"🚧 [调试模式] Token: {first_account.get('token', '')[:20]}...")
+                # 安全的Token显示
+                token = first_account.get('token', '')
+                if token:
+                    print(f"🚧 [调试模式] Token: {token[:10]}*** (已配置)")
+                else:
+                    print(f"🚧 [调试模式] Token: 未配置")
 
                 return {
                     'phone': first_account.get('phone'),
@@ -2435,7 +2444,12 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"=" * 60)
             for key, value in order_params.items():
                 if key == 'token':
-                    print(f"  {key}: {str(value)[:20]}...")
+                    # 安全的Token显示
+                    token_str = str(value)
+                    if token_str:
+                        print(f"  {key}: {token_str[:10]}*** (已配置)")
+                    else:
+                        print(f"  {key}: 未配置")
                 elif key == 'seatlable':
                     print(f"  {key}: {str(value)[:200]}...")
                 else:
@@ -2497,7 +2511,11 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[沃美订单] 参数验证:")
             print(f"  - cinema_id: {cinema_id}")
             print(f"  - schedule_id: {schedule_id}")
-            print(f"  - token: {token[:20]}..." if token else "  - token: 空")
+            # 安全的Token显示
+            if token:
+                print(f"  - token: {token[:10]}*** (已配置)")
+            else:
+                print(f"  - token: 未配置")
             print(f"  - 座位数: {len(selected_seats)}")
 
             if not cinema_id or not schedule_id or not token:
@@ -2688,7 +2706,7 @@ class ModularCinemaMainWindow(QMainWindow):
                 "session_data": session_data,
                 "account_data": {
                     "phone": account_data.get('phone', 'N/A'),
-                    "token_prefix": account_data.get('token', '')[:20] + '...' if account_data.get('token') else 'N/A'
+                    "token_status": "已配置" if account_data.get('token') else "未配置"
                 },
                 "debug_notes": {
                     "purpose": "增强的座位图调试数据（包含完整会话信息，每次覆盖保存）",
@@ -3209,10 +3227,14 @@ class ModularCinemaMainWindow(QMainWindow):
                 self._safe_update_seat_area("场次信息不完整\n\n无法加载座位图")
                 return
 
-            # 如果没有account，使用默认账号
+            # 如果没有account，使用配置的测试账号
             if not account:
-                print(f"[主窗口] ⚠️ 使用默认账号")
-                account = self.current_user or {'phone': '15155712316', 'token': '47794858a832916d8eda012e7cabd269'}
+                print(f"[主窗口] ⚠️ 使用配置的测试账号")
+                from config import config
+                account = self.current_user or {
+                    'phone': config.TEST_PHONE,
+                    'token': config.DEFAULT_TOKEN
+                }
                 session_info['account'] = account
 
             # 如果没有cinema_data，尝试获取
@@ -3343,7 +3365,11 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 设置token并调用沃美座位图API
             token = account.get('token', '')
-            print(f"[主窗口] 🔑 设置token: {token[:20]}...{token[-10:] if len(token) > 30 else token}")
+            # 安全的Token显示
+            if token:
+                print(f"[主窗口] 🔑 Token状态: 已配置 (长度: {len(token)})")
+            else:
+                print(f"[主窗口] 🔑 Token状态: 未配置")
 
             # 🔧 修复：使用get_womei_film_service获取服务实例，而不是使用未初始化的self.film_service
             from services.womei_film_service import get_womei_film_service
@@ -5525,7 +5551,12 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"=" * 60)
             for key, value in order_params.items():
                 if key == 'token':
-                    print(f"  {key}: {str(value)[:20]}...")
+                    # 安全的Token显示
+                    token_str = str(value)
+                    if token_str:
+                        print(f"  {key}: {token_str[:10]}*** (已配置)")
+                    else:
+                        print(f"  {key}: 未配置")
                 elif key == 'seatInfo':
                     print(f"  {key}: {str(value)[:100]}...")
                 else:
@@ -6050,7 +6081,11 @@ class ModularCinemaMainWindow(QMainWindow):
 
             print(f"[优惠券] 🚀 开始获取订单可用券列表，订单号: {order_id}")
             print(f"[优惠券] 🏢 影院ID: {cinema_id}")
-            print(f"[优惠券] 🎫 Token: {token[:20]}...")
+            # 安全的Token显示
+            if token:
+                print(f"[优惠券] 🎫 Token状态: 已配置")
+            else:
+                print(f"[优惠券] 🎫 Token状态: 未配置")
 
             # 🆕 调用沃美订单可用券API
             coupon_result = get_order_available_vouchers(cinema_id, token)
@@ -6397,17 +6432,54 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[券选择事件] 🔍 影院ID获取: cinema_data={cinema_data}")
             print(f"[券选择事件] 🔍 提取的影院ID: {cinema_id}")
 
-            # 处理券选择 - 🆕 使用优化后的单接口模式券绑定
+            # 处理券选择 - 🆕 使用两步式券使用流程（价格计算 + 券绑定）
             if selected_codes and selected_codes[0]:  # 确保券号不为空
                 try:
                     couponcode = ','.join(selected_codes)
-                    print(f"[券选择事件] 🚀 开始单接口模式券绑定: {couponcode}")
+                    print(f"[券选择事件] 🚀 开始两步式券使用流程: {couponcode}")
 
                     # 🆕 使用沃美订单券绑定服务
                     from services.womei_order_voucher_service import get_womei_order_voucher_service
                     voucher_service = get_womei_order_voucher_service()
 
-                    # 🆕 调用单接口模式券绑定（跳过价格计算步骤）
+                    # 🆕 第一步：计算券价格
+                    print(f"[券选择事件] 1️⃣ 第一步：计算券价格...")
+                    price_result = voucher_service.calculate_voucher_price(
+                        cinema_id=cinema_id,
+                        token=account['token'],
+                        order_id=order_id,
+                        voucher_code=couponcode,
+                        voucher_type='VGC_T'
+                    )
+
+                    print(f"[券选择事件] 📥 价格计算结果:")
+                    print(f"[券选择事件] 📥 完整响应数据: {price_result}")
+
+                    if not price_result.get('success', False) or price_result.get('ret') != 0:
+                        error_msg = price_result.get('msg', '价格计算失败')
+                        print(f"[券选择事件] ❌ 价格计算失败: {error_msg}")
+
+                        from services.ui_utils import MessageManager
+                        MessageManager.show_warning(self, "券价格计算失败", f"无法计算券使用后的价格\n{error_msg}")
+
+                        # 取消选择
+                        for item in selected_items:
+                            item.setSelected(False)
+                        return
+
+                    # 显示价格计算结果
+                    price_info = price_result.get('price_info', {})
+                    pay_price = price_info.get('pay_price', 0)
+                    surcharge_price = price_info.get('surcharge_price', 0)
+                    surcharge_msg = price_info.get('surcharge_msg', '')
+
+                    print(f"[券选择事件] 💰 价格计算成功:")
+                    print(f"[券选择事件] 💰 支付价格: {pay_price}")
+                    print(f"[券选择事件] 💸 附加费用: {surcharge_price}")
+                    print(f"[券选择事件] 📝 附加说明: {surcharge_msg}")
+
+                    # 🆕 第二步：绑定券到订单
+                    print(f"[券选择事件] 2️⃣ 第二步：绑定券到订单...")
                     bind_result = voucher_service.bind_voucher_to_order(
                         cinema_id=cinema_id,
                         token=account['token'],
@@ -6416,18 +6488,40 @@ class ModularCinemaMainWindow(QMainWindow):
                         voucher_type='VGC_T'
                     )
 
-                    print(f"[券选择事件] 📥 券绑定结果: success={bind_result.get('success')}")
+                    print(f"[券选择事件] 📥 券绑定结果:")
+                    print(f"[券选择事件] 📥 完整响应数据: {bind_result}")
+                    print(f"[券选择事件] 📥 绑定成功: {bind_result.get('success')}")
 
                     if bind_result.get('success'):
-                        # 🆕 券绑定成功，保存券信息（兼容现有格式）
+                        # 🆕 券绑定成功，整合价格计算和绑定结果
+                        bind_data = bind_result.get('data', {})
+                        final_payment_price = bind_data.get('order_payment_price', 0)
+                        voucher_use = bind_data.get('voucher_use', {})
+                        voucher_discounts = bind_data.get('voucher_discounts', [])
+
+                        # 保存券信息（兼容现有格式，同时包含价格计算结果）
                         self.current_coupon_info = {
                             'resultCode': '0',
                             'resultData': bind_result.get('data', {}),
-                            'womei_bind_result': bind_result  # 保存完整的绑定结果
+                            'womei_bind_result': bind_result,  # 保存完整的绑定结果
+                            'price_calculation': price_result,  # 保存价格计算结果
+                            'workflow_summary': {
+                                'calculated_pay_price': pay_price,
+                                'final_payment_price': final_payment_price,
+                                'surcharge_price': surcharge_price,
+                                'surcharge_msg': surcharge_msg,
+                                'price_match': abs(final_payment_price - pay_price) < 0.01,
+                                'voucher_use_count': len(voucher_use.get('use_codes', [])),
+                                'total_discount': voucher_use.get('use_total_price', 0)
+                            }
                         }
                         self.selected_coupons = selected_codes
 
-                        print(f"[券选择事件] ✅ 券绑定成功，券数: {len(selected_codes)}")
+                        print(f"[券选择事件] ✅ 两步式券使用流程完成")
+                        print(f"[券选择事件] 💰 预计支付价格: {pay_price}")
+                        print(f"[券选择事件] 💰 实际支付价格: {final_payment_price}")
+                        print(f"[券选择事件] 🎫 券使用数量: {len(voucher_use.get('use_codes', []))}")
+                        print(f"[券选择事件] 💸 券抵扣金额: {voucher_use.get('use_total_price', 0)}")
 
                         # 🆕 获取更新后的订单信息
                         updated_order = voucher_service.get_updated_order_info(
@@ -6444,14 +6538,22 @@ class ModularCinemaMainWindow(QMainWindow):
                         # 刷新订单详情显示，包含券抵扣信息
                         self._update_order_detail_with_coupon_info()
 
-                        # 🆕 显示券绑定成功消息
+                        # 🆕 显示券绑定成功消息（包含详细价格信息）
                         from services.ui_utils import MessageManager
-                        savings = bind_result.get('savings', 0)
-                        if savings > 0:
-                            MessageManager.show_success(
-                                self, "券绑定成功",
-                                f"券绑定成功！节省金额: {savings}元"
-                            )
+                        discount_amount = voucher_use.get('use_total_price', 0)
+
+                        if discount_amount > 0:
+                            success_msg = f"券使用成功！\n\n"
+                            success_msg += f"预计支付价格: ¥{pay_price}\n"
+                            success_msg += f"实际支付价格: ¥{final_payment_price}\n"
+                            success_msg += f"券抵扣金额: ¥{discount_amount}"
+
+                            if surcharge_price > 0:
+                                success_msg += f"\n附加费用: ¥{surcharge_price}"
+                            if surcharge_msg:
+                                success_msg += f"\n说明: {surcharge_msg}"
+
+                            MessageManager.show_success(self, "券使用成功", success_msg)
                         else:
                             MessageManager.show_success(self, "券绑定成功", "券已成功绑定到订单")
 

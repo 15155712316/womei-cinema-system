@@ -70,6 +70,114 @@ class WomeiOrderVoucherService:
 
 
 
+    def calculate_voucher_price(self, cinema_id: str, token: str, order_id: str,
+                              voucher_code: str, voucher_type: str = 'VGC_T') -> Dict[str, Any]:
+        """
+        🧮 计算优惠券价格 (HAR接口实现)
+        调用 POST /order/voucher/price/ 接口计算使用券后的价格
+
+        Args:
+            cinema_id: 影院ID
+            token: 用户token
+            order_id: 订单ID
+            voucher_code: 券码
+            voucher_type: 券类型，默认VGC_T
+
+        Returns:
+            Dict: 价格计算结果，包含 pay_price, surcharge_price 等信息
+        """
+        try:
+            print(f"[沃美券价格] 🧮 开始计算券价格")
+            print(f"[沃美券价格] 📋 订单ID: {order_id}")
+            print(f"[沃美券价格] 🎫 券码: {voucher_code}")
+            print(f"[沃美券价格] 🏢 影院ID: {cinema_id}")
+            print(f"[沃美券价格] 🔑 Token: {token[:20]}...")
+
+            # 构建请求头 (修复Content-Type)
+            headers = self.headers_template.copy()
+            headers['token'] = token
+            headers['Content-Type'] = 'application/x-www-form-urlencoded'  # 🆕 修复Content-Type
+
+            # 构建请求URL
+            url = f"{self.base_url}/ticket/wmyc/cinema/{cinema_id}/order/voucher/price/"
+
+            # 🆕 构建POST数据 (基于HAR文件分析，只保留核心参数)
+            data = {
+                'voucher_code': voucher_code,  # 券码
+                'order_id': order_id          # 订单ID
+            }
+
+            print(f"[沃美券价格] 📡 请求URL: {url}")
+            print(f"[沃美券价格] 📋 请求参数 (HAR格式): {data}")
+            print(f"[沃美券价格] 📋 Content-Type: application/x-www-form-urlencoded")
+
+            # 🆕 发送POST请求 (使用正确的Content-Type)
+            response = requests.post(url, headers=headers, data=data, verify=False, timeout=30)
+
+            print(f"[沃美券价格] 📥 响应状态: {response.status_code}")
+            print(f"[沃美券价格] 📥 原始响应: {response.text}")
+
+            if response.status_code == 200:
+                # 解码Unicode字符
+                decoded_data = self.decode_unicode_message(response.text)
+
+                if decoded_data:
+                    print(f"[沃美券价格] 📋 解码后完整响应:")
+                    print(json.dumps(decoded_data, ensure_ascii=False, indent=2))
+
+                    # 提取价格信息
+                    data_section = decoded_data.get('data', {})
+                    price_info = {
+                        'pay_price': data_section.get('pay_price', 0),
+                        'surcharge_price': data_section.get('surcharge_price', 0),
+                        'surcharge_msg': data_section.get('surcharge_msg', '')
+                    }
+
+                    print(f"[沃美券价格] 💰 价格计算结果:")
+                    print(f"[沃美券价格] 💰 支付价格: {price_info['pay_price']}")
+                    print(f"[沃美券价格] 💸 附加费用: {price_info['surcharge_price']}")
+                    print(f"[沃美券价格] 📝 附加说明: {price_info['surcharge_msg']}")
+
+                    return {
+                        'success': True,
+                        'ret': decoded_data.get('ret', 0),
+                        'sub': decoded_data.get('sub', 0),
+                        'msg': decoded_data.get('msg', ''),
+                        'data': decoded_data.get('data', {}),
+                        'price_info': price_info
+                    }
+                else:
+                    return {
+                        'success': False,
+                        'ret': -1,
+                        'sub': -1,
+                        'msg': '响应解析失败',
+                        'data': {},
+                        'error': 'decode_failed'
+                    }
+            else:
+                return {
+                    'success': False,
+                    'ret': -1,
+                    'sub': response.status_code,
+                    'msg': f'价格计算失败: HTTP {response.status_code}',
+                    'data': {},
+                    'error': 'http_error'
+                }
+
+        except Exception as e:
+            print(f"[沃美券价格] ❌ 价格计算异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                'success': False,
+                'ret': -1,
+                'sub': -1,
+                'msg': f'价格计算异常: {str(e)}',
+                'data': {},
+                'error': 'exception'
+            }
+
     def bind_voucher_to_order(self, cinema_id: str, token: str, order_id: str,
                              voucher_code: str, voucher_type: str = 'VGC_T') -> Dict[str, Any]:
         """
@@ -93,9 +201,10 @@ class WomeiOrderVoucherService:
             print(f"[沃美券绑定] 🏢 影院ID: {cinema_id}")
             print(f"[沃美券绑定] 🔑 Token: {token[:20]}...")
 
-            # 构建请求头
+            # 构建请求头 (修复Content-Type)
             headers = self.headers_template.copy()
             headers['token'] = token
+            headers['Content-Type'] = 'application/x-www-form-urlencoded'  # 🆕 修复Content-Type
 
             # 构建请求URL
             url = f"{self.base_url}/ticket/wmyc/cinema/{cinema_id}/order/change/?version=tp_version"
@@ -241,7 +350,7 @@ class WomeiOrderVoucherService:
             print(f"[沃美券绑定] ❌ 券绑定异常: {e}")
             import traceback
             traceback.print_exc()
-            
+
             return {
                 'success': False,
                 'ret': -1,
@@ -250,6 +359,104 @@ class WomeiOrderVoucherService:
                 'data': {},
                 'error': 'exception'
             }
+
+    def complete_voucher_workflow(self, cinema_id: str, token: str, order_id: str,
+                                voucher_code: str, voucher_type: str = 'VGC_T') -> Dict[str, Any]:
+        """
+        🔄 完整的两步式券使用工作流程
+        1. 先调用价格计算接口获取价格信息
+        2. 再调用券绑定接口完成券使用
+
+        Args:
+            cinema_id: 影院ID
+            token: 用户token
+            order_id: 订单ID
+            voucher_code: 券码
+            voucher_type: 券类型，默认VGC_T
+
+        Returns:
+            Dict: 完整流程结果，包含两个步骤的详细信息
+        """
+        workflow_result = {
+            'success': False,
+            'steps': {},
+            'final_result': {},
+            'error_message': '',
+            'price_calculation': {},
+            'voucher_binding': {}
+        }
+
+        try:
+            print(f"[沃美券流程] 🔄 开始完整券使用流程")
+            print(f"[沃美券流程] 📋 订单: {order_id}, 券码: {voucher_code}")
+            print(f"[沃美券流程] 🏢 影院: {cinema_id}, 券类型: {voucher_type}")
+
+            # 步骤1: 计算券价格
+            print(f"[沃美券流程] 1️⃣ 第一步：计算券价格...")
+            price_result = self.calculate_voucher_price(cinema_id, token, order_id, voucher_code, voucher_type)
+            workflow_result['steps']['price_calculation'] = price_result
+            workflow_result['price_calculation'] = price_result
+
+            if not price_result.get('success', False) or price_result.get('ret') != 0:
+                error_msg = price_result.get('msg', '价格计算失败')
+                workflow_result['error_message'] = f"价格计算失败: {error_msg}"
+                print(f"[沃美券流程] ❌ 价格计算失败: {error_msg}")
+                return workflow_result
+
+            print(f"[沃美券流程] ✅ 价格计算成功")
+
+            # 步骤2: 绑定券到订单
+            print(f"[沃美券流程] 2️⃣ 第二步：绑定券到订单...")
+            bind_result = self.bind_voucher_to_order(cinema_id, token, order_id, voucher_code, voucher_type)
+            workflow_result['steps']['voucher_binding'] = bind_result
+            workflow_result['voucher_binding'] = bind_result
+
+            if not bind_result.get('success', False) or bind_result.get('ret') != 0:
+                error_msg = bind_result.get('msg', '券绑定失败')
+                workflow_result['error_message'] = f"券绑定失败: {error_msg}"
+                print(f"[沃美券流程] ❌ 券绑定失败: {error_msg}")
+                return workflow_result
+
+            print(f"[沃美券流程] ✅ 券绑定成功")
+
+            # 步骤3: 整合最终结果
+            print(f"[沃美券流程] 3️⃣ 第三步：整合结果...")
+
+            # 从绑定结果中提取最终价格信息
+            bind_data = bind_result.get('data', {})
+            final_price = bind_data.get('order_payment_price', 0)
+            voucher_use = bind_data.get('voucher_use', {})
+            voucher_discounts = bind_data.get('voucher_discounts', [])
+
+            # 从价格计算结果中提取预计价格
+            price_data = price_result.get('data', {})
+            calculated_price = price_data.get('pay_price', 0)
+            surcharge_price = price_data.get('surcharge_price', 0)
+
+            workflow_result['success'] = True
+            workflow_result['final_result'] = {
+                'order_payment_price': final_price,
+                'calculated_pay_price': calculated_price,
+                'surcharge_price': surcharge_price,
+                'voucher_use': voucher_use,
+                'voucher_discounts': voucher_discounts,
+                'price_match': abs(final_price - calculated_price) < 0.01  # 价格是否匹配
+            }
+
+            print(f"[沃美券流程] ✅ 完整券使用流程成功完成")
+            print(f"[沃美券流程] 💰 预计支付价格: {calculated_price}")
+            print(f"[沃美券流程] 💰 实际支付价格: {final_price}")
+            print(f"[沃美券流程] 💸 附加费用: {surcharge_price}")
+            print(f"[沃美券流程] 🎫 券使用详情: {len(voucher_use.get('use_codes', []))}张券")
+
+            return workflow_result
+
+        except Exception as e:
+            print(f"[沃美券流程] ❌ 完整流程异常: {e}")
+            import traceback
+            traceback.print_exc()
+            workflow_result['error_message'] = f"流程异常: {str(e)}"
+            return workflow_result
     
     def get_updated_order_info(self, cinema_id: str, token: str, order_id: str) -> Dict[str, Any]:
         """
@@ -328,3 +535,58 @@ def get_womei_order_voucher_service() -> WomeiOrderVoucherService:
     if _womei_order_voucher_service is None:
         _womei_order_voucher_service = WomeiOrderVoucherService()
     return _womei_order_voucher_service
+
+
+# 便捷函数
+def calculate_voucher_price(cinema_id: str, token: str, order_id: str, voucher_code: str, voucher_type: str = 'VGC_T') -> Dict[str, Any]:
+    """
+    计算优惠券价格的便捷函数
+
+    Args:
+        cinema_id: 影院ID
+        token: 用户token
+        order_id: 订单ID
+        voucher_code: 券码
+        voucher_type: 券类型，默认VGC_T
+
+    Returns:
+        Dict: 价格计算结果
+    """
+    service = get_womei_order_voucher_service()
+    return service.calculate_voucher_price(cinema_id, token, order_id, voucher_code, voucher_type)
+
+
+def bind_voucher_to_order(cinema_id: str, token: str, order_id: str, voucher_code: str, voucher_type: str = 'VGC_T') -> Dict[str, Any]:
+    """
+    绑定券到订单的便捷函数
+
+    Args:
+        cinema_id: 影院ID
+        token: 用户token
+        order_id: 订单ID
+        voucher_code: 券码
+        voucher_type: 券类型，默认VGC_T
+
+    Returns:
+        Dict: 券绑定结果
+    """
+    service = get_womei_order_voucher_service()
+    return service.bind_voucher_to_order(cinema_id, token, order_id, voucher_code, voucher_type)
+
+
+def complete_voucher_workflow(cinema_id: str, token: str, order_id: str, voucher_code: str, voucher_type: str = 'VGC_T') -> Dict[str, Any]:
+    """
+    完整券使用流程的便捷函数
+
+    Args:
+        cinema_id: 影院ID
+        token: 用户token
+        order_id: 订单ID
+        voucher_code: 券码
+        voucher_type: 券类型，默认VGC_T
+
+    Returns:
+        Dict: 完整流程结果
+    """
+    service = get_womei_order_voucher_service()
+    return service.complete_voucher_workflow(cinema_id, token, order_id, voucher_code, voucher_type)

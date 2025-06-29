@@ -7,8 +7,8 @@
     "cinema_id": "400028",
     "hall_id": "6",
     "hall_name": "6号厅 高亮激光厅",
-    "schedule_id": 16626092,
-    "timestamp": "2025-06-29T14:26:47.323991"
+    "schedule_id": 16626091,
+    "timestamp": "2025-06-29T20:03:35.573081"
   },
   "api_response": {
     "ret": 0,
@@ -23,7 +23,7 @@
           "area_no": "1",
           "area_name": "默认区",
           "area_price_normal": true,
-          "area_price": 52.9,
+          "area_price": 57.9,
           "seats": {
             "2": {
               "row": 2,
@@ -396,7 +396,7 @@
           "area_no": "10014",
           "area_name": "按摩区域",
           "area_price_normal": true,
-          "area_price": 57.9,
+          "area_price": 62.9,
           "seats": {
             "4": {
               "row": 4,
@@ -608,7 +608,7 @@
           "area_no": "10013",
           "area_name": "中心区域",
           "area_price_normal": true,
-          "area_price": 57.9,
+          "area_price": 62.9,
           "seats": {
             "8": {
               "row": 8,
@@ -708,7 +708,7 @@
         "area_no": "1",
         "area_name": "默认区",
         "area_price_normal": true,
-        "area_price": 52.9,
+        "area_price": 57.9,
         "seats": {
           "2": {
             "row": 2,
@@ -1081,7 +1081,7 @@
         "area_no": "10014",
         "area_name": "按摩区域",
         "area_price_normal": true,
-        "area_price": 57.9,
+        "area_price": 62.9,
         "seats": {
           "4": {
             "row": 4,
@@ -1293,7 +1293,7 @@
         "area_no": "10013",
         "area_name": "中心区域",
         "area_price_normal": true,
-        "area_price": 57.9,
+        "area_price": 62.9,
         "seats": {
           "8": {
             "row": 8,
