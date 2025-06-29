@@ -41,7 +41,7 @@ class RefreshTimerService(QObject):
 
         # 配置参数
         self.check_interval = 10 * 60 * 1000  # 10分钟检查一次（毫秒）
-        self.api_base_url = "http://43.142.19.28:5000"  # API服务器地址
+        self.api_base_url = os.getenv('ADMIN_API_BASE_URL', 'http://localhost:5000')  # API服务器地址
         self.request_timeout = 10  # 请求超时时间（秒）
 
         # 状态变量

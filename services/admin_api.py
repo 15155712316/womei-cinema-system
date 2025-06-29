@@ -13,8 +13,9 @@ class AdminAPIService:
     """管理API服务类"""
     
     def __init__(self):
-        # API服务器地址
-        self.api_base_url = "http://43.142.19.28:5000"
+        # API服务器地址 - 从环境变量获取
+        import os
+        self.api_base_url = os.getenv('ADMIN_API_BASE_URL', 'http://localhost:5000')
         
     def update_user_machine_code(self, phone: str, new_machine_code: str) -> Tuple[bool, str]:
         """

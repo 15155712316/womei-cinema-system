@@ -231,7 +231,7 @@ def main():
     elif args.action == 'test':
         # 测试加密解密功能
         test_config = {
-            "server_url": "http://43.142.19.28:5000",
+            "server_url": "http://localhost:5000",
             "timeout": 10,
             "debug": False,
             "api_key": "secret_key_12345"
