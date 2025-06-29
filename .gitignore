@@ -89,6 +89,11 @@ node_modules/
 package-lock.json
 yarn.lock
 
+# 第三方项目和大文件夹
+user-feedback-mcp/
+*-mcp/
+remote-*/
+
 # 系统文件
 .DS_Store
 Thumbs.db
