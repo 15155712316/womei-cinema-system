@@ -99,6 +99,21 @@ dist/
 build/
 *.egg-info/
 
+# 大文件和压缩包
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.exe
+*.msi
+*.dmg
+*.pkg
+
+# PyQt5 分发文件
+**/PyQt5/Qt5/bin/*.dll
+**/PyQt5/Qt5/bin/*.so
+**/PyQt5/Qt5/bin/*.dylib
+
 # 系统文件
 .DS_Store
 Thumbs.db
