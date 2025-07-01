@@ -1425,10 +1425,7 @@ class TabManagerWidget(QWidget):
                 self.session_combo.addItem("Token已失效，请重新登录")
                 self.session_combo.setEnabled(False)
 
-            # 🔧 禁用所有依赖API的按钮
-            if hasattr(self, 'submit_order_btn'):
-                self.submit_order_btn.setEnabled(False)
-                self.submit_order_btn.setText("Token已失效")
+            # 🔧 Token失效时不修改选座按钮状态（选座按钮状态应该只由场次选择决定）
 
             # 🔧 清空券列表
             if hasattr(self, 'coupon_list'):
