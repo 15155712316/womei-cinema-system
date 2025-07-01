@@ -1956,64 +1956,7 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[券验证] 券验证异常: {e}")
             return {'success': False, 'error': str(e)}
 
-    def _get_account_payment_password(self, account: dict) -> str:
-        """获取账号的支付密码 - 复用现有实现"""
-        try:
-            if not account:
-                print(f"[密码管理] ❌ 账号数据为空")
-                return ""
-
-            # 详细的账号信息调试
-            userid = account.get('userid', 'N/A')
-            cinemaid = account.get('cinemaid', 'N/A')
-            print(f"[密码管理] 🔍 检查账号密码设置:")
-            print(f"[密码管理]   - userid: {userid}")
-            print(f"[密码管理]   - cinemaid: {cinemaid}")
-
-            # 从账号数据中获取支付密码
-            payment_password = account.get('payment_password', '')
-            print(f"[密码管理]   - payment_password字段: {repr(payment_password)}")
-
-            if payment_password:
-                print(f"[密码管理] ✅ 账号 {userid}@{cinemaid} 已设置支付密码 (长度: {len(payment_password)})")
-                return payment_password
-            else:
-                print(f"[密码管理] ❌ 账号 {userid}@{cinemaid} 未设置支付密码")
-                return ""
-
-        except Exception as e:
-            print(f"[密码管理] 获取支付密码异常: {e}")
-            return ""
-
-    def get_member_password_input(self) -> str:
-        """获取会员卡密码输入 - 复用现有实现"""
-        try:
-            from PyQt5.QtWidgets import QInputDialog, QLineEdit
-
-            # 构建提示信息
-            policy_desc = "需要会员卡密码验证"
-            if hasattr(self, 'member_password_policy') and self.member_password_policy:
-                policy_desc = f"该影院{policy_desc}"
-
-            # 显示密码输入对话框
-            password, ok = QInputDialog.getText(
-                self,
-                "会员卡密码",
-                f"{policy_desc}\n请输入会员卡密码:",
-                QLineEdit.Password
-            )
-
-            if ok and password:
-                self.member_card_password = password
-                print(f"[密码输入] 用户输入密码成功 (长度: {len(password)})")
-                return password
-            else:
-                print(f"[密码输入] 用户取消密码输入")
-                return None
-
-        except Exception as e:
-            print(f"[密码输入] 获取密码失败: {e}")
-            return None
+    # 🚫 已移除会员卡密码获取功能，专注于券码支付和微信支付
 
     def _update_order_detail_with_coupon_info(self):
         """
@@ -2159,30 +2102,7 @@ class ModularCinemaMainWindow(QMainWindow):
             chinese_status = status_map.get(status, status)
             info_lines.append(f"状态: {chinese_status}")
 
-            # 密码策略信息 - 按照重构前的逻辑
-            enable_mempassword = None
-
-            # 方法1: 从api_data获取
-            api_data = DataUtils.safe_get(order_detail, 'api_data', {})
-            if api_data and isinstance(api_data, dict):
-                enable_mempassword = api_data.get('enable_mempassword')
-
-            # 方法2: 直接从order_detail获取
-            if enable_mempassword is None:
-                enable_mempassword = order_detail.get('enable_mempassword')
-
-            # 显示密码策略
-            if enable_mempassword == '1':
-                info_lines.append("密码: 需要输入")
-            elif enable_mempassword == '0':
-                info_lines.append("密码: 无需输入")
-            else:
-                # 如果没有获取到策略，尝试从实例状态获取
-                if hasattr(self, 'member_password_policy') and self.member_password_policy:
-                    requires_password = DataUtils.safe_get(self.member_password_policy, 'requires_password', True)
-                    info_lines.append(f"密码: {'需要输入' if requires_password else '无需输入'}")
-                else:
-                    info_lines.append("密码: 无需输入")
+            # 🚫 已移除密码策略信息显示，专注于券码支付和微信支付
 
             # 价格信息 - 按照重构前的完整逻辑
             original_amount = DataUtils.safe_get(order_detail, 'amount', 0)
@@ -4646,307 +4566,13 @@ class ModularCinemaMainWindow(QMainWindow):
                 'data_source': 'error'
             }
 
-    def get_password_policy_from_order(self, order_no: str) -> Dict[str, Any]:
-        """🆕 从订单详情获取密码策略 - 增强错误处理"""
-        try:
-            if not self.current_account:
-                print(f"[调试-密码策略] ❌ 当前无登录账号")
-                return self._get_smart_default_password_policy()
+    # 🚫 已移除密码策略获取功能，专注于券码支付和微信支付
 
-            # 🆕 修复：使用正确的字段名
-            cinema_id = self.current_account.get('cinemaid', '') or self.current_account.get('cinema_id', '')
-            if not cinema_id:
-                print(f"[调试-密码策略] ❌ 无法获取影院ID")
-                return self._get_smart_default_password_policy()
+    # 🚫 已移除密码显示功能，专注于券码支付和微信支付
 
-            print(f"[调试-密码策略] 🔄 尝试从API获取订单详情，订单号: {order_no}")
+    # 🚫 已移除支付密码管理功能，专注于券码支付和微信支付
 
-            params = {
-                'orderno': order_no,
-                'groupid': '',
-                'cinemaid': cinema_id,
-                'cardno': '',
-                'userid': self.current_account.get('userid', ''),
-                'openid': self.current_account.get('openid', ''),
-                'CVersion': '3.9.12',
-                'OS': 'Windows',
-                'token': self.current_account.get('token', ''),
-                'source': '2'
-            }
-
-            from services.api_base import api_get
-            response = api_get('/MiniTicket/index.php/MiniOrder/getUnpaidOrderDetail', cinema_id, params)
-
-            if response and response.get('resultCode') == '0':
-                order_data = response.get('resultData', {})
-                enable_mempassword = order_data.get('enable_mempassword')
-
-                if enable_mempassword is not None:
-                    print(f"[调试-密码策略] ✅ API获取成功: enable_mempassword = {enable_mempassword}")
-                    return {
-                        'success': True,
-                        'requires_password': enable_mempassword == '1',
-                        'enable_mempassword': enable_mempassword,
-                        'mem_pay_only': order_data.get('memPayONLY', '0'),
-                        'source': 'order_detail_api',
-                        'description': f"API获取 - {'需要' if enable_mempassword == '1' else '不需要'}会员卡密码"
-                    }
-                else:
-                    print(f"[调试-密码策略] ⚠️ API返回成功但无enable_mempassword字段")
-            else:
-                error_desc = response.get('resultDesc', '未知错误') if response else 'API调用失败'
-                print(f"[调试-密码策略] ❌ API调用失败: {error_desc}")
-
-            # 🆕 降级到影院策略
-            print(f"[调试-密码策略] 🔄 降级到影院策略")
-            cinema_policy = self._get_cinema_password_policy()
-            if cinema_policy.get('success'):
-                return cinema_policy
-
-            # 🆕 最终降级到智能默认策略
-            print(f"[调试-密码策略] 🔄 降级到智能默认策略")
-            return self._get_smart_default_password_policy()
-
-        except Exception as e:
-            print(f"[调试-密码策略] ❌ 密码策略获取异常: {e}")
-            return self._get_smart_default_password_policy()
-
-    def _get_cinema_password_policy(self) -> Dict[str, Any]:
-        """🆕 根据影院特征判断密码策略"""
-        try:
-            if not hasattr(self, 'current_account') or not self.current_account:
-                return {'success': False}
-
-            cinema_id = self.current_account.get('cinemaid', '') or self.current_account.get('cinema_id', '')
-
-            # 🆕 已知的影院密码策略映射
-            cinema_password_policies = {
-                # 需要密码的影院
-                '61011571': {'requires_password': True, 'name': '华夏优加荟大都荟'},
-                '35fec8259e74': {'requires_password': True, 'name': '华夏优加荟大都荟'},
-
-                # 不需要密码的影院（示例）
-                # 'other_cinema_id': {'requires_password': False, 'name': '其他影院'},
-            }
-
-            if cinema_id in cinema_password_policies:
-                policy = cinema_password_policies[cinema_id]
-                requires_password = policy['requires_password']
-                cinema_name = policy['name']
-
-                print(f"[调试-密码策略] ✅ 影院 {cinema_name} ({cinema_id}) 策略: {'需要密码' if requires_password else '无需密码'}")
-
-                return {
-                    'success': True,
-                    'requires_password': requires_password,
-                    'enable_mempassword': '1' if requires_password else '0',
-                    'source': 'cinema_policy',
-                    'description': f"影院策略 ({cinema_name}) - {'需要密码' if requires_password else '无需密码'}"
-                }
-            else:
-                print(f"[调试-密码策略] ⚠️ 影院 {cinema_id} 无预设策略")
-                return {'success': False}
-
-        except Exception as e:
-            print(f"[调试-密码策略] ❌ 影院策略获取异常: {e}")
-            return {'success': False}
-
-    def _get_smart_default_password_policy(self) -> Dict[str, Any]:
-        """🆕 智能默认密码策略 - 基于用户设置状态"""
-        try:
-            # 检查用户是否已设置支付密码
-            has_password = False
-            if hasattr(self, 'current_account') and self.current_account:
-                payment_password = self.current_account.get('payment_password', '')
-                has_password = bool(payment_password)
-
-            if has_password:
-                # 用户已设置密码，默认需要密码
-                print(f"[调试-密码策略] 🎯 智能默认: 用户已设置密码，默认需要密码")
-                return {
-                    'success': True,
-                    'requires_password': True,
-                    'enable_mempassword': '1',
-                    'source': 'smart_default',
-                    'description': '智能默认 - 用户已设置密码，需要密码'
-                }
-            else:
-                # 用户未设置密码，默认不需要密码（避免支付失败）
-                print(f"[调试-密码策略] 🎯 智能默认: 用户未设置密码，默认无需密码")
-                return {
-                    'success': True,
-                    'requires_password': False,
-                    'enable_mempassword': '0',
-                    'source': 'smart_default',
-                    'description': '智能默认 - 用户未设置密码，无需密码'
-                }
-
-        except Exception as e:
-            print(f"[调试-密码策略] ❌ 智能默认策略异常: {e}")
-            # 最终降级：需要密码
-            return {
-                'success': True,
-                'requires_password': True,
-                'enable_mempassword': '1',
-                'source': 'final_fallback',
-                'description': '最终降级 - 需要会员卡密码'
-            }
-
-    def _get_enhanced_password_display(self, enable_mempassword: str) -> str:
-        """🆕 获取增强的密码策略显示 - 支持智能降级"""
-        try:
-            if enable_mempassword == '1':
-                # 需要密码，检查用户是否已设置支付密码
-                if hasattr(self, 'current_account') and self.current_account:
-                    payment_password = self.current_account.get('payment_password', '')
-                    if payment_password:
-                        return "密码: 需要输入 (已设置支付密码)"
-                    else:
-                        return "密码: 需要输入 (未设置支付密码)"
-                else:
-                    return "密码: 需要输入"
-            elif enable_mempassword == '0':
-                return "密码: 无需输入"
-            else:
-                # 🆕 智能降级处理 - 无法获取策略时使用智能默认
-                print(f"[密码显示] enable_mempassword值异常: {enable_mempassword}，使用智能默认策略")
-                smart_policy = self._get_smart_default_password_policy()
-
-                if smart_policy.get('requires_password', True):
-                    # 需要密码，检查密码设置状态
-                    if hasattr(self, 'current_account') and self.current_account:
-                        payment_password = self.current_account.get('payment_password', '')
-                        if payment_password:
-                            return f"密码: 需要输入 (已设置支付密码) - {smart_policy.get('description', '智能默认')}"
-                        else:
-                            return f"密码: 需要输入 (未设置支付密码) - {smart_policy.get('description', '智能默认')}"
-                    else:
-                        return f"密码: 需要输入 - {smart_policy.get('description', '智能默认')}"
-                else:
-                    return f"密码: 无需输入 - {smart_policy.get('description', '智能默认')}"
-
-        except Exception as e:
-            print(f"[密码显示] 获取密码显示错误: {e}")
-            # 最终降级
-            return "密码: 检测中... (系统异常)"
-
-    def _get_account_payment_password(self, account: dict) -> str:
-        """🆕 获取账号的支付密码 - 增强调试"""
-        try:
-            if not account:
-                print(f"[密码管理] ❌ 账号数据为空")
-                return ""
-
-            # 详细的账号信息调试
-            userid = account.get('userid', 'N/A')
-            cinemaid = account.get('cinemaid', 'N/A')
-            print(f"[密码管理] 🔍 检查账号密码设置:")
-            print(f"[密码管理]   - userid: {userid}")
-            print(f"[密码管理]   - cinemaid: {cinemaid}")
-            print(f"[密码管理]   - 账号数据键: {list(account.keys())}")
-
-            # 从账号数据中获取支付密码
-            payment_password = account.get('payment_password', '')
-            print(f"[密码管理]   - payment_password字段: {repr(payment_password)}")
-
-            if payment_password:
-                print(f"[密码管理] ✅ 账号 {userid}@{cinemaid} 已设置支付密码 (长度: {len(payment_password)})")
-                return payment_password
-            else:
-                print(f"[密码管理] ❌ 账号 {userid}@{cinemaid} 未设置支付密码")
-                return ""
-
-        except Exception as e:
-            print(f"[密码管理] ❌ 获取支付密码异常: {e}")
-            import traceback
-            traceback.print_exc()
-            return ""
-
-    def _prompt_set_payment_password(self, account: dict) -> str:
-        """🆕 提示用户设置支付密码"""
-        try:
-            from PyQt5.QtWidgets import QMessageBox, QInputDialog, QLineEdit
-
-            # 提示用户需要设置支付密码
-            reply = QMessageBox.question(
-                self, "需要设置支付密码",
-                f"订单需要会员卡密码，但账号 {account.get('userid', 'N/A')} 未设置支付密码。\n\n是否现在设置支付密码？",
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.Yes
-            )
-
-            if reply == QMessageBox.Yes:
-                # 获取密码输入
-                password, ok = QInputDialog.getText(
-                    self, "设置支付密码",
-                    f"为账号 {account.get('userid', 'N/A')} 设置会员卡支付密码:",
-                    QLineEdit.Password
-                )
-
-                if ok and password:
-                    # 保存密码到账号数据
-                    account['payment_password'] = password
-
-                    # 保存到文件
-                    self._save_payment_password_to_account_file(account)
-
-                    QMessageBox.information(self, "设置成功", "支付密码设置成功！")
-                    print(f"[密码管理] 支付密码设置成功: {account.get('userid', 'N/A')}")
-
-                    return password
-                else:
-                    print(f"[密码管理] 用户取消设置支付密码")
-                    return ""
-            else:
-                print(f"[密码管理] 用户选择不设置支付密码")
-                return ""
-
-        except Exception as e:
-            print(f"[密码管理] 提示设置支付密码错误: {e}")
-            return ""
-
-    def _save_payment_password_to_account_file(self, account: dict) -> bool:
-        """🆕 保存支付密码到账号文件"""
-        try:
-            import json
-            import os
-
-            accounts_file = "data/accounts.json"
-
-            if not os.path.exists(accounts_file):
-                print(f"[密码管理] 账号文件不存在: {accounts_file}")
-                return False
-
-            # 读取现有账号数据
-            with open(accounts_file, 'r', encoding='utf-8') as f:
-                accounts = json.load(f)
-
-            # 更新密码
-            userid = account.get('userid', '')
-            cinemaid = account.get('cinemaid', '')
-
-            updated = False
-            for acc in accounts:
-                if (acc.get('userid') == userid and
-                    acc.get('cinemaid') == cinemaid):
-                    acc['payment_password'] = account.get('payment_password', '')
-                    updated = True
-                    break
-
-            if updated:
-                # 写回文件
-                with open(accounts_file, 'w', encoding='utf-8') as f:
-                    json.dump(accounts, f, ensure_ascii=False, indent=2)
-
-                print(f"[密码管理] 支付密码已保存到文件: {userid}")
-                return True
-            else:
-                print(f"[密码管理] 未找到对应账号: {userid}")
-                return False
-
-        except Exception as e:
-            print(f"[密码管理] 保存支付密码错误: {e}")
-            return False
+    # 🚫 已移除密码文件保存功能，专注于券码支付和微信支付
 
     def validate_coupon_prepay_enhanced(self, order_no: str, coupon_codes: str) -> Dict[str, Any]:
         """🆕 增强的券预支付验证"""
@@ -4992,195 +4618,9 @@ class ModularCinemaMainWindow(QMainWindow):
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
-    def process_member_card_payment_enhanced(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
-        """🆕 增强的会员卡支付处理 - 支持动态密码策略"""
-        try:
-            # 1. 获取实时会员信息
-            member_result = self.get_member_info_enhanced()
-            if not member_result.get('success') or not member_result.get('is_member'):
-                return {
-                    'success': False,
-                    'error': member_result.get('error', '请先登录会员账户')
-                }
+    # 🚫 已移除增强的会员卡支付处理功能，专注于券码支付和微信支付
 
-            member_info = member_result
-
-            # 2. 检查余额
-            balance = member_info.get('balance', 0)
-            total_amount = int(order_data.get('amount', 0) * 100)  # 转换为分
-
-            if balance < total_amount:
-                return {
-                    'success': False,
-                    'error': f"会员卡余额不足\n余额: ¥{balance/100:.2f}\n需要: ¥{total_amount/100:.2f}"
-                }
-
-            # 3. 获取密码策略
-            order_no = order_data.get('orderno', '')
-            cinema_id = self.current_account.get('cinema_id', '')
-            password_policy = self.get_password_policy_from_order(order_no)
-
-            # 4. 根据策略决定是否需要密码
-            member_password = None
-            if password_policy.get('requires_password', True):
-                from PyQt5.QtWidgets import QInputDialog, QLineEdit
-                password, ok = QInputDialog.getText(
-                    self,
-                    "会员密码",
-                    f"请输入会员卡密码\n({password_policy.get('description', '需要密码验证')}):",
-                    QLineEdit.Password
-                )
-                if not ok or not password:
-                    return {'success': False, 'error': '用户取消密码输入'}
-                member_password = password
-
-            # 5. 构建支付参数
-            payment_params = {
-                'totalprice': str(total_amount),
-                'memberinfo': json.dumps({
-                    'cardno': member_info.get('cardno', ''),
-                    'mobile': member_info.get('mobile', ''),
-                    'memberId': member_info.get('memberId', ''),
-                    'cardtype': '0',
-                    'cardcinemaid': member_info.get('cardcinemaid', ''),
-                    'balance': member_info.get('balance', 0) / 100  # 转换为元
-                }),
-                'orderno': order_no,
-                'couponcodes': '',
-                'price': str(total_amount),
-                'discountprice': '0',
-                'filmname': order_data.get('movie', ''),
-                'featureno': order_data.get('featureno', ''),
-                'ticketcount': str(len(order_data.get('seats', []))),
-                'cinemaname': order_data.get('cinema', ''),
-                'cinemaid': self.current_account.get('cinema_id', ''),
-                'userid': self.current_account.get('userid', ''),
-                'openid': self.current_account.get('openid', ''),
-                'token': self.current_account.get('token', ''),
-                'source': '2'
-            }
-
-            # 🆕 增强密码处理逻辑
-            if password_policy.get('requires_password', True):
-                if member_password:
-                    payment_params['mempass'] = member_password
-                    print(f"[增强支付] 使用预设支付密码")
-                else:
-                    return {
-                        'success': False,
-                        'error': '订单需要会员卡密码，但未设置支付密码',
-                        'action_required': 'set_password'
-                    }
-            else:
-                print(f"[增强支付] 订单无需会员卡密码")
-
-            # 6. 执行支付
-            from services.api_base import api_post
-            response = api_post('/MiniTicket/index.php/MiniPay/memcardPay', cinema_id, payment_params)
-
-            if response.get('resultCode') == '0':
-                return {'success': True, 'message': '会员卡支付成功'}
-            else:
-                return {
-                    'success': False,
-                    'error': response.get('resultDesc', '支付失败')
-                }
-
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-
-    def process_mixed_payment_enhanced(self, order_data: Dict[str, Any], selected_coupons: List[Dict]) -> Dict[str, Any]:
-        """🆕 增强的混合支付处理 - 券+会员卡"""
-        try:
-            # 1. 券预支付验证
-            coupon_codes = ','.join([c.get('couponcode', '') for c in selected_coupons])
-            order_no = order_data.get('orderno', '')
-
-            prepay_result = self._validate_coupon_prepay(order_no, coupon_codes)
-            if not prepay_result.get('success'):
-                return {
-                    'success': False,
-                    'error': f"券验证失败: {prepay_result.get('error', '未知错误')}"
-                }
-
-            prepay_data = prepay_result.get('data', {})
-
-            # 2. 获取会员信息和密码策略
-            member_result = self.get_member_info_enhanced()
-            if not member_result.get('success') or not member_result.get('has_member_card'):
-                return {
-                    'success': False,
-                    'error': '混合支付需要会员卡，请先登录会员账户'
-                }
-
-            # 3. 获取密码策略
-            password_policy = self._get_member_password_policy_enhanced(order_data)
-
-            # 4. 处理会员密码
-            member_password = ""
-            if password_policy.get('requires_password', True):
-                member_password = self._get_account_payment_password(self.current_account)
-                if not member_password:
-                    # 提示用户设置密码
-                    member_password = self._prompt_set_payment_password(self.current_account)
-                    if not member_password:
-                        return {
-                            'success': False,
-                            'error': '混合支付需要会员卡密码，但未设置支付密码',
-                            'action_required': 'set_password'
-                        }
-
-            # 5. 构建混合支付参数
-            member_info = member_result
-            cinema_id = self.current_account.get('cinemaid', '')
-
-            # 使用券抵扣后的会员支付金额
-            total_price = prepay_data.get('mempaymentAmount', '0')
-            discount_price = prepay_data.get('discountmemprice', '0')
-
-            payment_params = {
-                'totalprice': total_price,  # 券抵扣后的会员支付金额
-                'memberinfo': json.dumps({
-                    'cardno': member_info.get('cardno', ''),
-                    'mobile': member_info.get('mobile', ''),
-                    'memberId': member_info.get('memberId', ''),
-                    'cardtype': '0',
-                    'cardcinemaid': member_info.get('cardcinemaid', ''),
-                    'balance': member_info.get('balance', 0)
-                }),
-                'orderno': order_no,
-                'couponcodes': coupon_codes,  # 券码
-                'price': str(int(total_price) // 2),  # 实际从会员卡扣除的金额（示例）
-                'discountprice': discount_price,  # 券抵扣金额
-                'filmname': order_data.get('movie', ''),
-                'featureno': order_data.get('featureno', ''),
-                'ticketcount': str(len(order_data.get('seats', []))),
-                'cinemaname': order_data.get('cinema', ''),
-                'cinemaid': cinema_id,
-                'userid': self.current_account.get('userid', ''),
-                'openid': self.current_account.get('openid', ''),
-                'token': self.current_account.get('token', ''),
-                'source': '2'
-            }
-
-            # 添加密码参数
-            if password_policy.get('requires_password', True) and member_password:
-                payment_params['mempass'] = member_password
-
-            # 6. 执行混合支付
-            from services.api_base import api_post
-            response = api_post('/MiniTicket/index.php/MiniPay/memcardPay', cinema_id, payment_params)
-
-            if response.get('resultCode') == '0':
-                return {'success': True, 'message': '混合支付成功'}
-            else:
-                return {
-                    'success': False,
-                    'error': response.get('resultDesc', '混合支付失败')
-                }
-
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+    # 🚫 已移除混合支付处理功能，专注于券码支付和微信支付
 
     def _validate_coupon_prepay(self, order_no: str, coupon_codes: str) -> Dict[str, Any]:
         """🆕 验证券预支付"""
@@ -5882,6 +5322,18 @@ class ModularCinemaMainWindow(QMainWindow):
             order_data = result.get('resultData', {})
             order_id = order_data.get('orderno', f"ORDER{int(time.time())}")
 
+            # 🚀 订单创建成功后立即初始化支付方式（解决4004错误）
+            print(f"[订单创建] 🔧 开始订单支付方式初始化...")
+            cinema_id = cinema_data.get('cinemaid', '')
+            token = self.current_account.get('token', '')
+
+            init_result = self._initialize_order_payment_method(order_id, cinema_id, token)
+            if init_result.get('success', False):
+                print(f"[订单创建] ✅ 订单支付方式初始化成功")
+            else:
+                print(f"[订单创建] ⚠️ 订单支付方式初始化失败: {init_result.get('error', '未知错误')}")
+                # 注意：初始化失败不阻断订单创建流程，仅记录日志
+
             # 获取场次数据用于显示
             tab_manager = self.tab_manager_widget
             session_data = getattr(tab_manager, 'current_session_data', {})
@@ -6420,25 +5872,12 @@ class ModularCinemaMainWindow(QMainWindow):
                     couponcode = ','.join(selected_codes)
                     print(f"[券选择事件] 🚀 开始两步式券使用流程: {couponcode}")
 
-                    # 🚀 核心修复：订单支付方式预初始化（解决4004错误）
-                    print(f"[券选择事件] 🔧 第一步：订单支付方式预初始化...")
-                    init_result = self._initialize_order_payment_method(order_id, cinema_id, account['token'])
-
-                    if not init_result.get('success', False):
-                        error_msg = init_result.get('error', '订单初始化失败')
-                        print(f"[券选择事件] ❌ 订单初始化失败: {error_msg}")
-                        from services.ui_utils import MessageManager
-                        MessageManager.show_warning(self, "订单初始化失败", f"无法初始化订单支付方式\n{error_msg}")
-                        return
-
-                    print(f"[券选择事件] ✅ 订单支付方式预初始化成功")
-
                     # 🆕 使用沃美订单券绑定服务
                     from services.womei_order_voucher_service import get_womei_order_voucher_service
                     voucher_service = get_womei_order_voucher_service()
 
-                    # 🆕 第二步：调用券价格计算接口（必需步骤）
-                    print(f"[券选择事件] 2️⃣ 第二步：计算券价格...")
+                    # 🆕 第一步：调用券价格计算接口（必需步骤）
+                    print(f"[券选择事件] 1️⃣ 第一步：计算券价格...")
                     price_result = voucher_service.calculate_voucher_price(
                         cinema_id=cinema_id,
                         token=account['token'],
