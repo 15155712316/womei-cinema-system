@@ -247,7 +247,8 @@ def safe_call(func, *args, **kwargs):
     try:
         return func(*args, **kwargs)
     except Exception as e:
-        print(f"[SafeCall] 调用 {func.__name__} 失败: {e}")
+        # 保留错误日志，但简化输出
+        print(f"调用 {func.__name__} 失败: {e}")
         return None
 
 # 模块级便捷函数
@@ -280,4 +281,4 @@ if __name__ == "__main__":
     print(f"initial状态是否显示优惠券: {CouponManager.should_show_coupons('initial')}")
     print(f"order_submitted状态是否显示优惠券: {CouponManager.should_show_coupons('order_submitted')}")
     
-    print("✅ UI工具类测试完成") 
+    # 调试打印已移除

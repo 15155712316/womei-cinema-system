@@ -85,9 +85,7 @@ class APIBase:
         if headers:
             request_headers.update(headers)
         
-        print(f"[API请求] {method} {url}")
-        print(f"[API请求] 请求头: {request_headers}")
-        print(f"[API请求] 参数: {params if method == 'GET' else data}")
+        # 调试打印已移除
 
         try:
             if method.upper() == 'GET':
@@ -95,18 +93,7 @@ class APIBase:
             else:  # POST
                 response = requests.post(url, data=data, headers=request_headers, timeout=timeout, verify=False)
 
-            print(f"[API响应] 状态码: {response.status_code}")
-            print(f"[API响应] 响应头: {dict(response.headers)}")
-            print(f"[API响应] 响应内容长度: {len(response.content)} bytes")
-
-            # 🔍 打印响应内容的前500个字符用于调试
-            if response.content:
-                try:
-                    content_preview = response.content.decode('utf-8-sig')[:500]
-                    print(f"[API响应] 响应内容预览: {content_preview}")
-                except:
-                    content_preview = response.content[:500]
-                    print(f"[API响应] 响应内容预览(bytes): {content_preview}")
+            # 调试打印已移除
 
             if response.status_code == 200:
                 try:
@@ -129,7 +116,7 @@ class APIBase:
                     return json.loads(content)
                 except json.JSONDecodeError as e:
                     print(f"[API响应] JSON解析失败: {e}")
-                    print(f"[API响应] 原始响应内容: {response.text[:500]}")  # 显示前500个字符
+                    # 调试打印已移除
                     return {"resultCode": "-1", "resultDesc": f"JSON解析失败: {e}", "resultData": None}
             else:
                 return {"resultCode": "-1", "resultDesc": f"HTTP错误: {response.status_code}", "resultData": None}

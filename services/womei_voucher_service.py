@@ -119,20 +119,20 @@ class WomeiVoucherService:
             # 构建URL
             url = f"{self.base_url}/{cinema_id}/user/voucher/add/"
             
-            print(f"[沃美绑券] 🚀 绑定券: {voucher_code}")
-            print(f"[沃美绑券] 📡 URL: {url}")
+            # 调试打印已移除
+            # 调试打印已移除
             
             # 发送请求
             response = requests.post(url, headers=headers, data=data, verify=False)
             
-            print(f"[沃美绑券] 📥 响应状态: {response.status_code}")
-            print(f"[沃美绑券] 📥 原始响应: {response.text}")
+            # 调试打印已移除
+            # 调试打印已移除
             
             # 解码Unicode字符
             decoded_data = self.decode_unicode_message(response.text)
             
             if decoded_data:
-                print(f"[沃美绑券] 📋 解码后响应: {json.dumps(decoded_data, ensure_ascii=False, indent=2)}")
+                # 调试打印已移除
                 return decoded_data
             else:
                 return {
@@ -166,7 +166,7 @@ class WomeiVoucherService:
         results = []
 
         for i, (voucher_code, voucher_password) in enumerate(vouchers, 1):
-            print(f"[沃美绑券] 📋 绑定进度: {i}/{len(vouchers)}")
+            # 调试打印已移除
 
             result = self.bind_voucher(cinema_id, token, voucher_code, voucher_password)
             result['voucher_code'] = voucher_code
@@ -199,30 +199,26 @@ class WomeiVoucherService:
             # 构建URL - 使用新的订单可用券API端点
             url = f"{self.base_url}/{cinema_id}/user/voucher/list/"
 
-            print(f"[沃美订单券] 🚀 获取订单可用券列表")
-            print(f"[沃美订单券] 📡 URL: {url}")
+            # 调试打印已移除
+            # 调试打印已移除
             print(f"[沃美订单券] 🏢 影院ID: {cinema_id}")
             print(f"[沃美订单券] 🎫 Token: {token[:20]}...")
 
             # 发送GET请求（添加超时设置）
             response = requests.get(url, headers=headers, verify=False, timeout=30)
 
-            print(f"[沃美订单券] 📥 响应状态: {response.status_code}")
-            print(f"[沃美订单券] 📥 原始响应: {response.text[:500]}...")
+            # 调试打印已移除
+            # 调试打印已移除
 
             # 解码Unicode字符
             decoded_data = self.decode_unicode_message(response.text)
 
             if decoded_data:
-                print(f"[沃美订单券] 📋 解码后响应: {json.dumps(decoded_data, ensure_ascii=False, indent=2)}")
-
                 # 检查API响应状态
                 if decoded_data.get('ret') == 0:
                     # 提取未使用的券列表（订单可用券）
                     data = decoded_data.get('data', {})
                     unused_vouchers = data.get('unused', [])
-
-                    print(f"[沃美订单券] ✅ 获取成功，订单可用券数量: {len(unused_vouchers)}")
 
                     # 处理券数据，添加必要字段以兼容现有系统
                     processed_vouchers = []
@@ -282,21 +278,21 @@ class WomeiVoucherService:
             # 构建URL - 使用新的券列表API端点
             url = f"{self.base_url}/{cinema_id}/user/voucher/list/"
 
-            print(f"[沃美券列表] 🚀 获取用户券列表")
-            print(f"[沃美券列表] 📡 URL: {url}")
+            # 调试打印已移除
+            # 调试打印已移除
             print(f"[沃美券列表] 🏢 影院ID: {cinema_id}")
 
             # 发送GET请求
             response = requests.get(url, headers=headers, verify=False)
 
-            print(f"[沃美券列表] 📥 响应状态: {response.status_code}")
-            print(f"[沃美券列表] 📥 原始响应: {response.text[:500]}...")
+            # 调试打印已移除
+            # 调试打印已移除
 
             # 解码Unicode字符
             decoded_data = self.decode_unicode_message(response.text)
 
             if decoded_data:
-                print(f"[沃美券列表] 📋 解码后响应: {json.dumps(decoded_data, ensure_ascii=False, indent=2)}")
+                # 调试打印已移除
 
                 # 检查API响应状态
                 if decoded_data.get('ret') == 0:
@@ -304,7 +300,7 @@ class WomeiVoucherService:
                     data = decoded_data.get('data', {})
                     unused_vouchers = data.get('unused', [])
 
-                    print(f"[沃美券列表] ✅ 获取成功，未使用券数量: {len(unused_vouchers)}")
+                    # 调试打印已移除
 
                     # 返回处理后的数据
                     return {
@@ -380,7 +376,7 @@ class WomeiVoucherService:
                 'douyin_code_resault': voucher.get('douyin_code_resault', [])
             }
 
-            print(f"[沃美订单券] 📋 处理券数据: {voucher_name} ({voucher_code_mask})")
+            # 调试打印已移除
             return processed_voucher
 
         except Exception as e:

@@ -69,10 +69,10 @@ class UnifiedCinemaAPI:
         print(f"🌐 API请求调试信息 - {self.config['system_name']}")
         print(f"{'='*60}")
         print(f"📍 请求URL: {url}")
-        print(f"🔧 请求方法: {method}")
+        # 调试打印已移除
         print(f"📊 系统类型: {self.system_type.value}")
 
-        print(f"\n📋 请求头信息:")
+        # 调试打印已移除
         for key, value in headers.items():
             # 隐藏敏感信息的部分内容
             if key.lower() == 'token' and len(value) > 10:
@@ -100,7 +100,7 @@ class UnifiedCinemaAPI:
         print(f"{'='*60}")
 
         try:
-            print(f"🚀 发送请求...")
+            # 调试打印已移除
 
             if method.upper() == 'GET':
                 response = self.session.get(url, headers=headers, params=data, verify=False)
@@ -125,7 +125,7 @@ class UnifiedCinemaAPI:
             response.raise_for_status()
             result = response.json()
 
-            print(f"✅ 请求成功，返回数据类型: {type(result)}")
+            # 调试打印已移除
             if isinstance(result, dict):
                 print(f"   字典键: {list(result.keys())}")
             elif isinstance(result, list):
@@ -167,9 +167,9 @@ class UnifiedCinemaAPI:
         try:
             raw_data = self._make_request('cities')
 
-            print(f"🔍 原始响应数据类型: {type(raw_data)}")
+            # 调试打印已移除
             if isinstance(raw_data, dict):
-                print(f"🔍 响应字典键: {list(raw_data.keys())}")
+                # 调试打印已移除
 
             # 数据格式标准化
             cities = []
@@ -178,18 +178,18 @@ class UnifiedCinemaAPI:
             if isinstance(raw_data, dict):
                 if 'ret' in raw_data and 'data' in raw_data:
                     # 沃美格式: {"ret": 0, "msg": "successfully", "data": {"hot": [...], "normal": [...]}}
-                    print(f"🔍 检测到沃美API格式")
+                    # 调试打印已移除
                     data_section = raw_data['data']
 
                     # 合并热门城市和普通城市
                     all_cities = []
                     if 'hot' in data_section and isinstance(data_section['hot'], list):
                         all_cities.extend(data_section['hot'])
-                        print(f"🔍 热门城市数量: {len(data_section['hot'])}")
+                        # 调试打印已移除
 
                     if 'normal' in data_section and isinstance(data_section['normal'], list):
                         all_cities.extend(data_section['normal'])
-                        print(f"🔍 普通城市数量: {len(data_section['normal'])}")
+                        # 调试打印已移除
 
                     # 去重处理（基于city_id）
                     seen_ids = set()
@@ -209,7 +209,7 @@ class UnifiedCinemaAPI:
 
                 elif 'data' in raw_data and isinstance(raw_data['data'], list):
                     # 华联格式: {"data": [...]}
-                    print(f"🔍 检测到华联API格式")
+                    # 调试打印已移除
                     for city_data in raw_data['data']:
                         city = {
                             "id": city_data.get('id') or city_data.get('cityId') or city_data.get('code'),
@@ -222,7 +222,7 @@ class UnifiedCinemaAPI:
 
                 else:
                     # 直接是城市数据的字典
-                    print(f"🔍 检测到直接字典格式")
+                    # 调试打印已移除
                     city = {
                         "id": raw_data.get('id') or raw_data.get('cityId') or raw_data.get('city_id'),
                         "name": raw_data.get('name') or raw_data.get('cityName') or raw_data.get('city_name'),
@@ -234,7 +234,7 @@ class UnifiedCinemaAPI:
 
             elif isinstance(raw_data, list):
                 # 直接是城市数组
-                print(f"🔍 检测到直接数组格式")
+                # 调试打印已移除
                 for city_data in raw_data:
                     city = {
                         "id": city_data.get('id') or city_data.get('cityId') or city_data.get('city_id'),
@@ -245,9 +245,9 @@ class UnifiedCinemaAPI:
                     }
                     cities.append(city)
 
-            print(f"✅ [统一API] 成功解析 {len(cities)} 个城市")
+            # 调试打印已移除
             if cities:
-                print(f"🔍 第一个城市示例: {cities[0]}")
+                # 调试打印已移除
 
             return cities
 

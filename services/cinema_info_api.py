@@ -75,7 +75,7 @@ def _try_get_cinema_info(url, cinemaid):
         if response.status_code == 200:
             try:
                 data = response.json()
-                print(f"[影院信息API] 响应内容: {response.text[:200]}...")
+                # 调试打印已移除
 
                 # 分析响应
                 result_code = data.get('resultCode')
@@ -152,7 +152,7 @@ def validate_cinema(cinemaid, base_urls=None):
             # 可以根据需要添加更多域名
         ]
     
-    print(f"[影院验证] 开始验证影院ID: {cinemaid}")
+    # 调试打印已移除
     print(f"[影院验证] 将尝试 {len(base_urls)} 个域名: {base_urls}")
     
     for i, base_url in enumerate(base_urls, 1):

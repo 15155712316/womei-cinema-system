@@ -43,7 +43,7 @@ class VoucherLoadThread(QThread):
         try:
             self.progress_updated.emit("正在获取券列表...")
 
-            print(f"[券加载线程] 开始加载券数据")
+            # 调试打印已移除
             print(f"[券加载线程] 影院ID: {self.cinema_id}")
             print(f"[券加载线程] Token: {self.token[:20]}...")
             print(f"[券加载线程] 只显示有效券: {self.only_valid}")
@@ -61,7 +61,7 @@ class VoucherLoadThread(QThread):
                     only_valid=self.only_valid
                 )
 
-            print(f"[券加载线程] API调用完成")
+            # 调试打印已移除
             print(f"[券加载线程] 结果成功: {result.get('success', False)}")
 
             if result['success']:
@@ -79,7 +79,7 @@ class VoucherLoadThread(QThread):
                 # 🔧 强制处理事件队列，确保信号被处理
                 from PyQt5.QtWidgets import QApplication
                 QApplication.processEvents()
-                print(f"[券加载线程] 强制处理事件队列完成")
+                pass  # 调试打印已移除
             else:
                 error_msg = result.get('message', '未知错误')
                 print(f"[券加载线程] API调用失败: {error_msg}")
@@ -300,7 +300,7 @@ class VoucherWidget(QWidget):
 
         # ⚡ 性能优化：直接同步加载，减少延时
         try:
-            print(f"[券组件] 开始快速同步加载券数据...")
+            # 调试打印已移除
             import time
             start_time = time.time()
 
@@ -329,7 +329,7 @@ class VoucherWidget(QWidget):
     def _on_data_loaded(self, data: Dict[str, Any]):
         """处理数据加载完成"""
         try:
-            print(f"[券组件] 开始处理数据: {type(data)}")
+            # 调试打印已移除
             print(f"[券组件] 数据keys: {list(data.keys()) if isinstance(data, dict) else '不是字典'}")
 
             # 安全地获取券数据
@@ -366,7 +366,7 @@ class VoucherWidget(QWidget):
             print(f"[券组件] 最终券数据数量: {len(self.vouchers_data)}")
 
             # 更新UI显示
-            print(f"[券组件] 开始更新UI...")
+            # 调试打印已移除
             self._update_voucher_table()
 
             # 恢复UI状态
@@ -377,7 +377,7 @@ class VoucherWidget(QWidget):
             self.status_label.setText(f"加载完成，共 {count} 张有效券")
             self.status_label.setStyleSheet("color: #4CAF50; font-size: 12px; margin-left: 10px;")
 
-            print(f"[券组件] 数据处理完成，券数量: {count}")
+            # 调试打印已移除
 
         except Exception as e:
             print(f"[券组件] 处理数据失败: {e}")
@@ -410,7 +410,7 @@ class VoucherWidget(QWidget):
     
     def _update_voucher_table(self):
         """更新券列表表格"""
-        print(f"[券组件-表格更新] 开始更新表格，券数据数量: {len(self.vouchers_data)}")
+        # 调试打印已移除
 
         if not self.vouchers_data:
             print(f"[券组件-表格更新] 券数据为空，显示空状态")
@@ -469,7 +469,7 @@ class VoucherWidget(QWidget):
                 self.voucher_table.setItem(row, 0, error_item)
                 self.voucher_table.setSpan(row, 0, 1, 3)  # 调整为3列
 
-        print(f"[券组件-表格更新] 表格更新完成，最终行数: {self.voucher_table.rowCount()}")
+        # 调试打印已移除
     
     def _on_voucher_selected(self):
         """处理券选择"""

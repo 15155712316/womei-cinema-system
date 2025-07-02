@@ -130,7 +130,7 @@ class SmartOrderRecognition:
     def parse_order_text(self, text: str) -> OrderInfo:
         """解析订单文本，提取关键信息"""
         try:
-            print(f"[智能识别] 开始解析订单文本")
+            # 调试打印已移除
             
             order_info = OrderInfo(raw_text=text)
             
@@ -198,7 +198,7 @@ class SmartOrderRecognition:
                 except ValueError:
                     pass
             
-            print(f"[智能识别] 订单信息解析完成")
+            # 调试打印已移除
             return order_info
             
         except Exception as e:
@@ -213,7 +213,7 @@ class SmartOrderRecognition:
             if not order_info.cinema_name:
                 return None
 
-            print(f"[智能识别] 开始匹配影院: {order_info.cinema_name}")
+            # 调试打印已移除
 
             # 获取影院列表
             if not (hasattr(self.main_window, 'tab_manager_widget') and
@@ -293,7 +293,7 @@ class SmartOrderRecognition:
             if not order_info.movie_name:
                 return None
 
-            print(f"[智能识别] 开始匹配影片: {order_info.movie_name}")
+            # 调试打印已移除
 
             # 获取影片列表（通过主窗口的Tab管理器）
             if not (hasattr(self.main_window, 'tab_manager_widget') and
@@ -353,7 +353,7 @@ class SmartOrderRecognition:
             if not order_info.session_time:
                 return None
             
-            print(f"[智能识别] 开始匹配场次: {order_info.session_time}")
+            # 调试打印已移除
             
             # 解析目标时间
             try:
@@ -434,7 +434,7 @@ class SmartOrderRecognition:
             if not order_info.seats:
                 return []
             
-            print(f"[智能识别] 开始匹配座位: {order_info.seats}")
+            # 调试打印已移除
             
             seat_matches = []
             for seat_str in order_info.seats:
@@ -555,7 +555,7 @@ class SmartOrderRecognition:
             # 生成建议
             match_result.suggestions = self._generate_suggestions(order_info, match_result)
             
-            print(f"[智能识别] 识别完成，置信度: {match_result.confidence_score:.2f}")
+            # 调试打印已移除
             
             return order_info, match_result
             

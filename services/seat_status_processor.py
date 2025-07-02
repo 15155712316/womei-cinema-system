@@ -76,7 +76,7 @@ class SeatStatusProcessor:
             (全部座位数据, 可售座位数据)
         """
         if self.debug_mode:
-            print(f"📡 调用全部座位API和可售座位API...")
+            pass  # 调试打印已移除
         
         full_data = {}
         saleable_data = {}
@@ -88,7 +88,7 @@ class SeatStatusProcessor:
                 full_data = full_result.get('hall_info', {})
                 if self.debug_mode:
                     full_count = self._count_seats_in_data(full_data)
-                    print(f"✅ 全部座位API: {full_count} 个座位")
+                    pass  # 调试打印已移除
             else:
                 if self.debug_mode:
                     print(f"❌ 全部座位API失败: {full_result.get('error')}")
@@ -99,7 +99,7 @@ class SeatStatusProcessor:
                 saleable_data = saleable_result.get('saleable_info', {})
                 if self.debug_mode:
                     saleable_count = self._count_seats_in_data(saleable_data)
-                    print(f"✅ 可售座位API: {saleable_count} 个座位")
+                    pass  # 调试打印已移除
             else:
                 if self.debug_mode:
                     print(f"❌ 可售座位API失败: {saleable_result.get('error')}")
@@ -122,7 +122,7 @@ class SeatStatusProcessor:
             已售座位的位置集合 {(row, col), ...}
         """
         if self.debug_mode:
-            print(f"🔍 分析座位差异...")
+            pass  # 调试打印已移除
         
         # 提取座位位置
         full_positions = self._extract_seat_positions(full_data)
@@ -223,7 +223,7 @@ class SeatStatusProcessor:
                                     print(f"  🔴 标记已售: {row}排{col}座 (座位号: {seat.get('seat_no', '未知')})")
             
             if self.debug_mode:
-                print(f"✅ 已标记 {marked_count} 个已售座位")
+                pass  # 调试打印已移除
         
         except Exception as e:
             if self.debug_mode:
@@ -252,23 +252,8 @@ class SeatStatusProcessor:
     
     def _print_processing_summary(self, full_data: Dict, saleable_data: Dict, sold_positions: Set):
         """打印处理摘要"""
-        print(f"\n📋 座位状态处理摘要:")
-        print(f"=" * 50)
-        
-        full_count = self._count_seats_in_data(full_data)
-        saleable_count = self._count_seats_in_data(saleable_data)
-        sold_count = len(sold_positions)
-        
-        print(f"全部座位数量: {full_count}")
-        print(f"可售座位数量: {saleable_count}")
-        print(f"已售座位数量: {sold_count}")
-        print(f"数据一致性: {'✅ 正常' if full_count == saleable_count + sold_count else '⚠️ 异常'}")
-        
-        if sold_count > 0:
-            print(f"✅ 成功识别并标记了 {sold_count} 个已售座位")
-            print(f"💡 现在UI组件将正确显示座位状态")
-        else:
-            print(f"ℹ️ 当前场次暂无已售座位")
+        # 调试打印已移除，保留方法结构以维持兼容性
+        pass
     
     def set_debug_mode(self, enabled: bool):
         """设置调试模式"""
@@ -321,7 +306,7 @@ if __name__ == "__main__":
             
             if accounts and len(accounts) > 0:
                 token = accounts[0].get('token', '')
-                print(f"✅ 加载token: {token[:20]}...")
+                # 调试打印已移除
                 
                 # 使用之前验证成功的场次数据
                 cinema_id = "400028"
@@ -337,14 +322,14 @@ if __name__ == "__main__":
                 accurate_data = get_accurate_seat_data(token, cinema_id, hall_id, schedule_id)
                 
                 if accurate_data:
-                    print(f"\n✅ 座位状态处理成功!")
+                    # 调试打印已移除
                     print(f"📄 返回数据格式与原始API保持一致")
                     print(f"🎯 已售座位状态已正确标记")
                 else:
                     print(f"\n❌ 座位状态处理失败")
             
             else:
-                print("❌ 账号文件为空")
+                pass  # 调试打印已移除
         
         except Exception as e:
             print(f"❌ 测试失败: {e}")

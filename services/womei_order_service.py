@@ -82,8 +82,7 @@ class WomeiOrderService:
                     'order_detail': {}
                 }
 
-            print(f"[沃美订单服务] 🚀 开始获取订单详情")
-            print(f"[沃美订单服务] 📋 参数: order_id={order_id}, cinema_id={cinema_id}, token={use_token[:10]}...")
+            # 调试打印已移除
 
             # 🔧 修正：使用正确的沃美订单详情API URL格式
             detail_url = f"https://ct.womovie.cn/ticket/wmyc/cinema/{cinema_id}/order/info/"
@@ -107,7 +106,7 @@ class WomeiOrderService:
                 timeout=10
             )
 
-            print(f"[沃美订单服务] 📡 API响应状态: {response.status_code}")
+            # 调试打印已移除
 
             if response.status_code != 200:
                 return {
@@ -120,18 +119,18 @@ class WomeiOrderService:
             # 解析JSON响应
             try:
                 response_data = response.json()
-                print(f"[沃美订单服务] 📥 API响应解析成功")
+                # 调试打印已移除
 
                 # 检查API返回状态
                 if response_data.get('ret') == 0 and response_data.get('sub') == 0:
                     # 提取订单详情数据
                     detail_data = response_data.get('data', {})
 
-                    print(f"[沃美订单服务] ✅ 获取订单详情成功")
-                    print(f"[沃美订单服务] 📋 订单ID: {detail_data.get('order_id', 'N/A')}")
-                    print(f"[沃美订单服务] 📋 影片: {detail_data.get('movie_name', 'N/A')}")
-                    print(f"[沃美订单服务] 📋 状态: {detail_data.get('status_desc', 'N/A')}")
-                    print(f"[沃美订单服务] 📋 取票码: {detail_data.get('ticket_code', 'N/A')}")
+                    # 调试打印已移除
+                    # 调试打印已移除
+                    # 调试打印已移除
+                    # 调试打印已移除
+                    # 调试打印已移除
 
                     # 格式化订单详情数据
                     formatted_detail = self.format_order_detail(detail_data)
@@ -153,7 +152,7 @@ class WomeiOrderService:
 
             except json.JSONDecodeError as e:
                 print(f"[沃美订单服务] ❌ JSON解析失败: {e}")
-                print(f"[沃美订单服务] 📄 原始响应: {response.text[:500]}...")
+                # 调试打印已移除
                 return {
                     'success': False,
                     'error': f'JSON解析失败: {str(e)}',
@@ -162,7 +161,7 @@ class WomeiOrderService:
                 }
 
         except requests.exceptions.Timeout:
-            print(f"[沃美订单服务] ❌ 请求超时")
+            # 调试打印已移除
             return {
                 'success': False,
                 'error': '请求超时',
@@ -204,8 +203,8 @@ class WomeiOrderService:
                     'orders': []
                 }
             
-            print(f"[沃美订单服务] 🚀 开始获取订单列表")
-            print(f"[沃美订单服务] 📋 参数: token={use_token[:10]}..., offset={offset}")
+            # 调试打印已移除
+            # 调试打印已移除
             
             # 构建请求头
             headers = self.headers_template.copy()
@@ -225,7 +224,7 @@ class WomeiOrderService:
                 timeout=10
             )
             
-            print(f"[沃美订单服务] 📡 API响应状态: {response.status_code}")
+            # 调试打印已移除
             
             if response.status_code != 200:
                 return {
@@ -238,17 +237,13 @@ class WomeiOrderService:
             # 解析JSON响应
             try:
                 response_data = response.json()
-                print(f"[沃美订单服务] 📥 API响应解析成功")
-                
+
                 # 检查API返回状态
                 if response_data.get('ret') == 0 and response_data.get('sub') == 0:
                     # 提取订单数据
                     data = response_data.get('data', {})
                     orders_list = data.get('orders', [])
                     next_offset = data.get('next_offset', 0)
-                    
-                    print(f"[沃美订单服务] ✅ 获取成功: {len(orders_list)} 个订单")
-                    print(f"[沃美订单服务] 📋 下一页偏移量: {next_offset}")
                     
                     # 格式化订单数据
                     formatted_orders = self.format_orders_list(orders_list)
@@ -272,7 +267,7 @@ class WomeiOrderService:
                     
             except json.JSONDecodeError as e:
                 print(f"[沃美订单服务] ❌ JSON解析失败: {e}")
-                print(f"[沃美订单服务] 📄 原始响应: {response.text[:500]}...")
+                # 调试打印已移除
                 return {
                     'success': False,
                     'error': f'JSON解析失败: {str(e)}',
@@ -281,7 +276,7 @@ class WomeiOrderService:
                 }
                 
         except requests.exceptions.Timeout:
-            print(f"[沃美订单服务] ❌ 请求超时")
+            # 调试打印已移除
             return {
                 'success': False,
                 'error': '请求超时',
@@ -418,15 +413,7 @@ class WomeiOrderService:
                         elif '验证码' in name or 'verify' in name or 'validation' in name:
                             ds_code = code
 
-            print(f"[沃美订单服务] 📋 订单详情格式化:")
-            print(f"  - 订单号: {order_id}")
-            print(f"  - 影片: {movie_name}")
-            print(f"  - 影院: {cinema_name}")
-            print(f"  - 状态: {status_desc}")
-            print(f"  - 取票码: {qr_code}")
-            print(f"  - 验证码: {ds_code}")
-            print(f"  - 座位: {seat_info}")
-            print(f"  - 影厅: {hall_name}")
+            # 调试打印已移除
 
             # 🔧 构建兼容现有UI逻辑的数据结构（按照字段映射要求）
             formatted_detail = {
@@ -476,7 +463,6 @@ class WomeiOrderService:
                 'raw_data': detail_data
             }
 
-            print(f"[沃美订单服务] ✅ 订单详情格式化完成")
             return formatted_detail
 
         except Exception as e:
@@ -549,7 +535,6 @@ class WomeiOrderService:
                 'raw_data': order_data
             }
 
-            print(f"[沃美订单服务] 📋 订单格式化: {key_fields['order_id']} | {key_fields['movie_name']} | {key_fields['status_desc']}")
             return formatted_order
 
         except Exception as e:
@@ -590,11 +575,9 @@ class WomeiOrderService:
             formatted_orders = []
 
             for i, order in enumerate(orders_data):
-                print(f"[沃美订单服务] 📋 正在格式化第 {i+1}/{len(orders_data)} 个订单")
                 formatted_order = self.format_single_order(order)
                 formatted_orders.append(formatted_order)
 
-            print(f"[沃美订单服务] ✅ 订单列表格式化完成，共 {len(formatted_orders)} 个订单")
             return formatted_orders
 
         except Exception as e:

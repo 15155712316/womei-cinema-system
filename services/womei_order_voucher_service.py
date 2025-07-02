@@ -87,11 +87,7 @@ class WomeiOrderVoucherService:
             Dict: 价格计算结果，包含 pay_price, surcharge_price 等信息
         """
         try:
-            print(f"[沃美券价格] 🧮 开始计算券价格")
-            print(f"[沃美券价格] 📋 订单ID: {order_id}")
-            print(f"[沃美券价格] 🎫 券码: {voucher_code}")
-            print(f"[沃美券价格] 🏢 影院ID: {cinema_id}")
-            print(f"[沃美券价格] 🔑 Token: {token[:20]}...")
+            # 调试打印已移除
 
             # 构建请求头 (修复Content-Type)
             headers = self.headers_template.copy()
@@ -107,24 +103,18 @@ class WomeiOrderVoucherService:
                 'order_id': order_id          # 订单ID
             }
 
-            print(f"[沃美券价格] 📡 请求URL: {url}")
-            print(f"[沃美券价格] 📋 请求参数 (HAR格式): {data}")
-            print(f"[沃美券价格] 📋 Content-Type: application/x-www-form-urlencoded")
+            # 调试打印已移除
 
             # 🆕 发送POST请求 (使用正确的Content-Type)
             response = requests.post(url, headers=headers, data=data, verify=False, timeout=30)
 
-            print(f"[沃美券价格] 📥 响应状态: {response.status_code}")
-            print(f"[沃美券价格] 📥 原始响应: {response.text}")
+            # 调试打印已移除
 
             if response.status_code == 200:
                 # 解码Unicode字符
                 decoded_data = self.decode_unicode_message(response.text)
 
                 if decoded_data:
-                    print(f"[沃美券价格] 📋 解码后完整响应:")
-                    print(json.dumps(decoded_data, ensure_ascii=False, indent=2))
-
                     # 提取价格信息
                     data_section = decoded_data.get('data', {})
                     price_info = {
@@ -132,11 +122,6 @@ class WomeiOrderVoucherService:
                         'surcharge_price': data_section.get('surcharge_price', 0),
                         'surcharge_msg': data_section.get('surcharge_msg', '')
                     }
-
-                    print(f"[沃美券价格] 💰 价格计算结果:")
-                    print(f"[沃美券价格] 💰 支付价格: {price_info['pay_price']}")
-                    print(f"[沃美券价格] 💸 附加费用: {price_info['surcharge_price']}")
-                    print(f"[沃美券价格] 📝 附加说明: {price_info['surcharge_msg']}")
 
                     return {
                         'success': True,
@@ -199,8 +184,8 @@ class WomeiOrderVoucherService:
             Dict: 订单变更结果
         """
         try:
-            print(f"[订单支付方式变更] 🔧 开始订单支付方式变更")
-            print(f"[订单支付方式变更] 📋 订单ID: {order_id}")
+            # 调试打印已移除
+            # 调试打印已移除
             print(f"[订单支付方式变更] 💳 支付类型: {pay_type}")
             print(f"[订单支付方式变更] 🎯 折扣类型: {discount_type}")
             print(f"[订单支付方式变更] 🏢 影院ID: {cinema_id}")
@@ -229,21 +214,21 @@ class WomeiOrderVoucherService:
                 'ticket_pack_goods': ' ',
             }
 
-            print(f"[订单支付方式变更] 📡 请求URL: {url}")
-            print(f"[订单支付方式变更] 📤 请求参数: {json.dumps(data, ensure_ascii=False, indent=2)}")
+            # 调试打印已移除
+            # 调试打印已移除
 
             # 发送POST请求
             response = requests.post(url, headers=headers, data=data, verify=False, timeout=30)
 
             print(f"[订单支付方式变更] 📥 HTTP状态码: {response.status_code}")
-            print(f"[订单支付方式变更] 📥 原始响应: {response.text[:500]}...")
+            # 调试打印已移除
 
             if response.status_code == 200:
                 # 解码Unicode字符
                 decoded_data = self.decode_unicode_message(response.text)
 
                 if decoded_data:
-                    print(f"[订单支付方式变更] 📋 解码后响应: {json.dumps(decoded_data, ensure_ascii=False, indent=2)}")
+                    # 调试打印已移除
 
                     # 分析响应结果
                     ret = decoded_data.get('ret', -1)
@@ -251,10 +236,10 @@ class WomeiOrderVoucherService:
                     msg = decoded_data.get('msg', '未知错误')
                     data_section = decoded_data.get('data', {})
 
-                    print(f"[订单支付方式变更] 🔍 响应分析: ret={ret}, sub={sub}, msg={msg}")
+                    # 调试打印已移除
 
                     if ret == 0:
-                        print(f"[订单支付方式变更] ✅ 订单支付方式变更成功")
+                        # 调试打印已移除
                         return {
                             'success': True,
                             'ret': ret,
@@ -328,8 +313,8 @@ class WomeiOrderVoucherService:
             operation_type = "订单初始化" if not voucher_code else "券码绑定"
             log_prefix = f"[订单变更-{operation_type}]"
 
-            print(f"{log_prefix} 🔧 开始订单变更操作")
-            print(f"{log_prefix} 📋 订单ID: {order_id}")
+            # 调试打印已移除
+            # 调试打印已移除
             print(f"{log_prefix} 🏢 影院ID: {cinema_id}")
             print(f"{log_prefix} 💳 支付类型: {pay_type}")
             print(f"{log_prefix} 🎯 折扣类型: {discount_type}")
@@ -365,7 +350,7 @@ class WomeiOrderVoucherService:
             # 添加扩展参数
             data.update(kwargs)
 
-            print(f"{log_prefix} 📡 请求URL: {url}")
+            # 调试打印已移除
             print(f"{log_prefix} 📤 请求参数: {json.dumps(data, ensure_ascii=False, indent=2)}")
 
             # 发送POST请求
@@ -379,7 +364,7 @@ class WomeiOrderVoucherService:
                 decoded_data = self.decode_unicode_message(response.text)
 
                 if decoded_data:
-                    print(f"{log_prefix} 📋 解码后响应: {json.dumps(decoded_data, ensure_ascii=False, indent=2)}")
+                    # 调试打印已移除
 
                     # 分析响应结果
                     ret = decoded_data.get('ret', -1)
@@ -387,10 +372,10 @@ class WomeiOrderVoucherService:
                     msg = decoded_data.get('msg', '未知错误')
                     data_section = decoded_data.get('data', {})
 
-                    print(f"{log_prefix} 🔍 响应分析: ret={ret}, sub={sub}, msg={msg}")
+                    # 调试打印已移除
 
                     if ret == 0:
-                        print(f"{log_prefix} ✅ {operation_type}成功")
+                        # 调试打印已移除
                         return {
                             'success': True,
                             'ret': ret,
@@ -594,8 +579,8 @@ class WomeiOrderVoucherService:
         }
 
         try:
-            print(f"[沃美券流程] 🔄 开始完整券使用流程")
-            print(f"[沃美券流程] 📋 订单: {order_id}, 券码: {voucher_code}")
+            # 调试打印已移除
+            # 调试打印已移除
             print(f"[沃美券流程] 🏢 影院: {cinema_id}, 券类型: {voucher_type}")
 
             # 步骤1: 计算券价格
@@ -610,7 +595,7 @@ class WomeiOrderVoucherService:
                 print(f"[沃美券流程] ❌ 价格计算失败: {error_msg}")
                 return workflow_result
 
-            print(f"[沃美券流程] ✅ 价格计算成功")
+            # 调试打印已移除
 
             # 步骤2: 绑定券到订单
             print(f"[沃美券流程] 2️⃣ 第二步：绑定券到订单...")
@@ -624,7 +609,7 @@ class WomeiOrderVoucherService:
                 print(f"[沃美券流程] ❌ 券绑定失败: {error_msg}")
                 return workflow_result
 
-            print(f"[沃美券流程] ✅ 券绑定成功")
+            # 调试打印已移除
 
             # 步骤3: 整合最终结果
             print(f"[沃美券流程] 3️⃣ 第三步：整合结果...")
@@ -650,11 +635,7 @@ class WomeiOrderVoucherService:
                 'price_match': abs(final_price - calculated_price) < 0.01  # 价格是否匹配
             }
 
-            print(f"[沃美券流程] ✅ 完整券使用流程成功完成")
-            print(f"[沃美券流程] 💰 预计支付价格: {calculated_price}")
-            print(f"[沃美券流程] 💰 实际支付价格: {final_price}")
-            print(f"[沃美券流程] 💸 附加费用: {surcharge_price}")
-            print(f"[沃美券流程] 🎫 券使用详情: {len(voucher_use.get('use_codes', []))}张券")
+            # 调试打印已移除
 
             return workflow_result
 
@@ -688,7 +669,7 @@ class WomeiOrderVoucherService:
             # 构建请求URL
             url = f"{self.base_url}/ticket/wmyc/cinema/{cinema_id}/order/info/?version=tp_version&order_id={order_id}"
             
-            print(f"[沃美券绑定] 📡 订单查询URL: {url}")
+            # 调试打印已移除
             
             # 发送GET请求
             response = requests.get(url, headers=headers, verify=False, timeout=15)
@@ -701,7 +682,7 @@ class WomeiOrderVoucherService:
                 
                 if decoded_data and decoded_data.get('ret') == 0:
                     order_data = decoded_data.get('data', {})
-                    print(f"[沃美券绑定] ✅ 订单信息更新成功")
+                    # 调试打印已移除
                     
                     return {
                         'success': True,

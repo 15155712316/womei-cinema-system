@@ -276,7 +276,7 @@ class AccountWidget(QWidget):
             save_result = self._save_account_to_file(phone, token)
 
             if save_result['success']:
-                print(f"[账号验证] ✅ 账号保存成功，开始后续处理...")
+                # 调试打印已移除
 
                 # 保存成功
                 if save_result['is_new']:
@@ -306,12 +306,12 @@ class AccountWidget(QWidget):
     def _trigger_post_token_update_flow(self, phone: str, token: str, is_new_account: bool):
         """Token更新成功后的自动数据加载流程"""
         try:
-            print(f"[Token更新] 🚀 开始Token更新后的数据加载流程")
-            print(f"[Token更新] 📋 账号: {phone}")
-            print(f"[Token更新] 📋 新账号: {'是' if is_new_account else '否'}")
+            # 调试打印已移除
+            # 调试打印已移除
+            # 调试打印已移除
 
             # 步骤1: 验证新Token是否有效
-            print(f"[Token更新] 🔍 步骤1: 验证新Token有效性...")
+            # 调试打印已移除
             token_valid = self._verify_token_validity(token)
 
             if not token_valid:
@@ -319,7 +319,7 @@ class AccountWidget(QWidget):
                 QMessageBox.warning(self, "Token验证失败", "新Token验证失败，请检查Token是否正确")
                 return
 
-            print(f"[Token更新] ✅ Token验证通过")
+            # 调试打印已移除
 
             # 步骤2: 更新内存中的用户信息
             print(f"[Token更新] 🔄 步骤2: 更新内存中的用户信息...")
@@ -336,7 +336,7 @@ class AccountWidget(QWidget):
             # 步骤5: 自动选择账号（在数据加载之后）
             QTimer.singleShot(500, lambda: self._auto_select_account(phone))
 
-            print(f"[Token更新] ✅ Token更新后的流程已启动")
+            # 调试打印已移除
 
         except Exception as e:
             print(f"[Token更新] ❌ Token更新后流程失败: {e}")
@@ -346,7 +346,7 @@ class AccountWidget(QWidget):
     def _verify_token_validity(self, token: str) -> bool:
         """验证Token有效性"""
         try:
-            print(f"[Token验证] 🔍 开始验证Token有效性...")
+            # 调试打印已移除
 
             # 使用沃美城市API进行Token验证（轻量级验证）
             try:
@@ -360,12 +360,12 @@ class AccountWidget(QWidget):
                 return self._verify_token_with_direct_api(token)
 
             if result.get('success', False):
-                print(f"[Token验证] ✅ Token验证通过，API调用成功")
+                # 调试打印已移除
                 return True
             else:
                 error_type = result.get('error_type', 'unknown')
                 if error_type == 'token_expired':
-                    print(f"[Token验证] ❌ Token已失效")
+                    pass  # 调试打印已移除
                 else:
                     print(f"[Token验证] ❌ Token验证失败: {result.get('error', '未知错误')}")
                 return False
@@ -396,7 +396,7 @@ class AccountWidget(QWidget):
             if response.status_code == 200:
                 data = response.json()
                 if data.get('ret') == 0 and data.get('sub') != 408:
-                    print(f"[Token验证] ✅ 直接API验证通过")
+                    # 调试打印已移除
                     return True
                 else:
                     print(f"[Token验证] ❌ 直接API验证失败: {data.get('msg', '未知错误')}")
@@ -433,9 +433,9 @@ class AccountWidget(QWidget):
                         'username': f'用户{phone[-4:]}',  # 使用手机号后4位作为用户名
                         'points': 0
                     }
-                    print(f"[用户信息更新] ✅ 创建新的用户信息: {phone}")
+                    # 调试打印已移除
 
-                print(f"[用户信息更新] ✅ 主窗口用户信息已更新")
+                pass  # 调试打印已移除
             else:
                 print(f"[用户信息更新] ⚠️ 未找到主窗口实例")
 
@@ -466,11 +466,11 @@ class AccountWidget(QWidget):
                 # 验证Token同步是否成功
                 current_token = tab_manager._get_current_token()
                 if current_token == token:
-                    print(f"[TabManager同步] ✅ TabManager Token同步成功")
+                    pass  # 调试打印已移除
                 else:
                     print(f"[TabManager同步] ❌ TabManager Token同步失败")
-                    print(f"[TabManager同步] 📋 期望: {token[:20]}...")
-                    print(f"[TabManager同步] 📋 实际: {current_token[:20] if current_token else 'None'}...")
+                    # 调试打印已移除
+                    # 调试打印已移除
 
             else:
                 print(f"[TabManager同步] ⚠️ 未找到TabManagerWidget实例")
@@ -481,9 +481,9 @@ class AccountWidget(QWidget):
     def _trigger_data_reload_flow(self, phone: str, token: str):
         """触发数据重新加载流程"""
         try:
-            print(f"[数据重载] 🚀 开始触发数据重新加载流程...")
-            print(f"[数据重载] 📋 使用账号: {phone}")
-            print(f"[数据重载] 📋 使用Token: {token[:20]}...")
+            # 调试打印已移除
+            # 调试打印已移除
+            # 调试打印已移除
 
             # 获取主窗口实例
             main_window = self._get_main_window()
@@ -495,7 +495,7 @@ class AccountWidget(QWidget):
                 # 重新初始化TabManagerWidget的联动系统
                 tab_manager._init_cascade()
 
-                print(f"[数据重载] ✅ 数据重新加载流程已触发")
+                # 调试打印已移除
 
                 # 发送全局账号变更事件
                 from utils.signals import event_bus
@@ -506,7 +506,7 @@ class AccountWidget(QWidget):
                     'points': 0
                 }
                 event_bus.account_changed.emit(account_data)
-                print(f"[数据重载] 📡 全局账号变更事件已发送")
+                # 调试打印已移除
 
             else:
                 print(f"[数据重载] ⚠️ 未找到TabManagerWidget实例，无法触发数据重载")
@@ -587,7 +587,7 @@ class AccountWidget(QWidget):
             with open(accounts_file, 'w', encoding='utf-8') as f:
                 json.dump(accounts, f, ensure_ascii=False, indent=2)
 
-            print(f"[账号保存] ✅ 账号保存成功，总计 {len(accounts)} 个账号")
+            # 调试打印已移除
 
             return {
                 "success": True,
@@ -597,7 +597,7 @@ class AccountWidget(QWidget):
 
         except Exception as e:
             error_msg = f"文件操作失败: {str(e)}"
-            print(f"[账号保存] ❌ {error_msg}")
+            # 调试打印已移除
             return {
                 "success": False,
                 "error": error_msg,
@@ -610,7 +610,7 @@ class AccountWidget(QWidget):
             print(f"[账号验证] 🎯 自动选择账号: {phone}")
             success = self.select_account_by_id(phone)
             if success:
-                print(f"[账号验证] ✅ 账号自动选择成功: {phone}")
+                pass  # 调试打印已移除
             else:
                 print(f"[账号验证] ⚠️ 账号自动选择失败: {phone}")
 
@@ -659,7 +659,7 @@ class AccountWidget(QWidget):
             self.phone_input.setText(phone)
             self.token_input.setText(token)
 
-            print(f"[账号组件] 自动填充完成: {phone}")
+            # 调试打印已移除
 
         except Exception as e:
             print(f"[账号组件] 自动填充错误: {e}")
@@ -989,7 +989,7 @@ class AccountWidget(QWidget):
             # 重新刷新账号数据
             self.refresh_accounts()
 
-            print(f"[账号组件] ✅ 账号列表已刷新")
+            # 调试打印已移除
 
         except Exception as e:
             print(f"[账号组件] 账号列表更新处理错误: {e}")
@@ -1182,7 +1182,7 @@ class AccountWidget(QWidget):
         try:
             self.accounts_data = accounts
             self._update_account_table(accounts)
-            print(f"[账号组件] 更新账号列表完成，共{len(accounts)}个账号")
+            pass  # 调试打印已移除
         except Exception as e:
             print(f"[账号组件] 更新账号列表错误: {e}")
     
@@ -1203,7 +1203,7 @@ class AccountWidget(QWidget):
             for i in range(self.account_table.rowCount()):
                 item = self.account_table.item(i, 0)
                 if item and item.text() == phone:
-                    print(f"[账号组件] ✅ 找到账号，选择第{i}行")
+                    # 调试打印已移除
 
                     # 选择表格行
                     self.account_table.selectRow(i)
@@ -1217,13 +1217,13 @@ class AccountWidget(QWidget):
                         self.account_selected.emit(account_data)
                         event_bus.account_changed.emit(account_data)
 
-                        print(f"[账号组件] ✅ 账号选择完成: {phone}")
+                        # 调试打印已移除
                         return True
                     else:
                         print(f"[账号组件] ⚠️ 账号数据为空: {phone}")
                         return False
 
-            print(f"[账号组件] ❌ 未找到账号: {phone}")
+            # 调试打印已移除
             return False
 
         except Exception as e:
@@ -1245,7 +1245,7 @@ class AccountWidget(QWidget):
             self.account_selected.emit(first_account)
             event_bus.account_changed.emit(first_account)
 
-            print(f"[账号组件] ✅ 账号自动选择完成: {phone}")
+            # 调试打印已移除
 
         except Exception as e:
             print(f"[账号组件] 自动选择账号错误: {e}")

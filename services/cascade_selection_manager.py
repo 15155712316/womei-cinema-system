@@ -74,7 +74,7 @@ class CascadeSelectionManager(QObject):
                 print("[级联选择] 级联选择正在进行中")
                 return False
             
-            print(f"[级联选择] 开始智能级联选择 (自动模式: {auto_mode})")
+            # 调试打印已移除
             
             # 重置状态
             self.state = self._init_state()
@@ -445,7 +445,7 @@ class CascadeSelectionManager(QObject):
                     'seats': self.state.seat_step.data
                 }
                 self.selection_completed.emit(True, result)
-                print("[级联选择] 智能级联选择完成")
+                pass  # 调试打印已移除
             else:
                 self.selection_completed.emit(False, {})
                 print("[级联选择] 智能级联选择失败")

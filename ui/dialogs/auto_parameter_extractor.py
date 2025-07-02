@@ -22,10 +22,10 @@ from PyQt5.QtGui import QFont
 try:
     from ui.components.auto_browser import AutoBrowserWidget
     AUTO_BROWSER_AVAILABLE = True
-    print("[参数采集] ✅ 自动浏览器组件可用")
+    pass  # 调试打印已移除
 except ImportError as e:
     AUTO_BROWSER_AVAILABLE = False
-    print(f"[参数采集] ❌ 自动浏览器组件不可用: {e}")
+    # 调试打印已移除
 
 
 class ParameterExtractorHelper:
@@ -250,7 +250,7 @@ curl -X GET 'https://www.heibaiyingye.cn/MiniTicket/index.php/MiniCommonSystem/g
         layout.addWidget(result_label)
         layout.addWidget(self.curl_result)
 
-        print("[参数采集] ✅ curl解析Tab设置完成")
+        # 调试打印已移除
 
     def setup_manual_tab(self):
         """设置手动输入Tab"""
@@ -339,7 +339,7 @@ curl -X GET 'https://www.heibaiyingye.cn/MiniTicket/index.php/MiniCommonSystem/g
         """处理提取到的参数"""
         if key and value:
             self.extracted_params[key] = value
-            print(f"[参数采集] 提取到参数: {key} = {value}")
+            # 调试打印已移除
 
     def on_status_changed(self, status: str):
         """处理状态变化"""
@@ -837,9 +837,9 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
                     self.status_label.setText(f"❌ 缺少必要的影院参数: {', '.join(missing_cinema)}")
                     self.ok_button.setEnabled(False)
 
-                print(f"[curl解析] 成功提取 {len(params)} 个参数")
-                print(f"[curl解析] 影院参数: {cinema_params}")
-                print(f"[curl解析] 账号参数: {account_params}")
+                # 调试打印已移除
+                # 调试打印已移除
+                # 调试打印已移除
 
             else:
                 self.status_label.setText("❌ curl命令解析失败，请检查命令格式")
@@ -879,7 +879,7 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
                         self.status_label.setText(f"⚠️ 参数不完整，缺少: {', '.join(missing)}")
                         self.ok_button.setEnabled(False)
 
-                    print(f"[参数采集] 从自动监听获取到 {len(auto_params)} 个参数")
+                    # 调试打印已移除
 
                 else:
                     self.status_label.setText("⚠️ 自动监听未提取到任何参数")
@@ -1049,7 +1049,7 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
             base_url = cinema_params['base_url']
             cinema_id = cinema_params['cinema_id']
 
-            print(f"[curl采集] 开始添加影院: {base_url}, {cinema_id}")
+            # 调试打印已移除
 
             # 🆕 智能重复检测
             if self._check_cinema_exists(cinema_id):
@@ -1062,30 +1062,30 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
             from services.cinema_manager import cinema_manager
 
             # 🔧 增强调试信息
-            print(f"[curl采集] 🔍 详细参数检查:")
+            # 调试打印已移除
             print(f"  - base_url: '{base_url}' (类型: {type(base_url)}, 长度: {len(base_url)})")
             print(f"  - cinema_id: '{cinema_id}' (类型: {type(cinema_id)}, 长度: {len(cinema_id)})")
 
             # 🔧 检查base_url格式
             if base_url.startswith('https://'):
                 clean_base_url = base_url.replace('https://', '')
-                print(f"[curl采集] 🔧 移除https://前缀: {clean_base_url}")
+                pass  # 调试打印已移除
             elif base_url.startswith('http://'):
                 clean_base_url = base_url.replace('http://', '')
-                print(f"[curl采集] 🔧 移除http://前缀: {clean_base_url}")
+                pass  # 调试打印已移除
             else:
                 clean_base_url = base_url
-                print(f"[curl采集] 🔧 使用原始域名: {clean_base_url}")
+                # 调试打印已移除
 
             # API验证和信息获取
-            print(f"[curl采集] 🚀 调用get_cinema_info API...")
-            print(f"[curl采集] 📡 API参数: base_url='{clean_base_url}', cinema_id='{cinema_id}'")
+            # 调试打印已移除
+            # 调试打印已移除
 
             cinema_info = get_cinema_info(clean_base_url, cinema_id)
 
-            print(f"[curl采集] 📋 API响应: {type(cinema_info)}")
+            # 调试打印已移除
             if cinema_info:
-                print(f"[curl采集] ✅ API响应成功，数据keys: {list(cinema_info.keys()) if isinstance(cinema_info, dict) else 'N/A'}")
+                pass  # 调试打印已移除
             else:
                 print(f"[curl采集] ❌ API响应为空或失败")
 
@@ -1095,9 +1095,9 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
                 return False
 
             # 格式化影院数据
-            print(f"[curl采集] 🔧 格式化影院数据...")
+            # 调试打印已移除
             cinema_data = format_cinema_data(cinema_info, clean_base_url, cinema_id)
-            print(f"[curl采集] ✅ 影院数据格式化完成: {cinema_data.get('cinemaShortName', 'N/A')}")
+            # 调试打印已移除
 
             # 保存影院数据
             cinemas = cinema_manager.load_cinema_list()
@@ -1131,7 +1131,7 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
             openid = account_params['openid']
             token = account_params['token']
 
-            print(f"[curl采集] 开始添加账号: {user_id}, {cinema_id}")
+            # 调试打印已移除
 
             # 🆕 智能重复检测
             if self._check_account_exists(user_id, cinema_id):
@@ -1288,7 +1288,7 @@ X-OpenID: ox1234567890abcdef1234567890abcdef
 
             # 🆕 发送账号列表更新事件 - 修复账号组件不刷新的问题
             event_bus.account_list_updated.emit([])  # 发送空列表，让组件自己重新加载
-            print(f"[curl采集] ✅ 已触发账号列表更新事件")
+            # 调试打印已移除
 
         except Exception as e:
             print(f"[curl采集] 触发账号刷新事件错误: {e}")

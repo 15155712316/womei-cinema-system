@@ -438,7 +438,7 @@ class EnhancedMatchingEngine:
             if not order_info.cinema_name or not cinemas_data:
                 return None
             
-            print(f"[增强匹配] 开始增强影院匹配: {order_info.cinema_name}")
+            # 调试打印已移除
             
             # 检查缓存
             cache_key = f"cinema_{order_info.cinema_name}"
