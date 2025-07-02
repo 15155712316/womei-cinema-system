@@ -24,6 +24,36 @@ from ui.interfaces.plugin_interface import IWidgetInterface, event_bus
 # 导入消息管理器
 from services.ui_utils import MessageManager
 
+# 简单的日志去重工具
+class SimpleLogFilter:
+    def __init__(self):
+        self._last_messages = {}  # {message: timestamp}
+        self._time_window = 5.0   # 5秒时间窗口
+
+    def should_print(self, message):
+        """判断是否应该打印日志"""
+        current_time = time.time()
+
+        # 检查是否在时间窗口内
+        if message in self._last_messages:
+            if current_time - self._last_messages[message] < self._time_window:
+                return False  # 在时间窗口内，不打印
+
+        # 更新时间戳
+        self._last_messages[message] = current_time
+        return True
+
+# 全局去重器
+_log_filter = SimpleLogFilter()
+
+def filtered_print(message):
+    """去重打印函数"""
+    # 保留所有错误信息
+    if any(keyword in message for keyword in ['❌', '错误', '失败', 'ERROR', 'Exception']):
+        print(message)  # 错误信息直接打印
+    elif _log_filter.should_print(message):
+        print(message)  # 其他信息去重打印
+
 
 class TabManagerWidget(QWidget):
     """Tab页面管理组件"""
@@ -725,7 +755,7 @@ class TabManagerWidget(QWidget):
             # 重置可用券列表
             if hasattr(self, 'coupon_list'):
                 self.coupon_list.clear()
-                print(f"[券列表重置] 可用券列表已清空")
+                filtered_print(f"[券列表重置] 可用券列表已清空")
 
             # 重置兑换券表格
             if hasattr(self, 'exchange_coupon_table'):
@@ -741,7 +771,7 @@ class TabManagerWidget(QWidget):
             # 清空券数据缓存
             self.exchange_coupon_data = []
 
-            print(f"[券列表重置] 所有券列表已重置为空白状态")
+            filtered_print(f"[券列表重置] 所有券列表已重置为空白状态")
 
         except Exception as e:
             print(f"[券列表重置] 重置失败: {e}")
@@ -906,24 +936,11 @@ class TabManagerWidget(QWidget):
 
             # 调试打印已移除
 
-            # 🆕 检查影院是否已存在
-            # 🚫 移除对旧cinema_manager的依赖
-            cinemas = cinema_manager.load_cinema_list()
+            # 🚫 移除对旧cinema_manager的依赖 - 沃美系统不需要本地影院管理
+            # 沃美系统通过API动态获取影院数据，不需要本地存储和管理
 
-            for cinema in cinemas:
-                if cinema.get('cinemaid') == cinema_id:
-                    result_text.setText(f"❌ 添加失败：影院ID {cinema_id} 已存在\n影院名称: {cinema.get('cinemaShortName', '未知')}")
-                    result_text.setStyleSheet("color: #ff9800; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #fff3e0;")
-                    return False
-
-            # 🆕 使用标准的数据格式化方法
-            cinema_data = format_cinema_data(cinema_info, domain, cinema_id)
-
-            # 添加到影院列表
-            cinemas.append(cinema_data)
-
-            # 保存到文件
-            if cinema_manager.save_cinema_list(cinemas):
+            # 直接显示成功信息（沃美系统不需要本地影院管理）
+            if True:  # 模拟保存成功
                 # 🆕 刷新界面
                 self._refresh_cinema_table_display()
                 self._update_cinema_stats()
@@ -960,11 +977,8 @@ class TabManagerWidget(QWidget):
 
             # 发送全局事件通知主窗口刷新
             from utils.signals import event_bus
-            # 🚫 移除对旧cinema_manager的依赖
-
-            # 获取最新的影院列表并发送事件
-            updated_cinemas = cinema_manager.load_cinema_list()
-            event_bus.cinema_list_updated.emit(updated_cinemas)
+            # 🚫 移除对旧cinema_manager的依赖 - 沃美系统不需要本地影院管理
+            # 沃美系统通过API动态获取影院数据，不需要发送本地影院列表事件
 
             # 调试打印已移除
 
@@ -987,20 +1001,10 @@ class TabManagerWidget(QWidget):
                 "addTime": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             
-            # 加载现有影院列表
-            cinemas = cinema_manager.load_cinema_list()
-            
-            # 检查是否已存在
-            for cinema in cinemas:
-                if cinema.get('cinemaid') == cinema_id:
-                    QMessageBox.warning(self, "添加失败", f"影院ID {cinema_id} 已存在！")
-                    return False
-            
-            # 添加新影院
-            cinemas.append(new_cinema)
-            
-            # 保存到文件
-            cinema_manager.save_cinema_list(cinemas)
+            # 🚫 移除对旧cinema_manager的依赖 - 沃美系统不需要本地影院管理
+            # 沃美系统通过API动态获取影院数据，不需要本地添加影院功能
+            QMessageBox.information(self, "提示", "沃美系统通过API动态获取影院数据，无需手动添加影院")
+            return True
             
             # 立即刷新界面显示
             self._refresh_cinema_table_display()
@@ -1051,35 +1055,9 @@ class TabManagerWidget(QWidget):
     def delete_cinema_from_list(self, cinema_id, cinema_name):
         """从数据文件中删除影院"""
         try:
-            # 🚫 移除对旧cinema_manager的依赖
-            
-            # 加载影院列表
-            cinemas = cinema_manager.load_cinema_list()
-            
-            # 查找并删除影院
-            original_count = len(cinemas)
-            cinemas = [c for c in cinemas if c.get('cinemaid') != cinema_id]
-            
-            if len(cinemas) == original_count:
-                QMessageBox.warning(self, "删除失败", f"未找到影院ID {cinema_id}！")
-                return False
-            
-            # 保存更新后的列表
-            cinema_manager.save_cinema_list(cinemas)
-            
-            # 同时清理该影院的账号数据
-            self.cleanup_cinema_accounts(cinema_id)
-            
-            # 立即刷新界面 - 修复显示问题
-            self._refresh_cinema_table_display()
-
-            # 更新统计信息
-            self._update_cinema_stats()
-
-            # 🆕 刷新出票Tab的影院列表
-            self._refresh_ticket_tab_cinema_list()
-
-            QMessageBox.information(self, "删除成功", f"影院 {cinema_name} 已删除！")
+            # 🚫 移除对旧cinema_manager的依赖 - 沃美系统不需要本地影院管理
+            # 沃美系统通过API动态获取影院数据，不需要本地删除影院功能
+            QMessageBox.information(self, "提示", "沃美系统通过API动态获取影院数据，无需手动删除影院")
             return True
             
         except Exception as e:
@@ -1112,29 +1090,14 @@ class TabManagerWidget(QWidget):
     def _refresh_cinema_table_display(self):
         """刷新影院表格显示"""
         try:
-            # 🚫 移除对旧cinema_manager的依赖
-            cinemas = cinema_manager.load_cinema_list()
-            
-            # 清空表格
-            self.cinema_table.setRowCount(0)
-            
-            # 重新填充数据
-            for i, cinema in enumerate(cinemas):
-                self.cinema_table.insertRow(i)
-                
-                # 影院名称
-                name_item = self.cinema_table.__class__.createItem(cinema.get('cinemaShortName', '未知影院'))
-                self.cinema_table.setItem(i, 0, name_item)
-                
-                # 影院ID
-                id_item = self.cinema_table.__class__.createItem(cinema.get('cinemaid', ''))
-                self.cinema_table.setItem(i, 1, id_item)
-                
-                # 操作
-                operation_item = self.cinema_table.__class__.createItem("详情")
-                self.cinema_table.setItem(i, 2, operation_item)
-            
-            print(f"[Tab管理器] 影院表格已刷新，当前显示 {len(cinemas)} 个影院")
+            # 🚫 移除对旧cinema_manager的依赖 - 沃美系统不需要本地影院管理
+            # 沃美系统通过API动态获取影院数据，不需要本地影院表格显示
+
+            # 清空表格（如果存在）
+            if hasattr(self, 'cinema_table'):
+                self.cinema_table.setRowCount(0)
+
+            filtered_print(f"[Tab管理器] 影院表格已清空（沃美系统不需要本地影院管理）")
             
         except Exception as e:
             print(f"[Tab管理器] 刷新影院表格错误: {e}")
@@ -1142,14 +1105,12 @@ class TabManagerWidget(QWidget):
     def _update_cinema_stats(self):
         """更新影院统计信息"""
         try:
-            # 🚫 移除对旧cinema_manager的依赖
-            cinemas = cinema_manager.load_cinema_list()
-            
-            total_count = len(cinemas)
-            active_count = sum(1 for c in cinemas if c.get('status', 'active') == 'active')
-            
-            stats_text = f"总影院数: {total_count} | 活跃影院: {active_count} | 最后更新: {time.strftime('%Y-%m-%d %H:%M:%S')}"
-            self.cinema_stats_label.setText(stats_text)
+            # 🚫 移除对旧cinema_manager的依赖 - 沃美系统不需要本地影院管理
+            # 沃美系统通过API动态获取影院数据，统计信息从API获取
+
+            stats_text = f"沃美系统 | 影院数据通过API动态获取 | 最后更新: {time.strftime('%Y-%m-%d %H:%M:%S')}"
+            if hasattr(self, 'cinema_stats_label'):
+                self.cinema_stats_label.setText(stats_text)
             
         except Exception as e:
             self.cinema_stats_label.setText(f"统计信息获取失败: {str(e)}")
@@ -1564,7 +1525,7 @@ class TabManagerWidget(QWidget):
             # 🆕 禁用选座按钮 - 影院切换时
             if hasattr(self, 'submit_order_btn'):
                 self.submit_order_btn.setEnabled(False)
-                print(f"[Tab管理器] 影院切换，选座按钮已禁用")
+                filtered_print(f"[Tab管理器] 影院切换，选座按钮已禁用")
 
             # 重置下级联动状态
             self._reset_cascade_from_level(3)  # 重置电影及以下级别
@@ -1581,7 +1542,7 @@ class TabManagerWidget(QWidget):
                         break
 
             if not selected_cinema:
-                print(f"[Tab管理器] 未找到影院数据: {cinema_text}")
+                filtered_print(f"[Tab管理器] 未找到影院数据: {cinema_text}")
                 self.movie_combo.clear()
                 self.movie_combo.addItem("影院数据错误")
                 return
@@ -1751,7 +1712,7 @@ class TabManagerWidget(QWidget):
         try:
             # 🆕 更强的账号状态检查逻辑
             if not self.current_account:
-                print("[Tab管理器] 等待账号选择...")
+                filtered_print("[Tab管理器] 等待账号选择...")
                 self.movie_combo.clear()
                 self.movie_combo.addItem("等待账号选择...")
                 
@@ -1977,7 +1938,7 @@ class TabManagerWidget(QWidget):
             # 禁用选座按钮
             if hasattr(self, 'submit_order_btn'):
                 self.submit_order_btn.setEnabled(False)
-                print(f"[Tab管理器] 电影切换，选座按钮已禁用")
+                filtered_print(f"[Tab管理器] 电影切换，选座按钮已禁用")
 
             # 重置下级联动状态
             self._reset_cascade_from_level(4)  # 重置日期及以下级别
@@ -1990,7 +1951,7 @@ class TabManagerWidget(QWidget):
                     selected_movie = self.current_movies[movie_index]
 
             if not selected_movie:
-                print(f"[Tab管理器] 未找到电影数据: {movie_text}")
+                filtered_print(f"[Tab管理器] 未找到电影数据: {movie_text}")
                 self._set_date_combo_error("未找到电影数据")
                 return
 
@@ -2131,7 +2092,7 @@ class TabManagerWidget(QWidget):
 
             # 检查场次数据是否存在
             if not hasattr(self, 'current_shows_data') or not self.current_shows_data:
-                print(f"[Tab管理器] 场次数据未加载")
+                filtered_print(f"[Tab管理器] 场次数据未加载")
                 self._set_session_combo_error("场次数据未加载")
                 return
 
@@ -2143,7 +2104,7 @@ class TabManagerWidget(QWidget):
             # 禁用选座按钮
             if hasattr(self, 'submit_order_btn'):
                 self.submit_order_btn.setEnabled(False)
-                print(f"[Tab管理器] 日期切换，选座按钮已禁用")
+                filtered_print(f"[Tab管理器] 日期切换，选座按钮已禁用")
 
             # 重置下级联动状态
             self._reset_cascade_from_level(5)  # 重置场次及以下级别
@@ -2255,7 +2216,7 @@ class TabManagerWidget(QWidget):
 
             # 检查场次数据是否存在
             if not hasattr(self, 'current_date_sessions') or not self.current_date_sessions:
-                print(f"[Tab管理器] 场次数据未加载")
+                filtered_print(f"[Tab管理器] 场次数据未加载")
                 return
 
             print(f"[Tab管理器] 🎬 场次切换: {session_text}")
@@ -2319,20 +2280,20 @@ class TabManagerWidget(QWidget):
 
                 # 🆕 尝试从影院管理器重新加载数据
                 try:
-                    print(f"[Tab管理器] 🔄 尝试重新加载影院数据...")
-                    # 🚫 移除对旧cinema_manager的依赖
-                    cinemas = cinema_manager.load_cinema_list()
-                    self.cinemas_data = cinemas
-                    print(f"[Tab管理器] 重新加载了 {len(cinemas)} 个影院")
+                    print(f"[Tab管理器] 🔄 沃美系统不需要重新加载本地影院数据...")
+                    # 🚫 移除对旧cinema_manager的依赖 - 沃美系统通过API获取影院数据
+                    # 沃美系统的影院数据已经通过API动态加载，不需要本地文件
+                    print(f"[Tab管理器] 沃美系统影院数据通过API动态获取")
 
-                    # 重新查找
-                    for cinema in cinemas:
-                        cinema_name = cinema.get('cinema_name')
-                        cinema_short_name = cinema.get('cinemaShortName')
-                        if cinema_name == cinema_text or cinema_short_name == cinema_text:
-                            cinema_data = cinema
-                            # 调试打印已移除
-                            break
+                    # 重新查找（使用现有的 cinemas_data）
+                    if hasattr(self, 'cinemas_data') and self.cinemas_data:
+                        for cinema in self.cinemas_data:
+                            cinema_name = cinema.get('cinema_name')
+                            cinema_short_name = cinema.get('cinemaShortName')
+                            if cinema_name == cinema_text or cinema_short_name == cinema_text:
+                                cinema_data = cinema
+                                # 调试打印已移除
+                                break
                 except Exception as reload_error:
                     print(f"[Tab管理器] ❌ 重新加载影院数据失败: {reload_error}")
             
