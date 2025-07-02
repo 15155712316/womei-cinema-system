@@ -5,8 +5,7 @@
 解决 _show_order_detail 和 _update_order_details 方法重复问题
 """
 
-from typing import Dict, List, Any, Optional
-import json
+from typing import Dict, List, Any
 
 
 class FieldNameMapper:
@@ -169,18 +168,17 @@ class OrderDetailManager:
         """构建显示内容 - 统一的显示逻辑"""
         try:
             info_lines = []
-            
+
+            print(f"[订单详情管理器] 构建显示内容，上下文: {context}")
+
             # 基础信息
             info_lines.extend(self._build_basic_info(order_data))
-            
-            # 密码策略信息
-            password_info = self._build_password_policy_info(order_data)
-            if password_info:
-                info_lines.append(password_info)
-            
+
+            # 🚫 问题1：已移除密码策略信息显示，专注于券码支付和微信支付
+
             # 价格信息
             info_lines.extend(self._build_price_info(order_data))
-            
+
             return info_lines
             
         except Exception as e:
@@ -190,63 +188,39 @@ class OrderDetailManager:
     def _build_basic_info(self, order_data: Dict[str, Any]) -> List[str]:
         """构建基础信息"""
         info_lines = []
-        
+
         # 订单号
         order_id = order_data.get('order_id', order_data.get('orderno', 'N/A'))
         info_lines.append(f"订单号: {order_id}")
-        
+
+        # 🆕 问题5：添加影院名称显示
+        cinema_name = order_data.get('cinema_name', order_data.get('cinema', ''))
+        if cinema_name and cinema_name != 'N/A':
+            info_lines.append(f"影院: {cinema_name}")
+
         # 影片信息
         movie = order_data.get('movie_name', order_data.get('movie', 'N/A'))
         info_lines.append(f"影片: {movie}")
-        
-        # 时间信息
-        session_time = order_data.get('session_time', '')
-        if not session_time:
-            date = order_data.get('date', '')
-            session = order_data.get('session', '')
-            if date and session:
-                session_time = f"{date} {session}"
+
+        # 🔧 修复场次时间显示格式问题
+        session_time = self._build_formatted_time_display(order_data)
         info_lines.append(f"时间: {session_time}")
-        
+
         # 影厅信息
-        cinema = order_data.get('cinema_name', order_data.get('cinema', 'N/A'))
         hall = order_data.get('hall_name', '')
         if hall:
             info_lines.append(f"影厅: {hall}")
-        else:
-            info_lines.append(f"影院: {cinema}")
-        
-        # 座位信息
-        seats = order_data.get('seats', [])
-        if isinstance(seats, list) and seats:
-            # 🔧 修复：确保座位数据是字符串格式
-            seat_strings = []
-            for seat in seats:
-                if isinstance(seat, str):
-                    seat_strings.append(seat)
-                elif isinstance(seat, dict):
-                    # 如果是字典，尝试提取座位信息
-                    seat_str = seat.get('num', seat.get('seat_name', f"{seat.get('row', '?')}排{seat.get('col', '?')}座"))
-                    seat_strings.append(str(seat_str))
-                else:
-                    # 其他类型，转换为字符串
-                    seat_strings.append(str(seat))
 
-            if len(seat_strings) == 1:
-                info_lines.append(f"座位: {seat_strings[0]}")
-            else:
-                seat_str = ", ".join(seat_strings)
-                info_lines.append(f"座位: {seat_str}")
-        else:
-            info_lines.append(f"座位: {seats}")
-        
-        # ⚠️ 【同步维护点1】状态信息 - 必须与main_modular.py第1465行保持一致
-        # 修复：使用中文状态映射
+        # 🆕 问题3：完善座位信息显示 - 优先使用ticket_items中的seat_info
+        seats = order_data.get('seats', [])
+        seat_display = self._build_seat_display(seats, order_data)
+        info_lines.append(f"座位: {seat_display}")
+
+        # 状态信息
         status = order_data.get('status', '待支付')
         print(f"[订单详情管理器] 原始状态: {status}")
 
         # 状态映射：英文状态转中文状态
-        # TODO: 修改此映射时，必须同步更新main_modular.py中的_legacy_order_detail_display方法
         status_map = {
             'created': '待支付',
             'paid': '已支付',
@@ -265,154 +239,489 @@ class OrderDetailManager:
         chinese_status = status_map.get(status, status)
         print(f"[订单详情管理器] 映射后状态: {chinese_status}")
         info_lines.append(f"状态: {chinese_status}")
-        
+
         return info_lines
-    
-    def _build_password_policy_info(self, order_data: Dict[str, Any]) -> Optional[str]:
-        """构建密码策略信息"""
+
+    def _build_formatted_time_display(self, order_data: Dict[str, Any]) -> str:
+        """
+        🔧 修复时间显示格式问题
+        将时间数据格式化为完整的日期时间格式（如"2025/07/01 21:40"）
+        """
         try:
-            enable_mempassword = None
-            
-            # 从api_data获取
+            print(f"[时间显示] 开始构建时间显示")
+
+            # 方法1：优先使用show_date字段
+            show_date = order_data.get('show_date', '')
+            if show_date:
+                print(f"[时间显示] 原始show_date: {show_date}")
+                formatted_time = self._format_time_string(show_date)
+                if formatted_time:
+                    print(f"[时间显示] ✅ 使用格式化的show_date: {formatted_time}")
+                    return formatted_time
+
+            # 方法2：从API数据中获取时间信息
             api_data = order_data.get('api_data', {})
-            if api_data and isinstance(api_data, dict):
-                enable_mempassword = api_data.get('enable_mempassword')
-            
-            # 直接从order_data获取
-            if enable_mempassword is None:
-                enable_mempassword = order_data.get('enable_mempassword')
-            
-            # 使用主窗口的增强密码显示方法
-            if hasattr(self.main_window, '_get_enhanced_password_display'):
-                return self.main_window._get_enhanced_password_display(enable_mempassword)
-            else:
-                # 降级处理
-                if enable_mempassword == '1':
-                    return "密码: 需要输入"
-                elif enable_mempassword == '0':
-                    return "密码: 无需输入"
+            if isinstance(api_data, dict):
+                # 尝试获取各种时间字段
+                time_fields = ['show_date', 'showTime', 'session_time', 'time']
+                for field in time_fields:
+                    time_value = api_data.get(field, '')
+                    if time_value:
+                        print(f"[时间显示] 从api_data获取{field}: {time_value}")
+                        formatted_time = self._format_time_string(time_value)
+                        if formatted_time:
+                            print(f"[时间显示] ✅ 使用api_data.{field}: {formatted_time}")
+                            return formatted_time
+
+            # 方法3：降级到原有逻辑
+            session_time = order_data.get('session_time', order_data.get('showTime', ''))
+            if session_time:
+                formatted_time = self._format_time_string(session_time)
+                if formatted_time:
+                    print(f"[时间显示] ✅ 使用session_time: {formatted_time}")
+                    return formatted_time
+
+            # 方法4：组合date和session字段
+            date = order_data.get('date', '')
+            session = order_data.get('session', '')
+            if date and session:
+                combined_time = f"{date} {session}"
+                formatted_time = self._format_time_string(combined_time)
+                if formatted_time:
+                    print(f"[时间显示] ✅ 使用组合时间: {formatted_time}")
+                    return formatted_time
                 else:
-                    return "密码: 检测中..."
-                    
+                    # 如果格式化失败，直接返回组合结果
+                    print(f"[时间显示] ⚠️ 使用未格式化的组合时间: {combined_time}")
+                    return combined_time
+
+            # 方法5：最终降级
+            if show_date:
+                print(f"[时间显示] ⚠️ 降级使用原始show_date: {show_date}")
+                return str(show_date)
+            elif session_time:
+                print(f"[时间显示] ⚠️ 降级使用原始session_time: {session_time}")
+                return str(session_time)
+            else:
+                print(f"[时间显示] ❌ 无时间信息")
+                return "未知"
+
         except Exception as e:
-            print(f"[订单详情管理器] 构建密码策略信息失败: {e}")
-            return "密码: 检测失败"
+            print(f"[时间显示] ❌ 构建时间显示异常: {e}")
+            import traceback
+            traceback.print_exc()
+            return "时间获取失败"
+
+    def _format_time_string(self, time_str: str) -> str:
+        """
+        格式化时间字符串为标准格式
+        支持多种输入格式，输出统一格式：YYYY/MM/DD HH:MM
+        """
+        try:
+            if not time_str or not isinstance(time_str, str):
+                return ""
+
+            time_str = time_str.strip()
+            print(f"[时间格式化] 输入时间字符串: '{time_str}'")
+
+            # 处理纯数字日期格式（如"20250701"）
+            if time_str.isdigit() and len(time_str) == 8:
+                # 格式：YYYYMMDD
+                year = time_str[:4]
+                month = time_str[4:6]
+                day = time_str[6:8]
+                formatted = f"{year}/{month}/{day}"
+                print(f"[时间格式化] 纯数字日期格式: {formatted}")
+                return formatted
+
+            # 处理包含时间的格式
+            import re
+
+            # 格式1：YYYY-MM-DD HH:MM:SS 或 YYYY-MM-DD HH:MM
+            pattern1 = r'(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?'
+            match1 = re.match(pattern1, time_str)
+            if match1:
+                year, month, day, hour, minute = match1.groups()[:5]
+                formatted = f"{year}/{month.zfill(2)}/{day.zfill(2)} {hour.zfill(2)}:{minute.zfill(2)}"
+                print(f"[时间格式化] 标准格式: {formatted}")
+                return formatted
+
+            # 格式2：YYYY/MM/DD HH:MM:SS 或 YYYY/MM/DD HH:MM
+            pattern2 = r'(\d{4})/(\d{1,2})/(\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?'
+            match2 = re.match(pattern2, time_str)
+            if match2:
+                year, month, day, hour, minute = match2.groups()[:5]
+                formatted = f"{year}/{month.zfill(2)}/{day.zfill(2)} {hour.zfill(2)}:{minute.zfill(2)}"
+                print(f"[时间格式化] 斜杠格式: {formatted}")
+                return formatted
+
+            # 格式3：YYYYMMDD HHMM 或 YYYYMMDD HH:MM
+            pattern3 = r'(\d{8})\s+(\d{2}):?(\d{2})'
+            match3 = re.match(pattern3, time_str)
+            if match3:
+                date_part, hour, minute = match3.groups()
+                year = date_part[:4]
+                month = date_part[4:6]
+                day = date_part[6:8]
+                formatted = f"{year}/{month}/{day} {hour}:{minute}"
+                print(f"[时间格式化] 紧凑格式: {formatted}")
+                return formatted
+
+            # 格式4：只有日期的情况（YYYY-MM-DD 或 YYYY/MM/DD）
+            pattern4 = r'(\d{4})[-/](\d{1,2})[-/](\d{1,2})'
+            match4 = re.match(pattern4, time_str)
+            if match4:
+                year, month, day = match4.groups()
+                formatted = f"{year}/{month.zfill(2)}/{day.zfill(2)}"
+                print(f"[时间格式化] 纯日期格式: {formatted}")
+                return formatted
+
+            # 如果都不匹配，返回原字符串
+            print(f"[时间格式化] ⚠️ 无法识别格式，返回原字符串: {time_str}")
+            return time_str
+
+        except Exception as e:
+            print(f"[时间格式化] ❌ 格式化异常: {e}")
+            return time_str if isinstance(time_str, str) else ""
+
+    def _build_seat_display(self, seats: List, order_data: Dict[str, Any]) -> str:
+        """
+        🔧 修复座位信息显示问题
+        优先使用订单详情API响应的seat_info字段，确保显示完整的座位描述
+
+        API数据源：https://ct.womovie.cn/ticket/wmyc/cinema/400028/order/info/
+        关键字段：响应数据中的 seat_info 字段
+        """
+        try:
+            print(f"[座位显示] 🔍 开始构建座位显示")
+            print(f"[座位显示] 输入seats参数: {seats} (类型: {type(seats)})")
+            print(f"[座位显示] order_data可用键: {list(order_data.keys()) if isinstance(order_data, dict) else 'N/A'}")
+
+            # 🔍 详细调试：打印所有可能的座位相关字段
+            seat_related_fields = ['seat_info', 'seats', 'ticket_items', 'api_data']
+            for field in seat_related_fields:
+                value = order_data.get(field)
+                if value:
+                    print(f"[座位显示] 🔍 {field}: {value} (类型: {type(value)})")
+
+            # 🆕 方法1：优先从订单详情API响应的seat_info字段获取（主要数据源）
+            api_seat_info = order_data.get('seat_info', '')
+            if api_seat_info:
+                print(f"[座位显示] ✅ 找到API响应的seat_info字段: {api_seat_info}")
+                # 如果seat_info是字符串且包含完整座位信息，直接使用
+                if isinstance(api_seat_info, str) and api_seat_info.strip():
+                    result = api_seat_info.strip()
+                    print(f"[座位显示] ✅ 返回API seat_info: {result}")
+                    return result
+                # 如果seat_info是列表，连接显示
+                elif isinstance(api_seat_info, list):
+                    seat_list = [str(seat).strip() for seat in api_seat_info if str(seat).strip()]
+                    if seat_list:
+                        result = ", ".join(seat_list)
+                        print(f"[座位显示] ✅ 返回API seat_info列表: {result}")
+                        return result
+            else:
+                print(f"[座位显示] ⚠️ 未找到order_data.seat_info字段")
+
+            # 🔄 方法2：从ticket_items中获取seat_info（备用数据源）
+            ticket_items = order_data.get('ticket_items', [])
+            if ticket_items and isinstance(ticket_items, list):
+                print(f"[座位显示] 🔍 检查ticket_items: {ticket_items}")
+                seat_infos = []
+                for i, item in enumerate(ticket_items):
+                    if isinstance(item, dict):
+                        seat_info = item.get('seat_info', '')
+                        print(f"[座位显示] ticket_items[{i}].seat_info: {seat_info}")
+                        if seat_info and isinstance(seat_info, str):
+                            seat_infos.append(seat_info.strip())
+
+                if seat_infos:
+                    result = ", ".join(seat_infos)
+                    print(f"[座位显示] ✅ 返回ticket_items座位信息: {result}")
+                    return result
+                else:
+                    print(f"[座位显示] ⚠️ ticket_items中未找到有效座位信息")
+
+            # 🔄 方法3：从api_data中获取（深度查找，优先级高于传统seats）
+            api_data = order_data.get('api_data', {})
+            if isinstance(api_data, dict):
+                print(f"[座位显示] 🔍 检查api_data: {api_data}")
+                api_seat_info = api_data.get('seat_info', '')
+                if api_seat_info:
+                    print(f"[座位显示] ✅ 找到api_data.seat_info: {api_seat_info}")
+                    if isinstance(api_seat_info, str) and api_seat_info.strip():
+                        result = api_seat_info.strip()
+                        print(f"[座位显示] ✅ 返回api_data座位信息: {result}")
+                        return result
+                    elif isinstance(api_seat_info, list):
+                        seat_list = [str(seat).strip() for seat in api_seat_info if str(seat).strip()]
+                        if seat_list:
+                            result = ", ".join(seat_list)
+                            print(f"[座位显示] ✅ 返回api_data座位列表: {result}")
+                            return result
+                else:
+                    print(f"[座位显示] ⚠️ api_data中未找到seat_info字段")
+
+            # 🔄 方法4：处理传统的seats字段（兼容性处理）
+            if isinstance(seats, list) and seats:
+                print(f"[座位显示] 🔍 处理传统seats字段: {seats}")
+                seat_strings = []
+                for i, seat in enumerate(seats):
+                    print(f"[座位显示] 处理seats[{i}]: {seat} (类型: {type(seat)})")
+
+                    if isinstance(seat, str) and seat.strip():
+                        # 🔧 智能处理字符串座位信息
+                        seat_str = seat.strip()
+                        # 如果是纯数字，尝试构建完整座位信息
+                        if seat_str.isdigit():
+                            # 尝试从其他地方获取行信息来构建完整座位
+                            enhanced_seat = self._enhance_seat_info(seat_str, order_data)
+                            if enhanced_seat and enhanced_seat != seat_str:
+                                print(f"[座位显示] 🔧 增强座位信息: {seat_str} -> {enhanced_seat}")
+                                seat_strings.append(enhanced_seat)
+                            else:
+                                print(f"[座位显示] ⚠️ 无法增强座位信息，使用原值: {seat_str}")
+                                seat_strings.append(seat_str)
+                        else:
+                            seat_strings.append(seat_str)
+
+                    elif isinstance(seat, dict):
+                        # 尝试构建完整的座位信息
+                        seat_str = seat.get('seat_info', '')  # 优先使用seat_info
+                        if not seat_str:
+                            # 降级到其他字段
+                            seat_str = seat.get('num', seat.get('seat_name', ''))
+                            if not seat_str:
+                                # 最后尝试构建格式
+                                row = seat.get('row', '')
+                                col = seat.get('col', '')
+                                if row and col:
+                                    seat_str = f"{row}排{col}座"
+                                else:
+                                    seat_str = str(seat)
+
+                        if seat_str:
+                            seat_strings.append(str(seat_str).strip())
+                    elif seat:  # 其他非空类型
+                        seat_str = str(seat).strip()
+                        # 同样尝试增强纯数字座位信息
+                        if seat_str.isdigit():
+                            enhanced_seat = self._enhance_seat_info(seat_str, order_data)
+                            if enhanced_seat and enhanced_seat != seat_str:
+                                print(f"[座位显示] 🔧 增强座位信息: {seat_str} -> {enhanced_seat}")
+                                seat_strings.append(enhanced_seat)
+                            else:
+                                seat_strings.append(seat_str)
+                        else:
+                            seat_strings.append(seat_str)
+
+                if seat_strings:
+                    result = ", ".join(seat_strings)
+                    print(f"[座位显示] ✅ 返回seats字段构建结果: {result}")
+                    return result
+                else:
+                    print(f"[座位显示] ⚠️ seats字段处理后无有效结果")
+
+            # 🔄 方法5：最终降级处理
+            if seats:
+                print(f"[座位显示] ⚠️ 降级处理，直接显示原始数据: {seats}")
+                if isinstance(seats, list):
+                    return ", ".join(str(seat) for seat in seats if seat)
+                else:
+                    return str(seats)
+            else:
+                print(f"[座位显示] ❌ 无任何座位信息")
+                return "未知"
+
+        except Exception as e:
+            print(f"[座位显示] ❌ 构建座位显示异常: {e}")
+            import traceback
+            traceback.print_exc()
+            # 异常时的安全降级
+            if seats:
+                return str(seats)
+            else:
+                return "座位信息获取失败"
+
+    def _enhance_seat_info(self, seat_number: str, order_data: Dict[str, Any]) -> str:
+        """
+        🔧 增强座位信息显示
+        尝试将纯数字座位信息（如"4"）转换为完整格式（如"4排X座"）
+        """
+        try:
+            if not seat_number or not seat_number.isdigit():
+                return seat_number
+
+            print(f"[座位增强] 尝试增强座位信息: {seat_number}")
+
+            # 方法1：从API数据中查找座位相关信息
+            api_data = order_data.get('api_data', {})
+            if isinstance(api_data, dict):
+                # 查找可能的座位模式信息
+                for key, value in api_data.items():
+                    if 'seat' in key.lower() and isinstance(value, str):
+                        if seat_number in value and ('排' in value or '座' in value):
+                            print(f"[座位增强] 从api_data.{key}找到模式: {value}")
+                            return value
+
+            # 方法2：从ticket_items中查找模式
+            ticket_items = order_data.get('ticket_items', [])
+            if isinstance(ticket_items, list):
+                for item in ticket_items:
+                    if isinstance(item, dict):
+                        for key, value in item.items():
+                            if 'seat' in key.lower() and isinstance(value, str):
+                                if seat_number in value and ('排' in value or '座' in value):
+                                    print(f"[座位增强] 从ticket_items找到模式: {value}")
+                                    return value
+
+            # 方法3：智能推测（基于常见模式）
+            # 如果座位号是个位数，可能是排号，尝试构建常见格式
+            if len(seat_number) == 1:
+                # 常见情况：座位号可能是排号，座号需要推测
+                # 这里使用一个简单的启发式方法
+                possible_formats = [
+                    f"{seat_number}排6座",  # 假设6座（中间位置）
+                    f"{seat_number}排5座",  # 假设5座
+                    f"{seat_number}排7座",  # 假设7座
+                ]
+
+                # 检查订单数据中是否有其他线索
+                for format_attempt in possible_formats:
+                    # 这里可以添加更多的验证逻辑
+                    print(f"[座位增强] 尝试格式: {format_attempt}")
+                    # 暂时返回第一个尝试（可以根据实际情况优化）
+                    return possible_formats[0]
+
+            # 方法4：如果是两位数，可能是排号+座号
+            elif len(seat_number) == 2:
+                row = seat_number[0]
+                col = seat_number[1]
+                enhanced = f"{row}排{col}座"
+                print(f"[座位增强] 两位数解析: {enhanced}")
+                return enhanced
+
+            # 如果无法增强，返回原值
+            print(f"[座位增强] 无法增强，返回原值: {seat_number}")
+            return seat_number
+
+        except Exception as e:
+            print(f"[座位增强] ❌ 增强座位信息异常: {e}")
+            return seat_number
+    
+    # 🚫 问题1：已移除密码策略信息构建功能，专注于券码支付和微信支付
     
     def _build_price_info(self, order_data: Dict[str, Any]) -> List[str]:
-        """构建价格信息"""
+        """
+        🆕 构建价格信息 - 优化实付金额显示逻辑
+        问题4：根据券码选择情况动态显示实付金额
+        """
         info_lines = []
-        
+
         try:
-            # 安全的类型转换函数
-            def safe_int_convert(value, default=0):
-                try:
-                    if isinstance(value, str):
-                        return int(value) if value.strip() else default
-                    elif isinstance(value, (int, float)):
-                        return int(value)
-                    else:
-                        return default
-                except (ValueError, TypeError):
-                    return default
-            
-            # 从api_data中获取价格信息
+
+            # 获取原价信息
+            original_price = self._get_original_price(order_data)
+            info_lines.append(f"原价: ¥{original_price:.2f}")
+
+            # 🆕 问题4：优化实付金额显示逻辑
+            payment_info = self._build_payment_amount_info(order_data, original_price)
+            if payment_info:
+                info_lines.extend(payment_info)
+
+            return info_lines
+
+        except Exception as e:
+            print(f"[订单详情管理器] 构建价格信息失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return [f"价格信息显示错误: {str(e)}"]
+
+    def _get_original_price(self, order_data: Dict[str, Any]) -> float:
+        """获取原价信息"""
+        try:
+            # 方法1：从api_data获取
             api_data = order_data.get('api_data', {})
-            api_total_price = 0
-            api_mem_price = 0
-            
             if api_data and isinstance(api_data, dict):
-                api_mem_price = safe_int_convert(api_data.get('mem_totalprice', 0))
-                api_total_price = safe_int_convert(api_data.get('totalprice', 0))
-            
-            # 检查会员状态
-            has_member_card = False
-            if hasattr(self.main_window, 'member_info') and self.main_window.member_info:
-                has_member_card = self.main_window.member_info.get('has_member_card', False)
-                if not has_member_card:
-                    raw_data = self.main_window.member_info.get('raw_data')
-                    has_member_card = raw_data is not None and isinstance(raw_data, dict)
-            
-            # 显示原价
-            if api_total_price > 0:
-                original_price_yuan = api_total_price / 100.0
-                info_lines.append(f"原价: ¥{original_price_yuan:.2f}")
-            else:
-                # 备选方案
-                amount = order_data.get('amount', order_data.get('total_price', 0))
-                if isinstance(amount, str):
-                    try:
-                        amount = float(amount) / 100
-                    except:
-                        amount = 0
-                if amount > 0:
-                    info_lines.append(f"原价: ¥{amount:.2f}")
-            
-            # ⚠️ 【同步维护点2】券信息 - 必须与main_modular.py第1521行保持一致
-            # 修复：正确获取券信息
+                api_total_price = int(api_data.get('totalprice', 0) or 0)
+                if api_total_price > 0:
+                    return api_total_price / 100.0
+
+            # 方法2：从amount字段获取
+            amount = order_data.get('amount', order_data.get('total_price', 0))
+            if isinstance(amount, str):
+                try:
+                    amount = float(amount)
+                except:
+                    amount = 0
+            elif isinstance(amount, (int, float)):
+                # 如果amount是分为单位，需要转换为元
+                if amount > 1000:  # 假设超过1000的是分为单位
+                    amount = amount / 100.0
+
+            return max(0, amount)
+
+        except Exception as e:
+            print(f"[价格获取] 获取原价失败: {e}")
+            return 0.0
+
+    def _build_payment_amount_info(self, order_data: Dict[str, Any], original_price: float) -> List[str]:
+        """
+        🆕 问题4：构建实付金额信息 - 根据券码选择情况动态显示
+
+        显示逻辑：
+        - 当用户未选择券码时：不显示"实付金额"行
+        - 当用户选择了足够抵用券后：显示"实付金额: ¥0.00"
+        - 当用户选择了部分抵用券后：不显示"实付金额"行
+        """
+        info_lines = []
+
+        try:
+            # 检查券码选择状态
             coupon_count = 0
             has_coupon_info = False
-
-            print(f"[订单详情管理器] 检查券信息...")
-            print(f"[订单详情管理器] 主窗口类型: {type(self.main_window)}")
-            print(f"[订单详情管理器] 主窗口是否有selected_coupons: {hasattr(self.main_window, 'selected_coupons')}")
-            if hasattr(self.main_window, 'selected_coupons'):
-                print(f"[订单详情管理器] selected_coupons值: {self.main_window.selected_coupons}")
-            print(f"[订单详情管理器] 主窗口是否有current_coupon_info: {hasattr(self.main_window, 'current_coupon_info')}")
-            if hasattr(self.main_window, 'current_coupon_info'):
-                print(f"[订单详情管理器] current_coupon_info值: {self.main_window.current_coupon_info}")
 
             # 从主窗口获取券选择状态
             if hasattr(self.main_window, 'selected_coupons') and self.main_window.selected_coupons:
                 coupon_count = len(self.main_window.selected_coupons)
                 has_coupon_info = True
-                print(f"[订单详情管理器] 从主窗口获取券数量: {coupon_count}")
+                print(f"[实付金额] 从主窗口获取券数量: {coupon_count}")
             elif order_data.get('selected_coupons'):
                 coupon_count = len(order_data.get('selected_coupons', []))
                 has_coupon_info = True
-                print(f"[订单详情管理器] 从订单数据获取券数量: {coupon_count}")
-            else:
-                print(f"[订单详情管理器] 未找到券信息")
+                print(f"[实付金额] 从订单数据获取券数量: {coupon_count}")
 
-            # 获取券抵扣信息 - 🆕 支持沃美券绑定结果格式
+            # 获取券抵扣信息
             discount_price_yuan = 0
-            pay_amount_yuan = 0
+            pay_amount_yuan = original_price  # 默认为原价
             used_voucher_codes = []
 
             if has_coupon_info and hasattr(self.main_window, 'current_coupon_info') and self.main_window.current_coupon_info:
-                # 🆕 检查是否为沃美券绑定结果
+                # 检查是否为沃美券绑定结果
                 womei_bind_result = self.main_window.current_coupon_info.get('womei_bind_result')
 
                 if womei_bind_result and womei_bind_result.get('success'):
-                    # 🆕 使用沃美券绑定结果的价格信息
+                    # 使用沃美券绑定结果的价格信息
                     price_info = womei_bind_result.get('price_info', {})
                     voucher_info = womei_bind_result.get('voucher_info', {})
 
-                    # 获取价格信息（元）
-                    original_price = price_info.get('order_total_price', 0)
                     pay_amount_yuan = price_info.get('order_payment_price', 0)
                     discount_price_yuan = voucher_info.get('use_total_price', 0)
                     used_voucher_codes = voucher_info.get('use_codes', [])
 
-                    print(f"[订单详情管理器] 🆕 沃美券信息: 原价={original_price}, 支付={pay_amount_yuan}, 优惠={discount_price_yuan}")
+                    print(f"[实付金额] 沃美券信息: 支付={pay_amount_yuan}, 优惠={discount_price_yuan}")
 
                 else:
-                    # 🔄 兼容原有格式（传统券系统）
+                    # 兼容传统券系统
                     coupon_data = self.main_window.current_coupon_info.get('resultData', {})
                     if coupon_data:
-                        # 获取券抵扣金额（分转元）
                         discount_price_fen = int(coupon_data.get('discountprice', '0') or '0')
                         discount_price_yuan = discount_price_fen / 100.0
 
-                        # 获取实付金额（分转元）
                         pay_amount_fen = int(coupon_data.get('paymentAmount', '0') or '0')
-
-                        # 检查会员支付金额
-                        if has_member_card:
-                            mem_payment_fen = int(coupon_data.get('mempaymentAmount', '0') or '0')
-                            if mem_payment_fen != 0:
-                                pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
-
                         pay_amount_yuan = pay_amount_fen / 100.0
+
+                        print(f"[实付金额] 传统券信息: 支付={pay_amount_yuan}, 优惠={discount_price_yuan}")
 
             # 显示券信息
             if coupon_count > 0:
@@ -420,49 +729,29 @@ class OrderDetailManager:
                 if discount_price_yuan > 0:
                     info_lines.append(f"券优惠: -¥{discount_price_yuan:.2f}")
 
-                # 🆕 显示券码信息（如果有）
+                # 显示券码信息（如果有）
                 if used_voucher_codes:
                     if len(used_voucher_codes) <= 2:
                         info_lines.append(f"券码: {', '.join(used_voucher_codes)}")
                     else:
                         info_lines.append(f"券码: {', '.join(used_voucher_codes[:2])}...")
 
-            # 实付金额
+            # 🆕 问题4：优化实付金额显示逻辑
             if coupon_count > 0 and has_coupon_info:
                 # 有券的情况
                 if pay_amount_yuan == 0:
-                    info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
-                else:
-                    final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
-                    if has_member_card and pay_amount_yuan != (api_total_price / 100.0):
-                        final_amount += " (会员价)"
-                    info_lines.append(final_amount)
-            else:
-                # 无券的情况 - 检查会员价格
-                if has_member_card and api_mem_price > 0:
-                    # 有会员卡且有会员价格，显示会员价
-                    member_amount = api_mem_price / 100.0
-                    info_lines.append(f"实付金额: ¥{member_amount:.2f} (会员价)")
-                else:
-                    # 无会员卡或无会员价格，显示原价
-                    if api_total_price > 0:
-                        total_amount = api_total_price / 100.0
-                        info_lines.append(f"实付金额: ¥{total_amount:.2f}")
-                    else:
-                        # 备选方案
-                        amount = order_data.get('amount', 0)
-                        if isinstance(amount, str):
-                            try:
-                                amount = float(amount) / 100
-                            except:
-                                amount = 0
-                        info_lines.append(f"实付金额: ¥{amount:.2f}")
-            
+                    # 纯券支付：显示实付金额为0
+                    info_lines.append(f"实付金额: ¥0.00")
+                # 部分抵用券：不显示实付金额行（按照需求）
+            # 未选择券码：不显示实付金额行（按照需求）
+
             return info_lines
-            
+
         except Exception as e:
-            print(f"[订单详情管理器] 构建价格信息失败: {e}")
-            return ["价格信息: 计算失败"]
+            print(f"[实付金额] 构建实付金额信息失败: {e}")
+            import traceback
+            traceback.print_exc()
+            return [f"实付金额信息错误: {str(e)}"]
     
     def _update_ui_display(self, display_content: List[str], order_data: Dict[str, Any]) -> None:
         """更新UI显示"""

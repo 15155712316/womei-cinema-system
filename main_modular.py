@@ -1960,261 +1960,54 @@ class ModularCinemaMainWindow(QMainWindow):
 
     def _update_order_detail_with_coupon_info(self):
         """
-        ⚠️ 【双重维护警告】⚠️
+        🆕 统一订单详情更新方法
 
-        这是订单详情显示的辅助方法，主要用于券相关操作的实时UI更新。
+        专门用于券相关操作的实时UI更新，统一使用OrderDetailManager处理
 
-        🔄 双重显示系统架构：
-        1. 主系统：OrderDetailManager.display_order_detail() (modules/order_display/order_detail_manager.py)
-        2. 辅助系统：本方法 (_update_order_detail_with_coupon_info)
-
-        📋 维护要求：
-        - 修改订单详情显示逻辑时，必须同时检查和更新两个位置
-        - 状态映射、券优惠计算等核心逻辑必须保持一致
-        - 任何显示格式变更都需要在两个系统中同步
-
-        🎯 本方法职责：
+        🎯 职责：
         - 券选择后的实时UI响应
         - 支付成功后的状态更新
         - 券取消选择的UI清理
-        - OrderDetailManager不可用时的降级处理
-
-        TODO: 未来重构时考虑完全整合到OrderDetailManager或使用事件驱动架构
         """
         try:
             if not self.current_order:
+                print(f"[订单详情更新] 当前订单为空，跳过更新")
                 return
 
-            print(f"[订单详情-辅助] 开始更新订单详情")
-            print(f"[订单详情-辅助] current_order类型: {type(self.current_order)}")
-            print(f"[订单详情-辅助] current_coupon_info: {getattr(self, 'current_coupon_info', None)}")
+            print(f"[订单详情更新] 开始更新订单详情")
+            print(f"[订单详情更新] current_order类型: {type(self.current_order)}")
+            print(f"[订单详情更新] current_coupon_info: {getattr(self, 'current_coupon_info', None)}")
 
-            # 🎯 优化调用方式：优先使用OrderDetailManager
+            # 🎯 统一使用OrderDetailManager处理
             if hasattr(self, 'order_detail_manager') and self.order_detail_manager:
-                print(f"[订单详情-辅助] 委托给OrderDetailManager处理")
+                print(f"[订单详情更新] 使用OrderDetailManager处理")
                 try:
-                    # 委托给主显示系统处理
-                    self.order_detail_manager.display_order_detail(self.current_order, 'payment')
-                    print(f"[订单详情-辅助] OrderDetailManager处理成功")
+                    # 委托给主显示系统处理，使用'coupon'上下文表示券码相关更新
+                    self.order_detail_manager.display_order_detail(self.current_order, 'coupon')
+                    print(f"[订单详情更新] OrderDetailManager处理成功")
                     return
                 except Exception as e:
-                    print(f"[订单详情-辅助] OrderDetailManager处理失败，使用降级方案: {e}")
-                    # 继续执行降级逻辑
+                    print(f"[订单详情更新] OrderDetailManager处理失败: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    # 显示错误信息
+                    if hasattr(self, 'order_detail_text'):
+                        self.order_detail_text.setPlainText(f"订单详情更新失败: {str(e)}")
             else:
-                print(f"[订单详情-辅助] OrderDetailManager不可用，使用降级方案")
-
-            # 🔄 降级处理：保持原有的直接UI更新逻辑
-            print(f"[订单详情-辅助] 执行降级显示逻辑")
-            self._legacy_order_detail_display()
+                print(f"[订单详情更新] ❌ OrderDetailManager不可用")
+                # 显示错误信息
+                if hasattr(self, 'order_detail_text'):
+                    self.order_detail_text.setPlainText("订单详情管理器不可用，请重启应用")
 
         except Exception as e:
-            print(f"[订单详情-辅助] 更新订单详情异常: {e}")
+            print(f"[订单详情更新] ❌ 更新订单详情异常: {e}")
             import traceback
             traceback.print_exc()
-            # 最终降级处理
+            # 最终错误处理
             if hasattr(self, 'order_detail_text'):
                 self.order_detail_text.setPlainText(f"订单详情更新失败: {str(e)}")
 
-    def _legacy_order_detail_display(self):
-        """
-        ⚠️ 【双重维护警告】⚠️
-
-        降级订单详情显示逻辑 - 当OrderDetailManager不可用时使用
-
-        📋 维护要求：
-        - 本方法的显示逻辑必须与OrderDetailManager保持一致
-        - 状态映射逻辑必须同步：modules/order_display/order_detail_manager.py 第231行
-        - 券优惠计算逻辑必须同步：modules/order_display/order_detail_manager.py 第335行
-
-        TODO: 定期检查与OrderDetailManager的一致性
-        """
-        try:
-            # 获取基础订单信息
-            order_detail = self.current_order
-
-            # 构建格式化的订单详情 - 按照重构前的顺序和格式
-            info_lines = []
-
-            # 订单号
-            order_id = DataUtils.safe_get(order_detail, 'orderno', order_detail.get('order_id', 'N/A'))
-            info_lines.append(f"订单号: {order_id}")
-
-            # 影片信息
-            movie = DataUtils.safe_get(order_detail, 'movie', order_detail.get('film_name', 'N/A'))
-            info_lines.append(f"影片: {movie}")
-
-            # 时间信息 - 按照重构前的格式
-            show_time = DataUtils.safe_get(order_detail, 'showTime', '')
-            if not show_time:
-                date = DataUtils.safe_get(order_detail, 'date', '')
-                session = DataUtils.safe_get(order_detail, 'session', '')
-                if date and session:
-                    show_time = f"{date} {session}"
-            if show_time:
-                info_lines.append(f"时间: {show_time}")
-
-            # 影院信息
-            cinema = DataUtils.safe_get(order_detail, 'cinema', order_detail.get('cinema_name', 'N/A'))
-            info_lines.append(f"影院: {cinema}")
-
-            # 座位信息 - 按照重构前的格式
-            seats = DataUtils.safe_get(order_detail, 'seats', [])
-            if isinstance(seats, list) and seats:
-                # 🔧 修复：确保座位数据是字符串格式
-                seat_strings = []
-                for seat in seats:
-                    if isinstance(seat, str):
-                        seat_strings.append(seat)
-                    elif isinstance(seat, dict):
-                        # 如果是字典，尝试提取座位信息
-                        seat_str = seat.get('num', seat.get('seat_name', f"{seat.get('row', '?')}排{seat.get('col', '?')}座"))
-                        seat_strings.append(str(seat_str))
-                    else:
-                        # 其他类型，转换为字符串
-                        seat_strings.append(str(seat))
-
-                if len(seat_strings) == 1:
-                    info_lines.append(f"座位: {seat_strings[0]}")
-                else:
-                    seat_str = " ".join(seat_strings)
-                    info_lines.append(f"座位: {seat_str}")
-            else:
-                info_lines.append(f"座位: {seats}")
-
-            # ⚠️ 【同步维护点1】状态信息 - 必须与OrderDetailManager第231行保持一致
-            status = DataUtils.safe_get(order_detail, 'status', '待支付')
-            # 状态映射：英文状态转中文状态
-            status_map = {
-                'created': '待支付',
-                'paid': '已支付',
-                'confirmed': '已确认',
-                'cancelled': '已取消',
-                'completed': '已完成',
-                'refunded': '已退款',
-                'failed': '支付失败',
-                '0': '待支付',
-                '1': '已支付',
-                '2': '已取票',
-                '3': '已取消',
-                '4': '已退款',
-                '5': '支付失败'
-            }
-            chinese_status = status_map.get(status, status)
-            info_lines.append(f"状态: {chinese_status}")
-
-            # 🚫 已移除密码策略信息显示，专注于券码支付和微信支付
-
-            # 价格信息 - 按照重构前的完整逻辑
-            original_amount = DataUtils.safe_get(order_detail, 'amount', 0)
-            seat_count = DataUtils.safe_get(order_detail, 'seat_count', len(seats) if isinstance(seats, list) else 1)
-
-            # 显示原价
-            if seat_count > 1:
-                unit_price = original_amount / seat_count if seat_count > 0 else original_amount
-                info_lines.append(f"原价: {seat_count}张×¥{unit_price:.2f} = ¥{original_amount:.2f}")
-            else:
-                info_lines.append(f"原价: ¥{original_amount:.2f}")
-
-            # ⚠️ 【同步维护点2】券抵扣信息 - 🆕 支持沃美券绑定结果格式
-            if hasattr(self, 'current_coupon_info') and self.current_coupon_info and hasattr(self, 'selected_coupons') and self.selected_coupons:
-                # 🆕 检查是否为沃美券绑定结果
-                womei_bind_result = self.current_coupon_info.get('womei_bind_result')
-
-                if womei_bind_result and womei_bind_result.get('success'):
-                    # 🆕 使用沃美券绑定结果的价格信息
-                    price_info = womei_bind_result.get('price_info', {})
-                    voucher_info = womei_bind_result.get('voucher_info', {})
-
-                    # 获取价格信息（元）
-                    original_price = price_info.get('order_total_price', 0)
-                    payment_price = price_info.get('order_payment_price', 0)
-                    voucher_discount = voucher_info.get('use_total_price', 0)
-
-                    # 显示券信息
-                    coupon_count = len(self.selected_coupons)
-                    used_codes = voucher_info.get('use_codes', [])
-                    info_lines.append(f"使用券: {coupon_count}张")
-
-                    if voucher_discount > 0:
-                        info_lines.append(f"券优惠: -¥{voucher_discount:.2f}")
-
-                    # 显示实付金额
-                    if payment_price == 0:
-                        info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
-                    else:
-                        info_lines.append(f"实付金额: ¥{payment_price:.2f}")
-
-                    # 🆕 显示券使用详情
-                    if used_codes:
-                        info_lines.append(f"券码: {', '.join(used_codes[:2])}{'...' if len(used_codes) > 2 else ''}")
-
-                    print(f"[订单详情] 🆕 沃美券信息: 原价={original_price}, 支付={payment_price}, 优惠={voucher_discount}")
-
-                else:
-                    # 🔄 兼容原有格式（传统券系统）
-                    coupon_data = DataUtils.safe_get(self.current_coupon_info, 'resultData', {})
-
-                    if coupon_data:
-                        # 获取券抵扣金额（分）
-                        discount_price_fen = int(DataUtils.safe_get(coupon_data, 'discountprice', '0'))
-                        discount_price_yuan = discount_price_fen / 100.0
-
-                        # 获取实付金额（分）
-                        pay_amount_fen = int(DataUtils.safe_get(coupon_data, 'paymentAmount', '0'))
-
-                        # 检查会员支付金额
-                        has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
-                        if has_member_card:
-                            mem_payment_fen = int(DataUtils.safe_get(coupon_data, 'mempaymentAmount', '0'))
-                            if mem_payment_fen != 0:
-                                pay_amount_fen = mem_payment_fen  # 会员优先使用会员支付金额
-
-                        pay_amount_yuan = pay_amount_fen / 100.0
-
-                        # 显示券信息
-                        coupon_count = len(self.selected_coupons)
-                        info_lines.append(f"使用券: {coupon_count}张")
-                        if discount_price_yuan > 0:
-                            info_lines.append(f"券优惠: -¥{discount_price_yuan:.2f}")
-
-                        # 显示实付金额
-                        if pay_amount_yuan == 0:
-                            info_lines.append(f"实付金额: ¥0.00 (纯券支付)")
-                        else:
-                            final_amount = f"实付金额: ¥{pay_amount_yuan:.2f}"
-                            if has_member_card and mem_payment_fen != 0:
-                                final_amount += " (会员价)"
-                            info_lines.append(final_amount)
-            else:
-                # 无券抵扣，显示原价或会员价
-                has_member_card = self.member_info and DataUtils.safe_get(self.member_info, 'has_member_card', False)
-                if has_member_card:
-                    mem_total_price = DataUtils.safe_get(order_detail, 'mem_totalprice', 0)
-                    if mem_total_price > 0:
-                        info_lines.append(f"实付金额: ¥{mem_total_price/100.0:.2f} (会员价)")
-                    else:
-                        info_lines.append(f"实付金额: ¥{original_amount:.2f}")
-                else:
-                    info_lines.append(f"实付金额: ¥{original_amount:.2f}")
-
-            # 使用单个换行符连接，确保紧凑显示
-            order_info_text = '\n'.join(info_lines)
-
-            # 降级显示：直接更新UI组件
-            print(f"[订单详情-降级] 使用直接文本显示")
-            if hasattr(self, 'order_detail_text'):
-                self.order_detail_text.setPlainText(order_info_text)
-                print(f"[订单详情-降级] 直接文本显示成功")
-            else:
-                print(f"[订单详情-降级] 无可用的显示组件")
-
-        except Exception as e:
-            print(f"[订单详情-降级] 降级显示异常: {e}")
-            import traceback
-            traceback.print_exc()
-            # 最终降级处理
-            if hasattr(self, 'order_detail_text'):
-                self.order_detail_text.setPlainText(f"订单详情显示失败: {str(e)}")
+    # 🚫 已移除降级显示逻辑，统一使用OrderDetailManager处理所有订单详情显示
     
     def show_order_detail(self, detail):
         """显示订单详情"""
@@ -2503,6 +2296,131 @@ class ModularCinemaMainWindow(QMainWindow):
             traceback.print_exc()
             return ""
 
+    def _enhance_seat_info_for_display(self, selected_seats):
+        """
+        🔧 增强座位信息用于显示
+        确保座位对象包含完整的显示信息
+        """
+        try:
+            enhanced_seats = []
+
+            for i, seat in enumerate(selected_seats):
+                if isinstance(seat, dict):
+                    # 复制原始座位对象
+                    enhanced_seat = seat.copy()
+
+                    # 🔧 确保有seat_info字段
+                    if 'seat_info' not in enhanced_seat or not enhanced_seat['seat_info']:
+                        # 尝试从original_data构建
+                        original_data = seat.get('original_data', {})
+                        if original_data:
+                            row = original_data.get('row', seat.get('row', ''))
+                            col = original_data.get('col', seat.get('col', ''))
+                            if row and col:
+                                enhanced_seat['seat_info'] = f"{row}排{col}座"
+                                print(f"[座位增强] 从original_data构建座位信息: {enhanced_seat['seat_info']}")
+
+                        # 如果还是没有，尝试从row/col构建
+                        if 'seat_info' not in enhanced_seat or not enhanced_seat['seat_info']:
+                            row = seat.get('row', '')
+                            col = seat.get('col', '')
+                            if row and col:
+                                enhanced_seat['seat_info'] = f"{row}排{col}座"
+                                print(f"[座位增强] 从row/col构建座位信息: {enhanced_seat['seat_info']}")
+
+                    enhanced_seats.append(enhanced_seat)
+                    print(f"[座位增强] 座位{i+1}: {enhanced_seat.get('seat_info', 'N/A')}")
+                else:
+                    # 如果是字符串，尝试构建对象
+                    if isinstance(seat, str):
+                        enhanced_seat = {
+                            'seat_info': f"{seat}排6座",  # 默认假设6座
+                            'row': seat,
+                            'col': '6',
+                            'original_seat': seat
+                        }
+                        enhanced_seats.append(enhanced_seat)
+                        print(f"[座位增强] 字符串座位{i+1}增强: {seat} -> {enhanced_seat['seat_info']}")
+                    else:
+                        enhanced_seats.append(seat)
+
+            return enhanced_seats
+
+        except Exception as e:
+            print(f"[座位增强] ❌ 增强失败: {e}")
+            return selected_seats
+
+    def _extract_seat_info_string(self, enhanced_seats):
+        """
+        🔧 提取座位信息字符串
+        从增强的座位对象中提取用于显示的座位信息
+        """
+        try:
+            seat_infos = []
+
+            for seat in enhanced_seats:
+                if isinstance(seat, dict):
+                    seat_info = seat.get('seat_info', '')
+                    if seat_info:
+                        seat_infos.append(seat_info)
+                    else:
+                        # 降级处理
+                        row = seat.get('row', '')
+                        col = seat.get('col', '')
+                        if row and col:
+                            seat_infos.append(f"{row}排{col}座")
+                        else:
+                            seat_infos.append(str(seat))
+                else:
+                    seat_infos.append(str(seat))
+
+            result = ", ".join(seat_infos) if seat_infos else "未知"
+            print(f"[座位提取] 提取的座位信息字符串: {result}")
+            return result
+
+        except Exception as e:
+            print(f"[座位提取] ❌ 提取失败: {e}")
+            return "座位信息提取失败"
+
+    def _enhance_time_info_for_display(self, session_data, order_info):
+        """
+        🔧 增强时间信息用于显示
+        确保时间信息包含完整的日期和时间
+        """
+        try:
+            # 方法1：从session_data获取
+            show_date = session_data.get('show_date', '')
+            show_time = session_data.get('show_time', '')
+
+            # 方法2：从order_info获取
+            if not show_date:
+                show_date = order_info.get('show_date', '')
+
+            # 方法3：组合日期和时间
+            if show_date and show_time and show_time not in show_date:
+                # 如果show_date只有日期，添加时间
+                if len(show_date) == 8 and show_date.isdigit():  # YYYYMMDD格式
+                    enhanced_time = f"{show_date} {show_time.replace(':', '')}"
+                    print(f"[时间增强] 组合时间信息: {show_date} + {show_time} -> {enhanced_time}")
+                    return enhanced_time
+                else:
+                    enhanced_time = f"{show_date} {show_time}"
+                    print(f"[时间增强] 组合时间信息: {enhanced_time}")
+                    return enhanced_time
+
+            # 如果已经包含时间信息，直接返回
+            if show_date:
+                print(f"[时间增强] 使用原始时间信息: {show_date}")
+                return show_date
+
+            # 最后降级
+            print(f"[时间增强] ⚠️ 无法获取时间信息，使用默认值")
+            return "时间未知"
+
+        except Exception as e:
+            print(f"[时间增强] ❌ 增强失败: {e}")
+            return session_data.get('show_date', '时间未知')
+
     def _handle_womei_order_success(self, result, selected_seats, session_info):
         """沃美系统专用：处理订单成功"""
         try:
@@ -2524,16 +2442,23 @@ class ModularCinemaMainWindow(QMainWindow):
             # 计算总价
             total_amount = sum(seat.get('price', 0) for seat in selected_seats)
 
+            # 🔧 修复：增强座位信息构建，确保完整的座位描述
+            enhanced_seats = self._enhance_seat_info_for_display(selected_seats)
+
+            # 🔧 修复：增强时间信息构建，确保包含完整时间
+            enhanced_show_date = self._enhance_time_info_for_display(session_data, order_info)
+
             # 构建订单详情
             self.current_order = {
                 'order_id': order_id,
-                'seats': selected_seats,
+                'seats': enhanced_seats,  # 使用增强的座位信息
+                'seat_info': self._extract_seat_info_string(enhanced_seats),  # 🆕 添加座位信息字符串
                 'total_price': total_amount,
                 'cinema_name': cinema_data.get('cinema_name', ''),
                 'film_name': session_data.get('movie_name', ''),
                 'hall_name': session_data.get('hall_name', ''),
                 'show_time': session_data.get('show_time', ''),
-                'show_date': session_data.get('show_date', ''),
+                'show_date': enhanced_show_date,  # 使用增强的时间信息
                 'api_data': order_info,
                 'movieid': session_data.get('movie_id', ''),
                 'showid': session_data.get('schedule_id', ''),
@@ -2541,6 +2466,14 @@ class ModularCinemaMainWindow(QMainWindow):
                 'cinemaid': cinema_data.get('cinema_id', ''),
                 'system_type': 'womei'  # 标记为沃美系统
             }
+
+            # 🔍 调试：打印增强后的座位和时间信息
+            print(f"[沃美订单] 🔧 增强信息调试:")
+            print(f"  - 原始座位数: {len(selected_seats)}")
+            print(f"  - 增强座位数: {len(enhanced_seats)}")
+            print(f"  - 座位信息字符串: {self.current_order.get('seat_info', 'N/A')}")
+            print(f"  - 增强时间信息: {enhanced_show_date}")
+            print(f"  - 原始时间信息: {session_data.get('show_date', 'N/A')}")
 
             print(f"[沃美订单] ✅ 订单详情构建完成:")
             print(f"  - 订单号: {order_id}")
@@ -2550,8 +2483,27 @@ class ModularCinemaMainWindow(QMainWindow):
             # 显示订单详情
             self._show_order_detail(self.current_order)
 
-            # 🆕 获取可用券列表 - 修复参数传递
+            # 🔧 修复：沃美订单创建成功后立即初始化支付方式（解决4004错误）
             cinema_id = cinema_data.get('cinema_id', '') or cinema_data.get('cinemaid', '') or cinema_data.get('id', '')
+            account_data = session_info.get('account', {})
+            token = account_data.get('token', '')
+
+            print(f"[沃美订单初始化] 🚀 开始订单支付方式初始化...")
+            print(f"[沃美订单初始化] 📋 订单ID: {order_id}")
+            print(f"[沃美订单初始化] 📋 影院ID: {cinema_id}")
+            print(f"[沃美订单初始化] 📋 Token: {token[:20] if token else 'N/A'}...")
+
+            if token and cinema_id:
+                init_result = self._initialize_order_payment_method(order_id, cinema_id, token)
+                if init_result.get('success', False):
+                    print(f"[沃美订单初始化] ✅ 订单支付方式初始化成功")
+                else:
+                    print(f"[沃美订单初始化] ⚠️ 订单支付方式初始化失败: {init_result.get('error', '未知错误')}")
+                    # 注意：初始化失败不阻断订单创建流程，仅记录日志
+            else:
+                print(f"[沃美订单初始化] ⚠️ 缺少必要参数，跳过初始化: token={bool(token)}, cinema_id={bool(cinema_id)}")
+
+            # 🆕 获取可用券列表 - 修复参数传递
             print(f"[优惠券调用] 🔍 影院参数检查:")
             print(f"  - cinema_data类型: {type(cinema_data)}")
             print(f"  - cinema_data内容: {cinema_data}")
