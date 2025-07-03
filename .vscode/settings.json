@@ -1,4 +1,32 @@
 {
+  // Git 同步功能配置
+  "git.autofetch": true,
+  "git.autofetchPeriod": 180,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "git.postCommitCommand": "sync",
+  "git.showPushSuccessNotification": true,
+  "git.fetchOnPull": true,
+  "git.pruneOnFetch": true,
+  "git.showInlineOpenFileAction": true,
+  "git.openRepositoryInParentFolders": "always",
+  "git.enableCommitSigning": false,
+  "git.alwaysSignOff": false,
+  "git.allowForcePush": false,
+  "git.branchProtection": ["main", "master"],
+  "git.defaultCloneDirectory": "",
+  "git.enableStatusBarSync": true,
+
+  // 源代码管理面板配置
+  "scm.defaultViewMode": "tree",
+  "scm.alwaysShowProviders": true,
+  "scm.showChangesSummary": true,
+
+  // GitHub 集成配置
+  "github.gitAuthentication": true,
+  "github.gitProtocol": "https",
+
+  // Augment MCP 配置
   "augment.mcp.enabled": true,
   "augment.mcp.autoStart": true,
   "augment.mcp.servers": {
