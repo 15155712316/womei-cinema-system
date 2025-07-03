@@ -5,12 +5,19 @@
     "show_date": "20250703",
     "show_time": "10:20",
     "cinema_id": "400028",
+<<<<<<< HEAD
     "hall_id": "5",
     "hall_name": "5号厅 高亮激光厅",
     "schedule_id": 16786301,
     "timestamp": "2025-07-02T21:16:01.454177",
     "account_phone": "14700280316",
     "session_text": "10:20 5号厅 高亮激光厅 2D 原版 ¥32.9"
+=======
+    "hall_id": "6",
+    "hall_name": "6号厅 高亮激光厅",
+    "schedule_id": 16626092,
+    "timestamp": "2025-06-29T22:15:47.360996"
+>>>>>>> a3e6fd1793661ec0651f285f7725d0ecbb8b34f9
   },
   "api_response": {
     "success": true,

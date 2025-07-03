@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    },
+    "user-feedback": {
+      "command": "node",
+      "args": [
+        "/Users/jiang/data/沃美0617/user-feedback-mcp/remote-mcp-package/dist/cli.js"
+      ],
+      "env": {
+        "FEEDBACK_SERVICE_URL": "http://localhost:3000",
+        "PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}
