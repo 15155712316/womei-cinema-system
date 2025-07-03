@@ -619,6 +619,7 @@ class OrderDetailManager:
         info_lines = []
 
         try:
+            pass
 
             # 获取原价信息
             original_price = self._get_original_price(order_data)

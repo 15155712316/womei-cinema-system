@@ -52,8 +52,6 @@ class RefreshTimerService(QObject):
         self.timer = QTimer()
         self.timer.timeout.connect(self._check_user_auth)
 
-        # 调试打印已移除
-        # 调试打印已移除
         print(f"[刷新验证服务]   - 检查间隔: {self.check_interval // 1000 // 60} 分钟")
         print(f"[刷新验证服务]   - API地址: {self.api_base_url}")
         print(f"[刷新验证服务]   - 超时时间: {self.request_timeout} 秒")
@@ -62,16 +60,13 @@ class RefreshTimerService(QObject):
         """开始监控用户认证状态"""
         try:
             print(f"[刷新验证服务] 🎯 收到启动监控请求")
-            # 调试打印已移除
 
             self.current_user = user_info
             phone = user_info.get('phone', '')
 
             if not phone:
-                # 调试打印已移除
                 return False
 
-            # 调试打印已移除
             print(f"[刷新验证服务] ⏰ 检查间隔: {self.check_interval // 1000 // 60} 分钟")
             print(f"[刷新验证服务] 🔄 定时器状态: {'已运行' if self.timer.isActive() else '未运行'}")
 
@@ -79,10 +74,8 @@ class RefreshTimerService(QObject):
             self.timer.start(self.check_interval)
             self.is_running = True
 
-            # 调试打印已移除
 
             # 立即执行一次检查
-            # 调试打印已移除
             self._check_user_auth()
 
             return True
@@ -116,7 +109,6 @@ class RefreshTimerService(QObject):
                 return
             
             phone = self.current_user.get('phone', '')
-            # 调试打印已移除
             
             # 调用刷新时间更新API
             success, message, updated_user_info = self._update_refresh_time(phone)
@@ -149,14 +141,14 @@ class RefreshTimerService(QObject):
     def _update_refresh_time(self, phone: str) -> Tuple[bool, str, Optional[Dict]]:
         """更新用户刷新时间 - 使用与登录相同的验证逻辑"""
         try:
-            # 调试打印已移除
+            pass
 
             # 🆕 使用与登录窗口完全相同的验证逻辑
             if auth_service:
                 success, message, user_info = auth_service.login(phone)
 
                 if success:
-                    # 调试打印已移除
+                    pass
 
                     # 🆕 使用统一的认证成功处理（静默模式）
                     if auth_error_handler:
@@ -172,7 +164,6 @@ class RefreshTimerService(QObject):
 
         except Exception as e:
             error_msg = f"验证异常: {str(e)}"
-            # 调试打印已移除
             import traceback
             traceback.print_exc()
             return False, error_msg, None
@@ -189,7 +180,6 @@ class RefreshTimerService(QObject):
             }
 
             print(f"[刷新验证服务] 🔄 备用API调用: {url}")
-            # 调试打印已移除
 
             response = requests.post(
                 url,
@@ -201,15 +191,12 @@ class RefreshTimerService(QObject):
                 }
             )
 
-            # 调试打印已移除
 
             if response.status_code == 200:
                 result = response.json()
-                # 调试打印已移除
 
                 if result.get("success"):
                     user_data = result.get("data", {})
-                    # 调试打印已移除
                     return True, "验证成功", user_data
                 else:
                     error_msg = result.get("message", "验证失败")
@@ -227,15 +214,12 @@ class RefreshTimerService(QObject):
 
         except requests.exceptions.ConnectionError:
             error_msg = "无法连接到服务器，请检查网络连接"
-            # 调试打印已移除
             return False, error_msg, None
         except requests.exceptions.Timeout:
             error_msg = "连接超时，请稍后重试"
-            # 调试打印已移除
             return False, error_msg, None
         except Exception as e:
             error_msg = f"验证异常: {str(e)}"
-            # 调试打印已移除
             return False, error_msg, None
 
     def _get_machine_code(self) -> str:

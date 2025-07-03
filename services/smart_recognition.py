@@ -130,7 +130,7 @@ class SmartOrderRecognition:
     def parse_order_text(self, text: str) -> OrderInfo:
         """解析订单文本，提取关键信息"""
         try:
-            # 调试打印已移除
+            pass
             
             order_info = OrderInfo(raw_text=text)
             
@@ -198,7 +198,6 @@ class SmartOrderRecognition:
                 except ValueError:
                     pass
             
-            # 调试打印已移除
             return order_info
             
         except Exception as e:
@@ -213,7 +212,6 @@ class SmartOrderRecognition:
             if not order_info.cinema_name:
                 return None
 
-            # 调试打印已移除
 
             # 获取影院列表
             if not (hasattr(self.main_window, 'tab_manager_widget') and
@@ -293,7 +291,6 @@ class SmartOrderRecognition:
             if not order_info.movie_name:
                 return None
 
-            # 调试打印已移除
 
             # 获取影片列表（通过主窗口的Tab管理器）
             if not (hasattr(self.main_window, 'tab_manager_widget') and
@@ -353,7 +350,6 @@ class SmartOrderRecognition:
             if not order_info.session_time:
                 return None
             
-            # 调试打印已移除
             
             # 解析目标时间
             try:
@@ -434,7 +430,6 @@ class SmartOrderRecognition:
             if not order_info.seats:
                 return []
             
-            # 调试打印已移除
             
             seat_matches = []
             for seat_str in order_info.seats:
@@ -555,7 +550,6 @@ class SmartOrderRecognition:
             # 生成建议
             match_result.suggestions = self._generate_suggestions(order_info, match_result)
             
-            # 调试打印已移除
             
             return order_info, match_result
             

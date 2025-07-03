@@ -76,7 +76,7 @@ class SeatStatusProcessor:
             (全部座位数据, 可售座位数据)
         """
         if self.debug_mode:
-            pass  # 调试打印已移除
+            pass
         
         full_data = {}
         saleable_data = {}
@@ -88,7 +88,6 @@ class SeatStatusProcessor:
                 full_data = full_result.get('hall_info', {})
                 if self.debug_mode:
                     full_count = self._count_seats_in_data(full_data)
-                    pass  # 调试打印已移除
             else:
                 if self.debug_mode:
                     print(f"❌ 全部座位API失败: {full_result.get('error')}")
@@ -99,7 +98,6 @@ class SeatStatusProcessor:
                 saleable_data = saleable_result.get('saleable_info', {})
                 if self.debug_mode:
                     saleable_count = self._count_seats_in_data(saleable_data)
-                    pass  # 调试打印已移除
             else:
                 if self.debug_mode:
                     print(f"❌ 可售座位API失败: {saleable_result.get('error')}")
@@ -122,7 +120,7 @@ class SeatStatusProcessor:
             已售座位的位置集合 {(row, col), ...}
         """
         if self.debug_mode:
-            pass  # 调试打印已移除
+            pass
         
         # 提取座位位置
         full_positions = self._extract_seat_positions(full_data)
@@ -223,7 +221,7 @@ class SeatStatusProcessor:
                                     print(f"  🔴 标记已售: {row}排{col}座 (座位号: {seat.get('seat_no', '未知')})")
             
             if self.debug_mode:
-                pass  # 调试打印已移除
+                pass
         
         except Exception as e:
             if self.debug_mode:
@@ -251,8 +249,7 @@ class SeatStatusProcessor:
         return 0
     
     def _print_processing_summary(self, full_data: Dict, saleable_data: Dict, sold_positions: Set):
-        """打印处理摘要"""
-        # 调试打印已移除，保留方法结构以维持兼容性
+        """打印处理摘要，保留方法结构以维持兼容性"""
         pass
     
     def set_debug_mode(self, enabled: bool):
@@ -306,7 +303,6 @@ if __name__ == "__main__":
             
             if accounts and len(accounts) > 0:
                 token = accounts[0].get('token', '')
-                # 调试打印已移除
                 
                 # 使用之前验证成功的场次数据
                 cinema_id = "400028"
@@ -322,14 +318,13 @@ if __name__ == "__main__":
                 accurate_data = get_accurate_seat_data(token, cinema_id, hall_id, schedule_id)
                 
                 if accurate_data:
-                    # 调试打印已移除
                     print(f"📄 返回数据格式与原始API保持一致")
                     print(f"🎯 已售座位状态已正确标记")
                 else:
                     print(f"\n❌ 座位状态处理失败")
             
             else:
-                pass  # 调试打印已移除
+                pass
         
         except Exception as e:
             print(f"❌ 测试失败: {e}")

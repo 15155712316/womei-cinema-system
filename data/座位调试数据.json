@@ -1,20 +1,20 @@
 {
   "session_info": {
-    "cinema_name": "沃美影院",
-    "movie_name": "未知影片",
-    "show_date": "未知日期",
-    "show_time": "未知时间",
+    "cinema_name": "北京沃美世界城店",
+    "movie_name": "名侦探柯南：独眼的残像",
+    "show_date": "20250703",
+    "show_time": "10:20",
     "cinema_id": "400028",
     "hall_id": "5",
     "hall_name": "5号厅 高亮激光厅",
-    "schedule_id": 16739603,
-    "timestamp": "2025-07-02T19:24:02.018243"
+    "schedule_id": 16786301,
+    "timestamp": "2025-07-02T21:16:01.454177",
+    "account_phone": "14700280316",
+    "session_text": "10:20 5号厅 高亮激光厅 2D 原版 ¥32.9"
   },
   "api_response": {
-    "ret": 0,
-    "sub": 0,
-    "msg": "successfully",
-    "data": {
+    "success": true,
+    "hall_info": {
       "cinema_id": 400028,
       "hall_no": "5",
       "hall_name": "5号厅 高亮激光厅",
@@ -23,7 +23,7 @@
           "area_no": "1",
           "area_name": "默认区",
           "area_price_normal": true,
-          "area_price": 57.9,
+          "area_price": 52.9,
           "seats": {
             "2": {
               "row": 2,
@@ -558,7 +558,7 @@
           "area_no": "10014",
           "area_name": "按摩区域",
           "area_price_normal": true,
-          "area_price": 62.9,
+          "area_price": 57.9,
           "seats": {
             "3": {
               "row": 3,
@@ -923,7 +923,7 @@
           "area_no": "10013",
           "area_name": "中心区域",
           "area_price_normal": true,
-          "area_price": 62.9,
+          "area_price": 57.9,
           "seats": {
             "10": {
               "row": 10,
@@ -981,7 +981,7 @@
       ]
     }
   },
-  "processed_hall_data": {
+  "hall_info": {
     "cinema_id": 400028,
     "hall_no": "5",
     "hall_name": "5号厅 高亮激光厅",
@@ -990,7 +990,7 @@
         "area_no": "1",
         "area_name": "默认区",
         "area_price_normal": true,
-        "area_price": 57.9,
+        "area_price": 52.9,
         "seats": {
           "2": {
             "row": 2,
@@ -1525,7 +1525,7 @@
         "area_no": "10014",
         "area_name": "按摩区域",
         "area_price_normal": true,
-        "area_price": 62.9,
+        "area_price": 57.9,
         "seats": {
           "3": {
             "row": 3,
@@ -1890,7 +1890,7 @@
         "area_no": "10013",
         "area_name": "中心区域",
         "area_price_normal": true,
-        "area_price": 62.9,
+        "area_price": 57.9,
         "seats": {
           "10": {
             "row": 10,
@@ -1947,12 +1947,47 @@
       }
     ]
   },
+  "cinema_data": {
+    "cinema_id": "400028",
+    "cinema_name": "北京沃美世界城店",
+    "cinema_area_id": "d41d8cd98f00b204e9800998ecf8427e",
+    "cinema_area": "",
+    "cinema_addr": "北京市朝阳区金汇路101幢中骏世界城E座B1（海底捞智慧餐厅对面）",
+    "longitude": "0.00000000",
+    "latitude": "0.00000000",
+    "cinemaid": "400028",
+    "cinemaShortName": "北京沃美世界城店"
+  },
+  "session_data": {
+    "schedule_id": 16786301,
+    "hall_id": "5",
+    "hall_name": "5号厅 高亮激光厅",
+    "show_time": "10:20",
+    "show_date": "20250703",
+    "end_time": "12:09",
+    "selling_price": 32.9,
+    "show_type": "2D",
+    "language": "原版",
+    "movie_name": "名侦探柯南：独眼的残像",
+    "first_row_price": "32.9元起",
+    "last_row_price": ""
+  },
+  "account_data": {
+    "phone": "14700280316",
+    "token_status": "已配置"
+  },
   "debug_notes": {
-    "purpose": "座位图API调试数据（每次覆盖保存）",
+    "purpose": "增强的座位图调试数据（包含完整会话信息，每次覆盖保存）",
     "area_no_usage": "区域ID应该使用area_no字段，不是固定的1",
     "seat_no_format": "seat_no应该是类似11051771#09#06的格式",
     "coordinate_mapping": "row/col是逻辑位置，x/y是物理位置",
-    "status_meaning": "0=可选，1=已售，2=锁定",
-    "file_location": "data/座位调试数据.json（固定文件名）"
+    "status_meaning": "0=可选，1=已售，2=锁定，6=不可选择",
+    "file_location": "data/座位调试数据.json（固定文件名，每次覆盖）",
+    "enhanced_features": [
+      "包含完整的影院、影片、场次信息",
+      "包含账号信息（脱敏处理）",
+      "包含会话上下文数据",
+      "便于调试座位参数构建问题"
+    ]
   }
 }

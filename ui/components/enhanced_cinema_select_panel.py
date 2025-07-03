@@ -32,7 +32,7 @@ class CinemaLoadThread(QThread):
     def run(self):
         """执行影院数据加载"""
         try:
-            # 调试打印已移除
+            pass
             
             # 创建API实例
             api = CinemaAPIFactory.create_api(self.system_type, self.token)
@@ -293,7 +293,6 @@ class EnhancedCinemaSelectPanel(QWidget):
         
         try:
             city_id = self.current_city.get('id')
-            # 调试打印已移除
             
             # 显示加载状态
             self.show_loading(True)
@@ -325,7 +324,7 @@ class EnhancedCinemaSelectPanel(QWidget):
     def on_cinemas_loaded(self, cinemas: List[Dict]):
         """影院加载完成处理"""
         try:
-            # 调试打印已移除
+            pass
 
             # 保存数据
             self.cinemas_data = cinemas
@@ -421,7 +420,6 @@ class EnhancedCinemaSelectPanel(QWidget):
             if self.on_cinema_changed:
                 self.on_cinema_changed(selected_cinema)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[影院选择] 影院选择失败: {e}")

@@ -31,7 +31,7 @@ class CityLoadThread(QThread):
     def run(self):
         """执行城市数据加载"""
         try:
-            # 调试打印已移除
+            pass
 
             # 创建API实例
             api = CinemaAPIFactory.create_api(self.system_type, self.token)
@@ -253,7 +253,7 @@ class CitySelectPanel(QWidget):
             return
 
         try:
-            # 调试打印已移除
+            pass
 
             # 显示加载状态
             self.show_loading(True)
@@ -285,7 +285,7 @@ class CitySelectPanel(QWidget):
     def on_cities_loaded(self, cities: List[Dict]):
         """城市加载完成处理"""
         try:
-            # 调试打印已移除
+            pass
 
             # 保存数据
             self.cities_data = cities
@@ -378,7 +378,6 @@ class CitySelectPanel(QWidget):
             if self.on_city_changed:
                 self.on_city_changed(selected_city)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[城市选择] 城市选择失败: {e}")

@@ -472,7 +472,6 @@ class CinemaSelectPanelPyQt5(QWidget):
                 print("[DEBUG] 缺少showCode，无法获取座位信息")
                 return
             
-            # 调试打印已移除
             print(f"  showCode={showCode}, hallCode={hallCode}")
             print(f"  filmCode={filmCode}, filmNo={filmNo}")
             print(f"  showDate={showDate}, startTime={startTime}")
@@ -499,7 +498,6 @@ class CinemaSelectPanelPyQt5(QWidget):
                     if self.seat_panel:
                         self.seat_panel.update_seat_data(result_data)
                 else:
-                    # 调试打印已移除
                     QMessageBox.warning(self, "数据错误", "获取到的座位数据格式异常")
             else:
                 print(f"[DEBUG] API返回非字典类型数据: {type(seat_data)}")

@@ -85,7 +85,6 @@ class APIBase:
         if headers:
             request_headers.update(headers)
         
-        # 调试打印已移除
 
         try:
             if method.upper() == 'GET':
@@ -93,7 +92,6 @@ class APIBase:
             else:  # POST
                 response = requests.post(url, data=data, headers=request_headers, timeout=timeout, verify=False)
 
-            # 调试打印已移除
 
             if response.status_code == 200:
                 try:
@@ -116,7 +114,6 @@ class APIBase:
                     return json.loads(content)
                 except json.JSONDecodeError as e:
                     print(f"[API响应] JSON解析失败: {e}")
-                    # 调试打印已移除
                     return {"resultCode": "-1", "resultDesc": f"JSON解析失败: {e}", "resultData": None}
             else:
                 return {"resultCode": "-1", "resultDesc": f"HTTP错误: {response.status_code}", "resultData": None}

@@ -176,9 +176,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 from services.api_base import APIBase
                 self.api_client = APIBase()
 
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
             print("[增强支付] 🚫 已移除会员卡支付功能")
 
         except Exception as e:
@@ -568,7 +565,7 @@ class ModularCinemaMainWindow(QMainWindow):
             # 显示结果
             dialog.show_recognition_result(order_info, match_result)
 
-            # 调试打印已移除
+
 
         except Exception as e:
             print(f"[智能识别] ❌ 显示智能识别对话框失败: {e}")
@@ -581,14 +578,14 @@ class ModularCinemaMainWindow(QMainWindow):
     def _on_recognition_confirmed(self, result_data: dict):
         """智能识别确认处理"""
         try:
-            # 调试打印已移除
+            pass
+
 
             order_info = result_data.get('order_info')
             match_result = result_data.get('match_result')
             auto_fill = result_data.get('auto_fill', False)
 
             if not order_info or not match_result:
-                # 调试打印已移除
                 return
 
             # 执行自动填充
@@ -597,7 +594,6 @@ class ModularCinemaMainWindow(QMainWindow):
             else:
                 self._execute_manual_fill(order_info, match_result)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[智能识别] ❌ 处理识别确认失败: {e}")
@@ -606,12 +602,11 @@ class ModularCinemaMainWindow(QMainWindow):
 
     def _on_recognition_cancelled(self):
         """智能识别取消处理"""
-        # 调试打印已移除
 
     def _execute_auto_fill(self, order_info, match_result):
         """执行自动填充"""
         try:
-            # 调试打印已移除
+            pass
 
             # 1. 自动选择影院
             if match_result.cinema_match:
@@ -878,7 +873,6 @@ class ModularCinemaMainWindow(QMainWindow):
             accounts_file = os.path.join(os.path.dirname(__file__), 'data', 'accounts.json')
 
             if not os.path.exists(accounts_file):
-                # 调试打印已移除
                 return None
 
             with open(accounts_file, "r", encoding="utf-8") as f:
@@ -891,9 +885,9 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 安全的Token显示
                 token = first_account.get('token', '')
                 if token:
-                    pass  # 调试打印已移除
+                    pass
                 else:
-                    pass  # 调试打印已移除
+                    pass
 
                 return {
                     'phone': first_account.get('phone'),
@@ -901,7 +895,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     'debug_mode': True
                 }
             else:
-                # 调试打印已移除
                 return None
 
         except Exception as e:
@@ -936,7 +929,7 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 直接使用已加载的账号，不进行影院关联
             if hasattr(self, 'current_user') and self.current_user:
-                pass  # 调试打印已移除
+                pass
             else:
                 print(f"[主窗口] ⚠️ 当前账号未设置")
 
@@ -977,7 +970,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _restart_login(self):
         """重新启动登录流程 - 增强错误处理和窗口管理"""
         try:
-            # 调试打印已移除
+            pass
 
             # 🆕 清理旧的登录窗口 - 增强清理逻辑
             if hasattr(self, 'login_window') and self.login_window:
@@ -990,7 +983,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 self.login_window.close()
                 self.login_window.deleteLater()  # 🆕 确保窗口被正确删除
                 self.login_window = None
-                # 调试打印已移除
 
             # 🆕 确保主窗口完全隐藏
             self.hide()
@@ -1006,7 +998,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _create_new_login_window(self):
         """创建新的登录窗口 - 增强窗口创建和显示逻辑"""
         try:
-            # 调试打印已移除
+            pass
 
             # 🆕 导入登录窗口类
             from ui.login_window import LoginWindow
@@ -1036,7 +1028,6 @@ class ModularCinemaMainWindow(QMainWindow):
             # 🔧 增强：强制获得焦点
             QApplication.setActiveWindow(self.login_window)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[主窗口] ❌ 创建登录窗口失败: {e}")
@@ -1166,7 +1157,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _on_debug_auth_button_clicked(self):
         """调试验证按钮点击处理 - 手动触发验证逻辑，使用统一错误处理"""
         try:
-            # 调试打印已移除
+            pass
 
             # 检查当前用户状态
             if not self.current_user:
@@ -1348,7 +1339,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 MessageManager.show_error(self, "座位未选择", "请先选择座位", auto_close=False)
                 return
             
-            # 调试打印已移除
             
             # 调用现有的完整订单处理流程
             result = self.on_submit_order(selected_seats)
@@ -1456,7 +1446,7 @@ class ModularCinemaMainWindow(QMainWindow):
             payment_success = self._execute_payment_process(coupon_validation_result)
 
             if payment_success:
-                pass  # 调试打印已移除
+                pass
             else:
                 print("[支付] 一键支付流程失败")
 
@@ -1518,7 +1508,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 }
 
             # 有选择券，需要验证券并获取实时价格
-            # 调试打印已移除
 
             # 调用优惠券验证接口
             coupon_validation = self._validate_coupon_prepay(self._payment_order_id, couponcode)
@@ -1610,7 +1599,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 'source': '2'
             }
 
-            # 调试打印已移除
 
             # 调用券支付API
             pay_result = coupon_pay(pay_params)
@@ -1640,13 +1628,10 @@ class ModularCinemaMainWindow(QMainWindow):
             final_amount = coupon_result.get('final_amount', 0)
             couponcode = coupon_result.get('couponcode', '')
 
-            # 调试打印已移除
-            # 调试打印已移除
             print(f"[微信支付] 💰 最终支付金额: {final_amount}分")
 
             if final_amount == 0:
                 # 纯券支付，无需微信支付
-                # 调试打印已移除
                 return self._execute_coupon_payment(coupon_result)
 
             # TODO: 实现微信支付逻辑
@@ -1654,7 +1639,6 @@ class ModularCinemaMainWindow(QMainWindow):
             MessageManager.show_info(self, "微信支付", f"微信支付功能开发中\n支付金额: ¥{final_amount/100:.2f}")
 
             # 临时返回成功（实际应该等待微信支付结果）
-            # 调试打印已移除
             return True
 
         except Exception as e:
@@ -1759,10 +1743,7 @@ class ModularCinemaMainWindow(QMainWindow):
         解决4004错误：在券码绑定前先设置订单的基础支付方式
         """
         try:
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
+            pass
 
             # 构建订单初始化参数
             init_params = {
@@ -1778,7 +1759,6 @@ class ModularCinemaMainWindow(QMainWindow):
             }
 
             print(f"[订单初始化] 📤 发送初始化请求...")
-            # 调试打印已移除
 
             # 调用订单变更API进行初始化
             from services.womei_order_voucher_service import get_womei_order_voucher_service
@@ -1794,7 +1774,6 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"[订单初始化] 📥 初始化结果: {init_result}")
 
             if init_result.get('success', False) and init_result.get('ret') == 0:
-                # 调试打印已移除
                 return {
                     'success': True,
                     'message': '订单支付方式预初始化成功',
@@ -1823,7 +1802,6 @@ class ModularCinemaMainWindow(QMainWindow):
         try:
             from services.ui_utils import MessageManager
 
-            # 调试打印已移除
 
             # 获取已支付订单详情
             detail_params = {
@@ -1880,7 +1858,6 @@ class ModularCinemaMainWindow(QMainWindow):
             # 显示成功消息
             MessageManager.show_success(self, "支付成功", "订单支付成功！")
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[支付成功] 处理支付成功异常: {e}")
@@ -1911,7 +1888,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 'source': '2'
             }
 
-            # 调试打印已移除
 
             # 调用API
             result = get_coupon_prepay_info(params)
@@ -1952,7 +1928,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 print(f"[订单详情更新] 当前订单为空，跳过更新")
                 return
 
-            # 调试打印已移除
             print(f"[订单详情更新] current_order类型: {type(self.current_order)}")
             print(f"[订单详情更新] current_coupon_info: {getattr(self, 'current_coupon_info', None)}")
 
@@ -1972,7 +1947,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     if hasattr(self, 'order_detail_text'):
                         self.order_detail_text.setPlainText(f"订单详情更新失败: {str(e)}")
             else:
-                # 调试打印已移除
                 # 显示错误信息
                 if hasattr(self, 'order_detail_text'):
                     self.order_detail_text.setPlainText("订单详情管理器不可用，请重启应用")
@@ -2010,7 +1984,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _get_member_info(self, account, cinemaid):
         """获取会员信息 - 修复：严格按照API返回数据结构判断"""
         try:
-            # 调试打印已移除
+            pass
 
             # 直接调用会员信息API，不使用增强方法的包装
             from services.api_base import api_get
@@ -2026,7 +2000,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 'source': '2'
             }
 
-            # 调试打印已移除
 
             # 调用getMemberInfo API
             api_result = api_get('/MiniTicket/index.php/MiniMember/getMemberInfo', cinemaid, params)
@@ -2052,14 +2025,12 @@ class ModularCinemaMainWindow(QMainWindow):
                         'balance': result_data.get('balance', 0),
                         'raw_data': result_data  # 保存原始数据供后续使用
                     }
-                    pass  # 调试打印已移除
                 else:
                     # 🆕 无会员卡：resultData为null
                     self.member_info = {
                         'has_member_card': False,
                         'raw_data': None
                     }
-                    pass  # 调试打印已移除
             else:
                 # API调用失败
                 error_desc = api_result.get('resultDesc', '未知错误') if api_result else '网络错误'
@@ -2152,7 +2123,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _create_womei_order_direct(self, selected_seats, session_info):
         """沃美系统专用：直接创建订单（抛弃华联系统逻辑）"""
         try:
-            # 调试打印已移除
+            pass
 
             # 🔧 沃美系统：从session_info获取必要数据
             cinema_data = session_info.get('cinema_data', {})
@@ -2163,7 +2134,6 @@ class ModularCinemaMainWindow(QMainWindow):
             schedule_id = session_data.get('schedule_id', '')
             token = account_data.get('token', '')
 
-            # 调试打印已移除
             print(f"  - cinema_id: {cinema_id}")
             print(f"  - schedule_id: {schedule_id}")
             # 安全的Token显示
@@ -2174,7 +2144,6 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"  - 座位数: {len(selected_seats)}")
 
             if not cinema_id or not schedule_id or not token:
-                # 调试打印已移除
                 return False
 
             # 🔧 沃美系统：构建真实的座位参数
@@ -2211,7 +2180,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _build_womei_seatlable_from_selected_seats(self, selected_seats):
         """沃美系统专用：从选中座位构建座位参数"""
         try:
-            # 调试打印已移除
+            pass
 
             seat_parts = []
             for i, seat in enumerate(selected_seats):
@@ -2226,11 +2195,9 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 # 验证数据完整性
                 if not real_seat_no or '#' not in real_seat_no:
-                    # 调试打印已移除
                     return ""
 
                 if not real_area_no:
-                    # 调试打印已移除
                     return ""
 
                 # 🔧 修复：使用真实的座位图API数据构建参数
@@ -2241,7 +2208,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 print(f"[沃美座位] 座位{i+1}构建: {seat_str}")
 
             seatlable_str = "|".join(seat_parts)
-            # 调试打印已移除
 
             return seatlable_str
 
@@ -2432,20 +2398,16 @@ class ModularCinemaMainWindow(QMainWindow):
             account_data = session_info.get('account', {})
             token = account_data.get('token', '')
 
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
 
             if token and cinema_id:
                 init_result = self._initialize_order_payment_method(order_id, cinema_id, token)
                 if init_result.get('success', False):
-                    pass  # 调试打印已移除
+                    pass
                 else:
                     print(f"[沃美订单初始化] ⚠️ 订单支付方式初始化失败: {init_result.get('error', '未知错误')}")
                     # 注意：初始化失败不阻断订单创建流程，仅记录日志
             else:
-                pass  # 调试打印已移除
+                pass
 
             # 🆕 获取可用券列表 - 修复参数传递
 
@@ -2588,9 +2550,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     # 构造格式：{schedule_id}#09#{col_num:02d}
                     constructed_seat_no = f"{schedule_id}#09#{col_num:02d}"
                     real_seat_no = constructed_seat_no
-                    # 调试打印已移除
 
-                # 调试打印已移除
 
                 # 构建座位字符串：区域ID:行号:列号:seat_no
                 seat_str = f"{area_id}:{row_num}:{col_num}:{real_seat_no}"
@@ -2600,7 +2560,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 用 | 连接多个座位
             seatlable_str = "|".join(seat_parts)
-            # 调试打印已移除
             print(f"[订单调试] 对比真实请求: 1:2:5:11051771#09#06|1:2:4:11051771#09#05")
 
             return seatlable_str
@@ -2668,7 +2627,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 "seatcount": len(selected_seats)
             }
 
-            # 调试打印已移除
             print(f"  - 影院ID: {order_params['cinemaid']}")
             print(f"  - 电影ID: {order_params['filmid']}")
             print(f"  - 场次ID: {order_params['sessionid']}")
@@ -2714,7 +2672,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 'system_type': 'womei'  # 标记为沃美系统
             }
 
-            # 调试打印已移除
             print(f"  - 订单号: {order_id}")
             print(f"  - 座位数: {len(selected_seats)}")
             print(f"  - 总价: {total_amount} 分")
@@ -2765,7 +2722,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 'cinemaid': cinema_data.get('cinema_id', '')
             }
 
-            # 调试打印已移除
             print(f"  - 订单号: {order_id}")
             print(f"  - 座位数: {len(selected_seats)}")
             print(f"  - 总价: {total_amount} 元")
@@ -2994,29 +2950,25 @@ class ModularCinemaMainWindow(QMainWindow):
         """场次选择处理 - 加载座位图"""
         try:
             print(f"[主窗口] 🎬 收到场次选择信号")
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 验证必要信息
             session_data = session_info.get('session_data')
             account = session_info.get('account')
             cinema_data = session_info.get('cinema_data')
 
-            # 调试打印已移除
             print(f"  - session_data: {type(session_data)} - {bool(session_data)}")
             print(f"  - account: {type(account)} - {bool(account)}")
             print(f"  - cinema_data: {type(cinema_data)} - {bool(cinema_data)}")
 
             if session_data:
-                pass  # 调试打印已移除
+                pass
             if account:
-                pass  # 调试打印已移除
+                pass
             if cinema_data:
-                pass  # 调试打印已移除
+                pass
 
             # 简化验证：只检查session_data，不再强制要求account
             if not session_data:
-                pass  # 调试打印已移除
                 self._safe_update_seat_area("场次信息不完整\n\n无法加载座位图")
                 return
 
@@ -3039,7 +2991,6 @@ class ModularCinemaMainWindow(QMainWindow):
             # 检查是否已经包含座位图数据
             hall_info = session_info.get('hall_info')
             if hall_info:
-                # 调试打印已移除
                 self._display_seat_map(hall_info, session_info)
             else:
                 print(f"[主窗口] 🔄 session_info不包含座位图数据，需要加载")
@@ -3120,14 +3071,13 @@ class ModularCinemaMainWindow(QMainWindow):
     def _load_seat_map(self, session_info: dict):
         """加载座位图数据"""
         try:
-            # 调试打印已移除
+            pass
 
             # 获取必要参数
             session_data = session_info['session_data']
             account = session_info['account']
             cinema_data = session_info['cinema_data']
 
-            # 调试打印已移除
             print(f"  - session_data类型: {type(session_data)}")
             print(f"  - account类型: {type(account)}")
             print(f"  - cinema_data类型: {type(cinema_data)}")
@@ -3137,7 +3087,6 @@ class ModularCinemaMainWindow(QMainWindow):
             schedule_id = session_data.get('schedule_id', '')
             hall_id = session_data.get('hall_id', '')
 
-            # 调试打印已移除
             print(f"  - cinema_id: {cinema_id} (来源: cinema_data.cinemaid)")
             print(f"  - schedule_id: {schedule_id} (来源: session_data.schedule_id)")
             print(f"  - hall_id: {hall_id} (来源: session_data.hall_id)")
@@ -3145,14 +3094,12 @@ class ModularCinemaMainWindow(QMainWindow):
             print(f"  - session_data所有字段: {list(session_data.keys()) if session_data else 'None'}")
 
             if not all([cinema_id, schedule_id, hall_id]):
-                # 调试打印已移除
                 print(f"  - cinema_id: {cinema_id} ({'✓' if cinema_id else '✗'})")
                 print(f"  - schedule_id: {schedule_id} ({'✓' if schedule_id else '✗'})")
                 print(f"  - hall_id: {hall_id} ({'✓' if hall_id else '✗'})")
                 self._safe_update_seat_area("缺少座位图参数\n\n请重新选择场次")
                 return
 
-            # 调试打印已移除
             print(f"  - 影院名称: {cinema_data.get('cinemaShortName', 'N/A')}")
             print(f"  - 影院ID: {cinema_data.get('cinemaid', 'N/A')}")
 
@@ -3249,7 +3196,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
                         # 🔧 修复：保存完整的session_info到座位面板
                         seat_panel.session_info = session_info
-                        # 调试打印已移除
                         print(f"  - 影院数据: {'存在' if session_info.get('cinema_data') else '缺失'}")
                         print(f"  - 账号数据: {'存在' if session_info.get('account') else '缺失'}")
                         print(f"  - 场次数据: {'存在' if session_info.get('session_data') else '缺失'}")
@@ -3440,15 +3386,13 @@ class ModularCinemaMainWindow(QMainWindow):
                 # 与预期状态对比
                 expected_status = "sold"  # 根据真实APP，这两个座位应该是已售
                 if status == expected_status:
-                    pass  # 调试打印已移除
+                    pass
                 else:
-                    # 调试打印已移除
                     print(f"     系统状态: {status}")
                     print(f"     预期状态: {expected_status}")
                     print(f"     真实APP显示: 已售")
 
                     # 🔧 状态不一致时的详细分析
-                    # 调试打印已移除
                     print(f"     API返回状态码: {seat_status}")
                     print(f"     当前映射规则: 0=可选, 1=已售, 2=锁定, 6=不可选择")
 
@@ -3637,7 +3581,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     MessageManager.show_error(self, "订单创建失败", "缺少影院数据，请重新选择影院和场次", auto_close=False)
                     return
                 else:
-                    pass  # 调试打印已移除
+                    pass
 
                 # 🔧 修复：直接使用沃美专用订单创建流程
                 self._create_womei_order_direct(selected_seats, session_info)
@@ -3821,13 +3765,11 @@ class ModularCinemaMainWindow(QMainWindow):
             # 因为_get_ticket_code_after_payment已经处理了取票码显示
             # 这里只做必要的状态更新，不覆盖二维码显示
 
-            # 调试打印已移除
 
             # 检查是否已经有取票码二维码显示
             if hasattr(self, 'qr_display'):
                 # 如果当前显示的是图片（二维码），则不覆盖
                 if self.qr_display.pixmap() and not self.qr_display.pixmap().isNull():
-                    # 调试打印已移除
                     return
 
                 # 如果当前没有二维码显示，则显示支付成功信息
@@ -3886,7 +3828,7 @@ class ModularCinemaMainWindow(QMainWindow):
             qr_bytes = generate_ticket_qrcode(ticket_code, detail_data)
 
             if qr_bytes:
-                # 调试打印已移除
+                pass
 
                 # 🎯 保存二维码图片到本地
                 save_path = save_qrcode_image(qr_bytes, order_id, cinema_id)
@@ -3952,7 +3894,7 @@ class ModularCinemaMainWindow(QMainWindow):
     def _on_show_qrcode(self, qr_data):
         """显示二维码处理"""
         try:
-            # 调试打印已移除
+            pass
 
             # 检查数据格式
             if isinstance(qr_data, dict):
@@ -4036,7 +3978,7 @@ class ModularCinemaMainWindow(QMainWindow):
             success = pixmap.loadFromData(byte_array)
 
             if success and not pixmap.isNull():
-                # 调试打印已移除
+                pass
 
                 # 缩放图片以适应显示区域
                 scaled_pixmap = pixmap.scaled(200, 200, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -4093,8 +4035,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
             info_text += f"📋 订单号: {order_no}"
 
-            # 调试打印已移除
-            # 调试打印已移除
 
             if hasattr(self, 'qr_display'):
                 # 简单清空和设置
@@ -4153,7 +4093,6 @@ class ModularCinemaMainWindow(QMainWindow):
                         if success and not pixmap.isNull():
                             # 缩放图片
                             qr_pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                            pass  # 调试打印已移除
                         else:
                             pass
                     except Exception as e:
@@ -4266,7 +4205,6 @@ class ModularCinemaMainWindow(QMainWindow):
                             }
                         """)
 
-                        # 调试打印已移除
 
                     else:
                         pass
@@ -4366,7 +4304,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 self.login_window = None
 
             # 座位区域和右栏区域是直接创建的QWidget，不需要特殊清理
-            # 调试打印已移除
             event.accept()
 
         except Exception as e:
@@ -4853,7 +4790,6 @@ class ModularCinemaMainWindow(QMainWindow):
             from services.order_api import create_order
 
             # 🔍 详细打印提交的订单参数
-            # 调试打印已移除
             print(f"=" * 60)
             for key, value in order_params.items():
                 if key == 'token':
@@ -5011,7 +4947,6 @@ class ModularCinemaMainWindow(QMainWindow):
         import json
         from datetime import datetime
 
-        # 调试打印已移除
         print(f"{'=' * 80}")
         print(f"⏰ 时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print(f"🔗 接口: {api_name}")
@@ -5024,7 +4959,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
             if isinstance(result, dict):
                 # 格式化字典数据
-                # 调试打印已移除
                 print(f"🔑 字段列表: {list(result.keys())}")
                 print(f"{'-' * 80}")
 
@@ -5094,7 +5028,7 @@ class ModularCinemaMainWindow(QMainWindow):
                     print(f"🔢 错误代码: {result.get('ret')}")
                 # 兼容其他API格式
                 elif result.get('success') is True or result.get('resultCode') == '0':
-                    pass  # 调试打印已移除
+                    pass
                 elif result.get('success') is False or result.get('resultCode') != '0':
                     error_msg = result.get('error') or result.get('resultDesc') or '未知错误'
                     print(f"❌ 接口调用状态: 失败")
@@ -5149,7 +5083,6 @@ class ModularCinemaMainWindow(QMainWindow):
     def _print_order_summary(self, order_data: dict, order_id: str):
         """打印订单摘要信息"""
         try:
-            # 调试打印已移除
             print(f"{'=' * 80}")
 
             # 基本信息
@@ -5184,7 +5117,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     print(f"🎫 {code_name}: {code_value}")
 
             print(f"{'=' * 80}")
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[订单摘要] ❌ 打印摘要失败: {e}")
@@ -5199,13 +5131,12 @@ class ModularCinemaMainWindow(QMainWindow):
             order_id = order_data.get('orderno', f"ORDER{int(time.time())}")
 
             # 🚀 订单创建成功后立即初始化支付方式（解决4004错误）
-            # 调试打印已移除
             cinema_id = cinema_data.get('cinemaid', '')
             token = self.current_account.get('token', '')
 
             init_result = self._initialize_order_payment_method(order_id, cinema_id, token)
             if init_result.get('success', False):
-                pass  # 调试打印已移除
+                pass
             else:
                 print(f"[订单创建] ⚠️ 订单支付方式初始化失败: {init_result.get('error', '未知错误')}")
                 # 注意：初始化失败不阻断订单创建流程，仅记录日志
@@ -5246,7 +5177,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     total_amount += 0.0
 
             # 获取会员信息
-            # 调试打印已移除
             self._get_member_info(self.current_account, cinema_data.get('cinemaid', ''))
 
             # 获取未支付订单详情以获取会员价格信息
@@ -5314,14 +5244,12 @@ class ModularCinemaMainWindow(QMainWindow):
                 'cinemaid': cinema_data.get('cinemaid', '')  # 影院ID
             }
 
-            # 调试打印已移除
             print(f"  - 订单号: {order_id}")
             print(f"  - 座位数: {len(selected_seats)}")
             print(f"  - 总价: {total_amount} 元")
             print(f"  - 会员价: {member_total_price/100.0:.2f} 元")
 
             # 🔍 调试：打印订单数据
-            # 调试打印已移除
             print(f"=" * 60)
             print(f"订单号: {self.current_order.get('order_id', 'N/A')}")
             print(f"座位数据类型: {type(self.current_order.get('seats', []))}")
@@ -5336,7 +5264,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 获取可用券列表 - 修复参数传递
             cinema_id = cinema_data.get('cinemaid', '') or cinema_data.get('cinema_id', '') or cinema_data.get('id', '')
-            # 调试打印已移除
             print(f"  - cinema_data类型: {type(cinema_data)}")
             print(f"  - cinema_data内容: {cinema_data}")
             print(f"  - 提取的cinema_id: {cinema_id}")
@@ -5363,7 +5290,6 @@ class ModularCinemaMainWindow(QMainWindow):
     def _load_available_coupons(self, order_id: str, cinema_id: str):
         """获取订单可用券列表 - 复用现有实现"""
         try:
-            # 调试打印已移除
             print(f"  - current_account存在: {bool(self.current_account)}")
             print(f"  - order_id: '{order_id}' (长度: {len(order_id) if order_id else 0})")
             print(f"  - cinema_id: '{cinema_id}' (长度: {len(cinema_id) if cinema_id else 0})")
@@ -5389,7 +5315,6 @@ class ModularCinemaMainWindow(QMainWindow):
             # 提取必要参数
             token = DataUtils.safe_get(self.current_account, 'token', '')
 
-            # 调试打印已移除
             print(f"[优惠券] 🏢 影院ID: {cinema_id}")
             # 安全的Token显示
             if token:
@@ -5500,7 +5425,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
                 converted_vouchers.append(converted_voucher)
 
-            # 调试打印已移除
             return converted_vouchers
 
         except Exception as e:
@@ -5535,7 +5459,6 @@ class ModularCinemaMainWindow(QMainWindow):
         try:
             # 确保coupons参数有效
             if coupons is None:
-                # 调试打印已移除
                 coupons = []
 
             if not isinstance(coupons, list):
@@ -5634,7 +5557,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     display_text = f"{coupon_type} | 有效期至 {expire_date} | 券号 {coupon_code}"
                     coupon_list_widget.addItem(display_text)
 
-                pass  # 调试打印已移除
             else:
                 print("[优惠券] 未找到券列表组件")
 
@@ -5719,7 +5641,6 @@ class ModularCinemaMainWindow(QMainWindow):
 
             # 验证必要参数
             if not self.current_order or not self.current_account:
-                # 调试打印已移除
                 return
 
             # 获取订单和账号信息
@@ -5739,14 +5660,11 @@ class ModularCinemaMainWindow(QMainWindow):
             cinema_id = (DataUtils.safe_get(cinema_data, 'cinema_id', '') or
                         DataUtils.safe_get(cinema_data, 'cinemaid', '') or
                         DataUtils.safe_get(cinema_data, 'id', ''))
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 处理券选择 - 🆕 使用两步式券使用流程（价格计算 + 券绑定）
             if selected_codes and selected_codes[0]:  # 确保券号不为空
                 try:
                     couponcode = ','.join(selected_codes)
-                    # 调试打印已移除
 
                     # 🆕 使用沃美订单券绑定服务
                     from services.womei_order_voucher_service import get_womei_order_voucher_service
@@ -5763,7 +5681,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     )
 
                     print(f"[券选择事件] 📥 价格计算结果:")
-                    # 调试打印已移除
 
                     if not price_result.get('success', False) or price_result.get('ret') != 0:
                         error_msg = price_result.get('msg', '价格计算失败')
@@ -5799,7 +5716,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     )
 
                     print(f"[券选择事件] 📥 券绑定结果:")
-                    # 调试打印已移除
                     print(f"[券选择事件] 📥 绑定成功: {bind_result.get('success')}")
 
                     if bind_result.get('success'):
@@ -5827,7 +5743,6 @@ class ModularCinemaMainWindow(QMainWindow):
                         }
                         self.selected_coupons = selected_codes
 
-                        # 调试打印已移除
                         print(f"[券选择事件] 💰 预计支付价格: {pay_price}")
                         print(f"[券选择事件] 💰 实际支付价格: {final_payment_price}")
                         print(f"[券选择事件] 🎫 券使用数量: {len(voucher_use.get('use_codes', []))}")
@@ -5983,7 +5898,6 @@ class ModularCinemaMainWindow(QMainWindow):
                 'totalprice': DataUtils.safe_get(self.current_order, 'totalprice', 0)
             }
 
-            # 调试打印已移除
             print(f"  - 影院ID: {order_params.get('cinemaid')}")
             print(f"  - 电影ID: {order_params.get('movieid')}")
             print(f"  - 场次ID: {order_params.get('showid')}")
@@ -6010,11 +5924,9 @@ class ModularCinemaMainWindow(QMainWindow):
                 from services.order_api import create_order
                 result = create_order(order_params)
 
-            # 调试打印已移除
 
             # 检查API响应
             if result and result.get('resultCode') == '0':
-                # 调试打印已移除
                 return True
             else:
                 error_msg = result.get('resultDesc', '未知错误') if result else '网络错误'
@@ -6047,7 +5959,6 @@ class ModularCinemaMainWindow(QMainWindow):
             # 刷新UI
             self.update_ui_after_order()
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[订单成功] 处理异常: {e}")
@@ -6097,7 +6008,6 @@ class ModularCinemaMainWindow(QMainWindow):
             if hasattr(self, 'status_bar'):
                 self.status_bar.showMessage("Token失效，系统功能受限", 0)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Token失效] ❌ 处理token失效信号异常: {e}")
@@ -6165,11 +6075,6 @@ class ModularCinemaMainWindow(QMainWindow):
                     center_x = client_x + (client_width - popup_width) // 2
                     center_y = client_y + (client_height - popup_height) // 2
 
-                    # 调试打印已移除
-                    # 调试打印已移除
-                    # 调试打印已移除
-                    # 调试打印已移除
-                    # 调试打印已移除
 
                     # 🎯 移动弹窗到居中位置
                     msg_box.move(center_x, center_y)
@@ -6189,11 +6094,10 @@ class ModularCinemaMainWindow(QMainWindow):
                     offset_y = abs(actual_center_y - expected_center_y)
 
                     if offset_x <= 5 and offset_y <= 5:
-                        pass  # 调试打印已移除
+                        pass
                     else:
                         print(f"[Token失效] ⚠️ 弹窗位置有轻微偏差，但在可接受范围内")
 
-                    # 调试打印已移除
 
                 except Exception as e:
                     print(f"[Token失效] ❌ 居中计算异常: {e}")

@@ -30,12 +30,10 @@ def login_and_check_card(
         "source": source
     }
     
-    # 调试打印已移除
     print(f"[登录API] 影院ID: {cinemaid}")
     print(f"[登录API] 手机号: {phone}")
     print(f"[登录API] CK长度: {len(ck)}")
     print(f"[登录API] OpenID: {openid}")
-    # 调试打印已移除
     
     # 使用新的API基础服务，自动根据cinemaid选择base_url
     result = api_get('MiniTicket/index.php/MiniMember/getMemcardList', cinemaid, params=params)

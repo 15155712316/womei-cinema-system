@@ -119,20 +119,15 @@ class WomeiVoucherService:
             # 构建URL
             url = f"{self.base_url}/{cinema_id}/user/voucher/add/"
             
-            # 调试打印已移除
-            # 调试打印已移除
             
             # 发送请求
             response = requests.post(url, headers=headers, data=data, verify=False)
             
-            # 调试打印已移除
-            # 调试打印已移除
             
             # 解码Unicode字符
             decoded_data = self.decode_unicode_message(response.text)
             
             if decoded_data:
-                # 调试打印已移除
                 return decoded_data
             else:
                 return {
@@ -166,7 +161,7 @@ class WomeiVoucherService:
         results = []
 
         for i, (voucher_code, voucher_password) in enumerate(vouchers, 1):
-            # 调试打印已移除
+            pass
 
             result = self.bind_voucher(cinema_id, token, voucher_code, voucher_password)
             result['voucher_code'] = voucher_code
@@ -199,16 +194,12 @@ class WomeiVoucherService:
             # 构建URL - 使用新的订单可用券API端点
             url = f"{self.base_url}/{cinema_id}/user/voucher/list/"
 
-            # 调试打印已移除
-            # 调试打印已移除
             print(f"[沃美订单券] 🏢 影院ID: {cinema_id}")
             print(f"[沃美订单券] 🎫 Token: {token[:20]}...")
 
             # 发送GET请求（添加超时设置）
             response = requests.get(url, headers=headers, verify=False, timeout=30)
 
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 解码Unicode字符
             decoded_data = self.decode_unicode_message(response.text)
@@ -278,21 +269,17 @@ class WomeiVoucherService:
             # 构建URL - 使用新的券列表API端点
             url = f"{self.base_url}/{cinema_id}/user/voucher/list/"
 
-            # 调试打印已移除
-            # 调试打印已移除
             print(f"[沃美券列表] 🏢 影院ID: {cinema_id}")
 
             # 发送GET请求
             response = requests.get(url, headers=headers, verify=False)
 
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 解码Unicode字符
             decoded_data = self.decode_unicode_message(response.text)
 
             if decoded_data:
-                # 调试打印已移除
+                pass
 
                 # 检查API响应状态
                 if decoded_data.get('ret') == 0:
@@ -300,7 +287,6 @@ class WomeiVoucherService:
                     data = decoded_data.get('data', {})
                     unused_vouchers = data.get('unused', [])
 
-                    # 调试打印已移除
 
                     # 返回处理后的数据
                     return {
@@ -376,7 +362,6 @@ class WomeiVoucherService:
                 'douyin_code_resault': voucher.get('douyin_code_resault', [])
             }
 
-            # 调试打印已移除
             return processed_voucher
 
         except Exception as e:

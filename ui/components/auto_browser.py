@@ -17,14 +17,12 @@ try:
     from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEnginePage, QWebEngineProfile
     from PyQt5.QtWebEngineCore import QWebEngineUrlRequestInterceptor
     WEBENGINE_AVAILABLE = True
-    pass  # 调试打印已移除
 except ImportError as e:
     WEBENGINE_AVAILABLE = False
     QWebEngineView = None
     QWebEnginePage = None
     QWebEngineProfile = None
     QWebEngineUrlRequestInterceptor = None
-    pass  # 调试打印已移除
 except Exception as e:
     WEBENGINE_AVAILABLE = False
     QWebEngineView = None
@@ -288,7 +286,6 @@ class AutoBrowserWidget(QWidget):
                 self.page = QWebEnginePage(self.profile)
                 self.web_view.setPage(self.page)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[自动浏览器] ❌ 设置失败: {e}")
@@ -378,7 +375,6 @@ class AutoBrowserWidget(QWidget):
             self.status_changed.emit("🎯 监听已启动 - 请参考指南获取小程序参数")
             self.status_label.setText("🎯 网络监听已启动 - 请参考浏览器中的指南操作")
 
-            pass  # 调试打印已移除
         except Exception as e:
             print(f"[自动浏览器] ❌ 启动监听失败: {e}")
             self.status_changed.emit(f"❌ 启动监听失败: {str(e)}")
@@ -426,7 +422,6 @@ class AutoBrowserWidget(QWidget):
                 for key, value in params.items():
                     self.parameter_extracted.emit(key, value)
                 
-                # 调试打印已移除
             
             # 更新状态（每10个请求更新一次，避免频繁更新）
             if count % 10 == 0:
@@ -461,7 +456,6 @@ class AutoBrowserWidget(QWidget):
         self.request_count = 0
         self.params_display.clear()
         self.status_label.setText("准备就绪 - 点击'开始监听'启动自动参数采集")
-        # 调试打印已移除
     
     def get_extracted_params(self):
         """获取提取的参数"""

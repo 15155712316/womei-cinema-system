@@ -41,7 +41,6 @@ def save_qrcode_image(image_data: bytes, order_no: str, cinema_id: str) -> str:
         with open(file_path, 'wb') as f:
             f.write(image_data)
 
-        # 调试打印已移除
         print(f"[图片保存] 📁 路径: {file_path}")
         print(f"[图片保存] 📏 大小: {len(image_data)} bytes")
 
@@ -77,7 +76,6 @@ def get_coupons_by_order(params: dict) -> dict:
     """
     # 🔧 修复：检查params参数
     if params is None:
-        # 调试打印已移除
         return {"resultCode": "-1", "resultDesc": "参数为空", "resultData": None}
 
     if not isinstance(params, dict):
@@ -86,7 +84,6 @@ def get_coupons_by_order(params: dict) -> dict:
 
     cinemaid = params.get('cinemaid')
     if not cinemaid:
-        # 调试打印已移除
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
 
     # 特殊的headers for 券接口
@@ -113,7 +110,6 @@ def get_coupons_by_order(params: dict) -> dict:
             print(f"[优惠券API] API返回类型错误: {type(result)}")
             return {"resultCode": "-1", "resultDesc": "API响应格式错误", "resultData": None}
 
-        # 调试打印已移除
         return result
 
     except Exception as e:
@@ -130,7 +126,6 @@ def get_coupon_list(params: dict) -> dict:
     """
     # 🔧 修复：检查params参数
     if params is None:
-        # 调试打印已移除
         return {"resultCode": "-1", "resultDesc": "参数为空", "resultData": None}
 
     if not isinstance(params, dict):
@@ -139,7 +134,6 @@ def get_coupon_list(params: dict) -> dict:
 
     cinemaid = params.get('cinemaid')
     if not cinemaid:
-        # 调试打印已移除
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
 
     print(f"[券列表API] 获取账号券列表")
@@ -160,7 +154,6 @@ def get_coupon_list(params: dict) -> dict:
             print(f"[券列表API] API返回类型错误: {type(result)}")
             return {"resultCode": "-1", "resultDesc": "API响应格式错误", "resultData": None}
 
-        # 调试打印已移除
         return result
 
     except Exception as e:
@@ -249,7 +242,6 @@ def get_order_qrcode_api(orderno: str, cinemaid: str, account: dict = None) -> b
     from .api_base import api_base
 
     if not cinemaid:
-        # 调试打印已移除
         return None
 
     base_url = api_base.get_base_url_for_cinema(cinemaid)
@@ -287,7 +279,6 @@ def get_order_qrcode_api(orderno: str, cinemaid: str, account: dict = None) -> b
     }
 
     try:
-        # 调试打印已移除
         print(f"[订单二维码API] 订单号: {orderno}")
         print(f"[订单二维码API] 影院ID: {cinemaid}")
         print(f"[订单二维码API] 请求URL: {url}")
@@ -295,9 +286,6 @@ def get_order_qrcode_api(orderno: str, cinemaid: str, account: dict = None) -> b
 
         resp = requests.get(url, headers=headers, timeout=10, verify=False)
 
-        # 调试打印已移除
-        # 调试打印已移除
-        # 调试打印已移除
 
         if resp.status_code == 200:
             # 检查响应内容类型
@@ -309,23 +297,21 @@ def get_order_qrcode_api(orderno: str, cinemaid: str, account: dict = None) -> b
                 try:
                     # 尝试解码为文本（如果是文本响应）
                     content_preview = resp.content[:100].decode('utf-8', errors='ignore')
-                    pass  # 调试打印已移除
                 except:
                     # 如果是二进制数据，显示十六进制
                     content_preview = resp.content[:50].hex()
-                    # 调试打印已移除
 
                 # 检查是否为有效的图片格式
                 if resp.content.startswith(b'\x89PNG'):
-                    pass  # 调试打印已移除
+                    pass
                 elif resp.content.startswith(b'\xff\xd8\xff'):
-                    pass  # 调试打印已移除
+                    pass
                 elif resp.content.startswith(b'GIF'):
-                    pass  # 调试打印已移除
+                    pass
                 elif resp.content.startswith(b'<'):
-                    pass  # 调试打印已移除
+                    pass
                 else:
-                    pass  # 调试打印已移除
+                    pass
 
             # 🎯 保存二维码图片到本地
             if account:
@@ -401,7 +387,6 @@ def cancel_all_unpaid_orders(account: dict, cinemaid: str) -> dict:
     if not cinemaid:
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
     
-    # 调试打印已移除
     
     # 首先获取订单列表
     list_params = {
@@ -461,7 +446,6 @@ def get_coupon_prepay_info(params: dict) -> dict:
     """
     # 🔧 修复：检查params参数
     if params is None:
-        # 调试打印已移除
         return {"resultCode": "-1", "resultDesc": "参数为空", "resultData": None}
 
     if not isinstance(params, dict):
@@ -470,7 +454,6 @@ def get_coupon_prepay_info(params: dict) -> dict:
 
     cinemaid = params.get('cinemaid')
     if not cinemaid:
-        # 调试打印已移除
         return {"resultCode": "-1", "resultDesc": "缺少影院ID参数", "resultData": None}
 
     try:
@@ -487,7 +470,6 @@ def get_coupon_prepay_info(params: dict) -> dict:
             print(f"[券价格API] API返回类型错误: {type(result)}")
             return {"resultCode": "-1", "resultDesc": "API响应格式错误", "resultData": None}
 
-        # 调试打印已移除
         return result
 
     except Exception as e:
@@ -518,7 +500,6 @@ def member_card_pay(params):
         couponcodes = params.get('couponcodes', '')
         payprice = params.get('payprice', '0')
 
-        # 调试打印已移除
         print(f"[会员卡支付API] 影院ID: {cinemaid}")
         print(f"[会员卡支付API] 订单号: {params.get('orderno')}")
         print(f"[会员卡支付API] 券号: '{couponcodes}'")
@@ -561,7 +542,6 @@ def member_card_pay(params):
 
         result = api_post('MiniTicket/index.php/MiniPay/memcardPay', cinemaid, data=member_pay_params, headers=special_headers)
 
-        # 调试打印已移除
         return result
 
     except Exception as e:
@@ -588,7 +568,6 @@ def coupon_pay(params):
     }
 
     try:
-        # 调试打印已移除
         print(f"[券支付API] 影院ID: {cinemaid}")
         print(f"[券支付API] 订单号: {params.get('orderno')}")
         print(f"[券支付API] 券号: {params.get('couponcodes')}")
@@ -596,7 +575,6 @@ def coupon_pay(params):
 
         result = api_post('MiniTicket/index.php/MiniPay/couponPay', cinemaid, data=params, headers=special_headers)
 
-        # 调试打印已移除
         return result
 
     except Exception as e:
@@ -616,14 +594,12 @@ def pay_order(params):
         couponcodes = params.get('couponcodes', '')
         payprice = params.get('payprice', '0')
 
-        # 调试打印已移除
         print(f"[智能支付] 券码: '{couponcodes}'")
         print(f"[智能支付] 支付金额: {payprice}")
 
         # 🆕 支付接口选择逻辑
         if not couponcodes or couponcodes.strip() == '':
             # 情况1: 纯会员卡支付 - couponcodes为空
-            # 调试打印已移除
             return member_card_pay(params)
 
         else:
@@ -635,11 +611,9 @@ def pay_order(params):
 
             if pay_amount == 0:
                 # 情况2a: 纯券支付 - 券完全抵扣，最终金额为0
-                # 调试打印已移除
                 return coupon_pay(params)
             else:
                 # 情况2b: 混合支付 - 券部分抵扣，剩余金额用会员卡支付
-                # 调试打印已移除
                 return member_card_pay(params)
 
     except Exception as e:

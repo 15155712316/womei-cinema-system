@@ -87,7 +87,7 @@ class WomeiOrderVoucherService:
             Dict: 价格计算结果，包含 pay_price, surcharge_price 等信息
         """
         try:
-            # 调试打印已移除
+            pass
 
             # 构建请求头 (修复Content-Type)
             headers = self.headers_template.copy()
@@ -103,12 +103,10 @@ class WomeiOrderVoucherService:
                 'order_id': order_id          # 订单ID
             }
 
-            # 调试打印已移除
 
             # 🆕 发送POST请求 (使用正确的Content-Type)
             response = requests.post(url, headers=headers, data=data, verify=False, timeout=30)
 
-            # 调试打印已移除
 
             if response.status_code == 200:
                 # 解码Unicode字符
@@ -184,8 +182,6 @@ class WomeiOrderVoucherService:
             Dict: 订单变更结果
         """
         try:
-            # 调试打印已移除
-            # 调试打印已移除
             print(f"[订单支付方式变更] 💳 支付类型: {pay_type}")
             print(f"[订单支付方式变更] 🎯 折扣类型: {discount_type}")
             print(f"[订单支付方式变更] 🏢 影院ID: {cinema_id}")
@@ -214,21 +210,18 @@ class WomeiOrderVoucherService:
                 'ticket_pack_goods': ' ',
             }
 
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 发送POST请求
             response = requests.post(url, headers=headers, data=data, verify=False, timeout=30)
 
             print(f"[订单支付方式变更] 📥 HTTP状态码: {response.status_code}")
-            # 调试打印已移除
 
             if response.status_code == 200:
                 # 解码Unicode字符
                 decoded_data = self.decode_unicode_message(response.text)
 
                 if decoded_data:
-                    # 调试打印已移除
+                    pass
 
                     # 分析响应结果
                     ret = decoded_data.get('ret', -1)
@@ -236,10 +229,8 @@ class WomeiOrderVoucherService:
                     msg = decoded_data.get('msg', '未知错误')
                     data_section = decoded_data.get('data', {})
 
-                    # 调试打印已移除
 
                     if ret == 0:
-                        # 调试打印已移除
                         return {
                             'success': True,
                             'ret': ret,
@@ -313,8 +304,6 @@ class WomeiOrderVoucherService:
             operation_type = "订单初始化" if not voucher_code else "券码绑定"
             log_prefix = f"[订单变更-{operation_type}]"
 
-            # 调试打印已移除
-            # 调试打印已移除
             print(f"{log_prefix} 🏢 影院ID: {cinema_id}")
             print(f"{log_prefix} 💳 支付类型: {pay_type}")
             print(f"{log_prefix} 🎯 折扣类型: {discount_type}")
@@ -350,7 +339,6 @@ class WomeiOrderVoucherService:
             # 添加扩展参数
             data.update(kwargs)
 
-            # 调试打印已移除
             print(f"{log_prefix} 📤 请求参数: {json.dumps(data, ensure_ascii=False, indent=2)}")
 
             # 发送POST请求
@@ -364,7 +352,7 @@ class WomeiOrderVoucherService:
                 decoded_data = self.decode_unicode_message(response.text)
 
                 if decoded_data:
-                    # 调试打印已移除
+                    pass
 
                     # 分析响应结果
                     ret = decoded_data.get('ret', -1)
@@ -372,10 +360,8 @@ class WomeiOrderVoucherService:
                     msg = decoded_data.get('msg', '未知错误')
                     data_section = decoded_data.get('data', {})
 
-                    # 调试打印已移除
 
                     if ret == 0:
-                        # 调试打印已移除
                         return {
                             'success': True,
                             'ret': ret,
@@ -579,8 +565,6 @@ class WomeiOrderVoucherService:
         }
 
         try:
-            # 调试打印已移除
-            # 调试打印已移除
             print(f"[沃美券流程] 🏢 影院: {cinema_id}, 券类型: {voucher_type}")
 
             # 步骤1: 计算券价格
@@ -595,7 +579,6 @@ class WomeiOrderVoucherService:
                 print(f"[沃美券流程] ❌ 价格计算失败: {error_msg}")
                 return workflow_result
 
-            # 调试打印已移除
 
             # 步骤2: 绑定券到订单
             print(f"[沃美券流程] 2️⃣ 第二步：绑定券到订单...")
@@ -609,7 +592,6 @@ class WomeiOrderVoucherService:
                 print(f"[沃美券流程] ❌ 券绑定失败: {error_msg}")
                 return workflow_result
 
-            # 调试打印已移除
 
             # 步骤3: 整合最终结果
             print(f"[沃美券流程] 3️⃣ 第三步：整合结果...")
@@ -635,7 +617,6 @@ class WomeiOrderVoucherService:
                 'price_match': abs(final_price - calculated_price) < 0.01  # 价格是否匹配
             }
 
-            # 调试打印已移除
 
             return workflow_result
 
@@ -669,7 +650,6 @@ class WomeiOrderVoucherService:
             # 构建请求URL
             url = f"{self.base_url}/ticket/wmyc/cinema/{cinema_id}/order/info/?version=tp_version&order_id={order_id}"
             
-            # 调试打印已移除
             
             # 发送GET请求
             response = requests.get(url, headers=headers, verify=False, timeout=15)
@@ -682,7 +662,6 @@ class WomeiOrderVoucherService:
                 
                 if decoded_data and decoded_data.get('ret') == 0:
                     order_data = decoded_data.get('data', {})
-                    # 调试打印已移除
                     
                     return {
                         'success': True,

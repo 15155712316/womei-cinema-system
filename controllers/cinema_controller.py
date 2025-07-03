@@ -38,7 +38,6 @@ class CinemaController(QObject):
         # 连接事件总线
         self._connect_events()
         
-        # 调试打印已移除
     
     def _connect_events(self):
         """连接事件总线"""
@@ -113,7 +112,6 @@ class CinemaController(QObject):
                 print("[影院控制器] 影院或账号信息不完整，无法加载电影")
                 return []
             
-            # 调试打印已移除
             
             # 获取必要参数
             base_url = self.current_cinema.get('base_url', '') or self.current_cinema.get('domain', '')
@@ -126,7 +124,6 @@ class CinemaController(QObject):
             token = self.current_account.get('token', '')
             
             if not all([base_url, cinema_id, user_id]):
-                # 调试打印已移除
                 return []
             
             # 调用API获取电影
@@ -250,7 +247,6 @@ class CinemaController(QObject):
                 print("[影院控制器] 信息不完整，无法加载座位图")
                 return None
             
-            # 调试打印已移除
             
             # 发布座位图加载中事件
             event_bus.seat_map_loading.emit()

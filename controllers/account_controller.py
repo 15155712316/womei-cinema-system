@@ -37,7 +37,6 @@ class AccountController(QObject):
         # 连接事件总线
         self._connect_events()
         
-        # 调试打印已移除
     
     def _connect_events(self):
         """连接事件总线"""
@@ -64,7 +63,7 @@ class AccountController(QObject):
     def load_account_list(self) -> List[dict]:
         """加载账号列表"""
         try:
-            # 调试打印已移除
+            pass
             
             # 获取所有账号
             all_accounts = get_account_list()

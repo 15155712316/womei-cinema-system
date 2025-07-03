@@ -43,7 +43,6 @@ class AdminAPIService:
             response.raise_for_status()
             
             result = response.json()
-            # 调试打印已移除
             
             if result.get("success"):
                 return True, result.get("message", "机器码更新成功")

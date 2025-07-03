@@ -82,7 +82,6 @@ class WomeiOrderService:
                     'order_detail': {}
                 }
 
-            # 调试打印已移除
 
             # 🔧 修正：使用正确的沃美订单详情API URL格式
             detail_url = f"https://ct.womovie.cn/ticket/wmyc/cinema/{cinema_id}/order/info/"
@@ -106,7 +105,6 @@ class WomeiOrderService:
                 timeout=10
             )
 
-            # 调试打印已移除
 
             if response.status_code != 200:
                 return {
@@ -119,18 +117,12 @@ class WomeiOrderService:
             # 解析JSON响应
             try:
                 response_data = response.json()
-                # 调试打印已移除
 
                 # 检查API返回状态
                 if response_data.get('ret') == 0 and response_data.get('sub') == 0:
                     # 提取订单详情数据
                     detail_data = response_data.get('data', {})
 
-                    # 调试打印已移除
-                    # 调试打印已移除
-                    # 调试打印已移除
-                    # 调试打印已移除
-                    # 调试打印已移除
 
                     # 格式化订单详情数据
                     formatted_detail = self.format_order_detail(detail_data)
@@ -152,7 +144,6 @@ class WomeiOrderService:
 
             except json.JSONDecodeError as e:
                 print(f"[沃美订单服务] ❌ JSON解析失败: {e}")
-                # 调试打印已移除
                 return {
                     'success': False,
                     'error': f'JSON解析失败: {str(e)}',
@@ -161,7 +152,6 @@ class WomeiOrderService:
                 }
 
         except requests.exceptions.Timeout:
-            # 调试打印已移除
             return {
                 'success': False,
                 'error': '请求超时',
@@ -203,8 +193,6 @@ class WomeiOrderService:
                     'orders': []
                 }
             
-            # 调试打印已移除
-            # 调试打印已移除
             
             # 构建请求头
             headers = self.headers_template.copy()
@@ -224,7 +212,6 @@ class WomeiOrderService:
                 timeout=10
             )
             
-            # 调试打印已移除
             
             if response.status_code != 200:
                 return {
@@ -267,7 +254,6 @@ class WomeiOrderService:
                     
             except json.JSONDecodeError as e:
                 print(f"[沃美订单服务] ❌ JSON解析失败: {e}")
-                # 调试打印已移除
                 return {
                     'success': False,
                     'error': f'JSON解析失败: {str(e)}',
@@ -276,7 +262,6 @@ class WomeiOrderService:
                 }
                 
         except requests.exceptions.Timeout:
-            # 调试打印已移除
             return {
                 'success': False,
                 'error': '请求超时',
@@ -413,7 +398,6 @@ class WomeiOrderService:
                         elif '验证码' in name or 'verify' in name or 'validation' in name:
                             ds_code = code
 
-            # 调试打印已移除
 
             # 🔧 构建兼容现有UI逻辑的数据结构（按照字段映射要求）
             formatted_detail = {

@@ -735,9 +735,7 @@ class TabManagerWidget(QWidget):
 
             # 触发券组件刷新
             self.voucher_widget.refresh_vouchers()
-            pass  # 调试打印已移除
         else:
-            # 调试打印已移除
             from services.ui_utils import MessageManager
             MessageManager.show_error(self, "组件错误", "券管理组件未初始化！")
             return
@@ -912,7 +910,6 @@ class TabManagerWidget(QWidget):
             # 🆕 调用影院信息API获取影院名称
             from services.cinema_info_api import get_cinema_info, format_cinema_data
 
-            # 调试打印已移除
 
             # 调用API获取影院信息
             cinema_info = get_cinema_info(domain, cinema_id)
@@ -934,7 +931,6 @@ class TabManagerWidget(QWidget):
             result_text.setText(success_text)
             result_text.setStyleSheet("color: #4caf50; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f1f8e9;")
 
-            # 调试打印已移除
 
             # 🚫 移除对旧cinema_manager的依赖 - 沃美系统不需要本地影院管理
             # 沃美系统通过API动态获取影院数据，不需要本地存储和管理
@@ -951,7 +947,6 @@ class TabManagerWidget(QWidget):
                 result_text.setText(f"🎉 添加成功！\n影院名称: {cinema_name}\n已添加到系统中")
                 result_text.setStyleSheet("color: #4caf50; padding: 10px; border: 1px solid #ddd; border-radius: 4px; background: #f1f8e9;")
 
-                # 调试打印已移除
 
                 QMessageBox.information(dialog, "添加成功", f"影院 {cinema_name} 已成功添加！")
                 return True
@@ -980,7 +975,6 @@ class TabManagerWidget(QWidget):
             # 🚫 移除对旧cinema_manager的依赖 - 沃美系统不需要本地影院管理
             # 沃美系统通过API动态获取影院数据，不需要发送本地影院列表事件
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Tab管理器] 刷新出票Tab影院列表错误: {e}")
@@ -1125,7 +1119,6 @@ class TabManagerWidget(QWidget):
             self._reset_all_combos_to_default()
 
             # 沃美系统使用六级联动，城市数据在_init_cascade中通过API加载
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Tab管理器] 初始化下拉框错误: {e}")
@@ -1263,7 +1256,6 @@ class TabManagerWidget(QWidget):
                 # 沃美系统统一使用cinema_id字段
                 cinema_id = self.current_cinema_data.get('cinema_id')
                 if cinema_id:
-                    # 调试打印已移除
                     return cinema_id
 
             # 🎯 第二优先级：从沃美影院下拉框选择获取
@@ -1276,14 +1268,12 @@ class TabManagerWidget(QWidget):
                             if cinema.get('cinema_name') == cinema_name:
                                 cinema_id = cinema.get('cinema_id')
                                 if cinema_id:
-                                    # 调试打印已移除
                                     return cinema_id
 
             # 🚫 移除对旧账号数据和影院表格的依赖
             # 🚫 移除对旧cinema_manager的依赖
 
             # 如果都没有找到，返回空字符串而不是默认值
-            # 调试打印已移除
             return ""
 
         except Exception as e:
@@ -1318,7 +1308,6 @@ class TabManagerWidget(QWidget):
                 self.order_table.customContextMenuRequested.connect(self._show_order_context_menu)
                 self.order_table.itemDoubleClicked.connect(self._on_order_double_click)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Tab管理器] 信号连接错误: {e}")
@@ -1342,7 +1331,6 @@ class TabManagerWidget(QWidget):
             self.last_token_expired_time = current_time
             self.token_expired_flag = True
 
-            # 调试打印已移除
 
             # 🎯 发射token失效信号到主窗口
             self.token_expired.emit(error_msg)
@@ -1353,7 +1341,6 @@ class TabManagerWidget(QWidget):
             # 🔧 停止所有正在进行的API调用
             self._stop_all_api_calls()
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Token失效] ❌ 处理token失效异常: {e}")
@@ -1393,7 +1380,6 @@ class TabManagerWidget(QWidget):
                 self.coupon_list.clear()
                 self.coupon_list.addItem("Token已失效，无法加载券列表")
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Token失效] ❌ 重置UI状态异常: {e}")
@@ -1406,14 +1392,12 @@ class TabManagerWidget(QWidget):
             # 🔧 设置API实例的token失效标志
             if self.api_instance and hasattr(self.api_instance, 'token_expired'):
                 self.api_instance.token_expired = True
-                # 调试打印已移除
 
             # 🔧 清理数据缓存
             self.movies_data.clear()
             self.dates_data.clear()
             self.sessions_data.clear()
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Token失效] ❌ 停止API调用异常: {e}")
@@ -1430,7 +1414,6 @@ class TabManagerWidget(QWidget):
             if self.api_instance and hasattr(self.api_instance, 'reset_token_status'):
                 self.api_instance.reset_token_status()
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Token失效] ❌ 重置token状态异常: {e}")
@@ -1458,18 +1441,17 @@ class TabManagerWidget(QWidget):
     def _auto_refresh_orders(self):
         """自动刷新订单数据"""
         try:
-            # 调试打印已移除
+            pass
 
             # 检查订单刷新按钮是否存在
             if hasattr(self, 'order_refresh_btn') and self.order_refresh_btn:
-                # 调试打印已移除
+                pass
 
                 # 模拟点击刷新按钮
                 self.order_refresh_btn.click()
 
-                pass  # 调试打印已移除
             else:
-                pass  # 调试打印已移除
+                pass
 
         except Exception as e:
             print(f"[Tab管理器] 自动刷新订单错误: {e}")
@@ -1576,7 +1558,7 @@ class TabManagerWidget(QWidget):
     def _load_movies_for_cinema_womei(self, cinema_data):
         """使用沃美电影服务为指定影院加载电影数据（增强调试功能）"""
         try:
-            # 调试打印已移除
+            pass
 
             # 设置加载状态
             self.movie_combo.clear()
@@ -1592,7 +1574,6 @@ class TabManagerWidget(QWidget):
             print(f"  - 影院ID: {cinema_id}")
 
             if not cinema_id:
-                # 调试打印已移除
                 self._set_movie_combo_error("影院ID缺失")
                 return
 
@@ -1610,14 +1591,12 @@ class TabManagerWidget(QWidget):
             movies_result = film_service.get_movies(cinema_id)
 
             # 🔧 详细的响应调试
-            # 调试打印已移除
             print(f"  - success: {movies_result.get('success')}")
             print(f"  - total: {movies_result.get('total', 'N/A')}")
             print(f"  - error: {movies_result.get('error', 'N/A')}")
 
             if movies_result.get('success'):
                 movies = movies_result.get('movies', [])
-                # 调试打印已移除
                 print(f"  - 电影数量: {len(movies)}")
 
                 # 🔧 显示前3部电影的详细信息
@@ -1631,7 +1610,6 @@ class TabManagerWidget(QWidget):
 
                 if movies:
                     self._update_movie_combo_womei(movies)
-                    # 调试打印已移除
 
                     # 🔧 自动选择第一个电影
                     if len(movies) > 0:
@@ -1642,7 +1620,6 @@ class TabManagerWidget(QWidget):
                         # 延迟选择，确保下拉框已更新
                         QTimer.singleShot(100, lambda: self._auto_select_first_movie(movie_name))
                 else:
-                    # 调试打印已移除
                     self._set_movie_combo_error("该影院暂无电影")
             else:
                 error = movies_result.get('error', '未知错误')
@@ -1658,7 +1635,7 @@ class TabManagerWidget(QWidget):
     def _update_movie_combo_womei(self, movies):
         """更新电影下拉框（沃美数据格式，增强调试功能）"""
         try:
-            # 调试打印已移除
+            pass
 
             # 清空并设置默认选项
             self.movie_combo.clear()
@@ -1680,7 +1657,6 @@ class TabManagerWidget(QWidget):
 
             # 🔧 确保下拉框启用状态正确
             self.movie_combo.setEnabled(True)
-            # 调试打印已移除
             print(f"  - 总电影数: {len(movies)}")
             print(f"  - 下拉框项目数: {self.movie_combo.count()}")
             print(f"  - 启用状态: {self.movie_combo.isEnabled()}")
@@ -1764,7 +1740,6 @@ class TabManagerWidget(QWidget):
             print(f"  - 域名: {base_url}")
             
             if not base_url or not cinemaid:
-                # 调试打印已移除
                 self.movie_combo.clear()
                 self.movie_combo.addItem("影院参数错误")
                 return
@@ -1787,19 +1762,15 @@ class TabManagerWidget(QWidget):
             print(f"  - Token: {token[:10]}..." if token else "  - Token: 空")
 
             if not all([phone, token]):           # 🔧 修复：只检查必需的字段
-                # 调试打印已移除
                 self.movie_combo.clear()
                 self.movie_combo.addItem("账号信息不完整")
                 return
             
-            # 调试打印已移除
             print(f"[Tab管理器] API URL: https://{base_url}/MiniTicket/index.php/MiniFilm/getAllFilmsIndexNew")
             
             # 调用API获取影片数据
             films_data = get_films(base_url, cinemaid, openid, phone, token)  # 🔧 修复：使用phone替代userid
             
-            # 调试打印已移除
-            # 调试打印已移除
             
             if not films_data:
                 print("[Tab管理器] API返回空数据")
@@ -1808,7 +1779,6 @@ class TabManagerWidget(QWidget):
                 return
             
             # 🆕 详细调试API响应结构
-            # 调试打印已移除
             
             # 🆕 正确保存原始数据
             self.raw_films_data = films_data  # 保存完整的原始数据
@@ -1912,7 +1882,6 @@ class TabManagerWidget(QWidget):
                     print(f"[Tab管理器] 影片 {i+1}: {film_name} (排期数: {len(plans)})")
                     self.movie_combo.addItem(film_name)
                     
-                pass  # 调试打印已移除
             else:
                 self.movie_combo.addItem("暂无影片")
                 print(f"[Tab管理器] 没有可用影片")
@@ -1959,7 +1928,6 @@ class TabManagerWidget(QWidget):
             self.current_movie_data = selected_movie
             movie_id = selected_movie.get('movie_id') or selected_movie.get('id')
 
-            # 调试打印已移除
 
             # 获取沃美影院ID
             cinema_id = None
@@ -1967,7 +1935,6 @@ class TabManagerWidget(QWidget):
                 cinema_id = self.current_cinema_data.get('cinema_id')  # 沃美系统使用cinema_id
 
             if not cinema_id or not movie_id:
-                # 调试打印已移除
                 self._set_date_combo_error("参数缺失")
                 return
 
@@ -1987,7 +1954,6 @@ class TabManagerWidget(QWidget):
             if shows_result.get('success'):
                 shows_data = shows_result.get('shows', {})  # 沃美返回按日期分组的字典
                 total_shows = shows_result.get('total', 0)
-                # 调试打印已移除
 
                 if shows_data and isinstance(shows_data, dict):
                     # 从按日期分组的数据中提取有效日期
@@ -2129,10 +2095,8 @@ class TabManagerWidget(QWidget):
             # 更新场次下拉框
             if matching_sessions:
                 self._update_session_combo_womei(matching_sessions)
-                pass  # 调试打印已移除
             else:
                 self._set_session_combo_error("该日期暂无场次")
-                # 调试打印已移除
             
         except Exception as e:
             print(f"[Tab管理器] 日期选择错误: {e}")
@@ -2227,14 +2191,11 @@ class TabManagerWidget(QWidget):
             # 获取选中的场次数据
             selected_session = None
             session_index = self.session_combo.currentIndex() - 1  # 减去"请选择场次"选项
-            # 调试打印已移除
 
             if 0 <= session_index < len(self.current_date_sessions):
                 selected_session = self.current_date_sessions[session_index]
-                # 调试打印已移除
 
             if not selected_session:
-                # 调试打印已移除
                 return
             
             # 🆕 保存当前场次数据供订单创建使用
@@ -2247,14 +2208,12 @@ class TabManagerWidget(QWidget):
             date_text = self.date_combo.currentText() if hasattr(self, 'date_combo') else ""
             
             # 🆕 查找影院详细数据 - 修复逻辑
-            # 调试打印已移除
             print(f"  - 目标影院名: {cinema_text}")
             print(f"  - cinemas_data存在: {hasattr(self, 'cinemas_data')}")
             print(f"  - cinemas_data长度: {len(self.cinemas_data) if hasattr(self, 'cinemas_data') and self.cinemas_data else 0}")
 
             cinema_data = None
             if hasattr(self, 'cinemas_data') and self.cinemas_data:
-                # 调试打印已移除
                 for i, cinema in enumerate(self.cinemas_data):
                     cinema_name = cinema.get('cinema_name')  # 沃美系统字段
                     cinema_short_name = cinema.get('cinemaShortName')  # 华联系统字段
@@ -2263,14 +2222,12 @@ class TabManagerWidget(QWidget):
                     # 同时检查两种字段名
                     if cinema_name == cinema_text or cinema_short_name == cinema_text:
                         cinema_data = cinema
-                        # 调试打印已移除
                         print(f"  - cinema_id: {cinema.get('cinema_id')}")
                         print(f"  - cinemaid: {cinema.get('cinemaid')}")
                         print(f"  - base_url: {cinema.get('base_url')}")
                         break
 
             if not cinema_data:
-                # 调试打印已移除
                 print(f"[Tab管理器] 可用影院列表:")
                 if hasattr(self, 'cinemas_data') and self.cinemas_data:
                     for i, c in enumerate(self.cinemas_data):
@@ -2292,13 +2249,11 @@ class TabManagerWidget(QWidget):
                             cinema_short_name = cinema.get('cinemaShortName')
                             if cinema_name == cinema_text or cinema_short_name == cinema_text:
                                 cinema_data = cinema
-                                # 调试打印已移除
                                 break
                 except Exception as reload_error:
                     print(f"[Tab管理器] ❌ 重新加载影院数据失败: {reload_error}")
             
             # 构建场次信息对象
-            # 调试打印已移除
             print(f"  - selected_session: {selected_session}")
             print(f"  - cinema_text: {cinema_text}")
             print(f"  - movie_text: {movie_text}")
@@ -2317,9 +2272,6 @@ class TabManagerWidget(QWidget):
                 'cinema_data': cinema_data  # 🆕 确保传递完整的影院数据
             }
 
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 🆕 启用选座按钮 - 当用户选择完场次后
             if hasattr(self, 'submit_order_btn'):
@@ -2338,10 +2290,8 @@ class TabManagerWidget(QWidget):
                 cinema_id = self.current_cinema_data.get('cinema_id')  # 沃美系统使用cinema_id
 
             if not all([cinema_id, hall_id, schedule_id]):
-                # 调试打印已移除
                 return
 
-            # 调试打印已移除
             print(f"  - 影院ID: {cinema_id}")
             print(f"  - 影厅ID: {hall_id}")
             print(f"  - 场次ID: {schedule_id}")
@@ -2357,7 +2307,7 @@ class TabManagerWidget(QWidget):
     def _load_seat_map_womei(self, cinema_id, hall_id, schedule_id, session_data):
         """使用沃美电影服务获取座位图"""
         try:
-            # 调试打印已移除
+            pass
 
             # 获取沃美电影服务实例
             from services.womei_film_service import get_womei_film_service
@@ -2365,7 +2315,6 @@ class TabManagerWidget(QWidget):
             # 🔧 修复：使用当前账号的token而不是硬编码token
             current_token = self.current_account.get('token', '') if self.current_account else ''
             if not current_token:
-                # 调试打印已移除
                 return
 
             print(f"[Tab管理器] 🔑 使用账号token: {current_token[:20]}...")
@@ -2376,10 +2325,8 @@ class TabManagerWidget(QWidget):
 
             if hall_result.get('success'):
                 hall_info = hall_result.get('hall_info', {})
-                # 调试打印已移除
 
                 # 构建正确的session_info对象（主窗口期望的格式）
-                # 调试打印已移除
                 print(f"  - session_data: {session_data}")
                 print(f"  - current_account: {bool(self.current_account)}")
                 print(f"  - current_cinema_data: {bool(hasattr(self, 'current_cinema_data'))}")
@@ -2420,7 +2367,6 @@ class TabManagerWidget(QWidget):
                     'session_text': self._format_session_text_womei(session_data)
                 }
 
-                # 调试打印已移除
                 print(f"  - session_data: {bool(session_info.get('session_data'))}")
                 print(f"  - account: {bool(session_info.get('account'))}")
                 print(f"  - cinema_data: {bool(session_info.get('cinema_data'))}")
@@ -2432,7 +2378,6 @@ class TabManagerWidget(QWidget):
                 # 启用选座按钮
                 if hasattr(self, 'submit_order_btn'):
                     self.submit_order_btn.setEnabled(True)
-                    # 调试打印已移除
 
             else:
                 error = hall_result.get('error', '未知错误')
@@ -2517,20 +2462,15 @@ class TabManagerWidget(QWidget):
             self.order_refresh_btn.setText("刷新中...")
             self.order_refresh_btn.setEnabled(False)
 
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 🆕 使用新的沃美订单服务
             from services.womei_order_service import get_user_orders
 
             result = get_user_orders(token, offset=0)
 
-            # 调试打印已移除
 
             if result.get('success'):
                 orders = result.get('orders', [])
-                # 调试打印已移除
 
                 # 🆕 使用新的订单数据格式更新表格
                 self.update_womei_order_table(orders)
@@ -2559,13 +2499,13 @@ class TabManagerWidget(QWidget):
     def update_womei_order_table(self, orders):
         """🆕 更新沃美订单表格显示 - 基于新的数据格式"""
         try:
-            # 调试打印已移除
+            pass
 
             self.order_table.setRowCount(len(orders))
             self.order_data_cache = orders
 
             for row, order in enumerate(orders):
-                # 调试打印已移除
+                pass
 
                 # 🆕 使用新的数据格式 - 4个关键字段
                 movie_name = order.get('movie_name', '未知影片')
@@ -2573,7 +2513,6 @@ class TabManagerWidget(QWidget):
                 status_desc = order.get('status_desc', '未知状态')
                 order_id = order.get('order_id', '未知订单号')
 
-                # 调试打印已移除
 
                 # 设置表格数据
                 self.order_table.setItem(row, 0, self.order_table.__class__.createItem(movie_name))
@@ -2593,7 +2532,6 @@ class TabManagerWidget(QWidget):
 
                 self.order_table.setItem(row, 3, self.order_table.__class__.createItem(order_id))
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[沃美订单表格] ❌ 更新订单表格错误: {e}")
@@ -2747,7 +2685,6 @@ class TabManagerWidget(QWidget):
 
             # 🎯 验证订单号
             if not order_no:
-                # 调试打印已移除
                 MessageManager.show_error(self, "订单信息错误", "订单号不存在，无法查看二维码", auto_close=True)
                 return
 
@@ -2759,10 +2696,8 @@ class TabManagerWidget(QWidget):
                 # 🔄 旧格式继续使用原有的二维码逻辑
                 cinemaid = self.get_selected_cinemaid()
                 if not cinemaid:
-                    # 调试打印已移除
                     return
 
-                # 调试打印已移除
                 self._get_and_show_qrcode(order_no, cinemaid)
 
         except Exception as e:
@@ -2773,23 +2708,19 @@ class TabManagerWidget(QWidget):
     def _show_womei_order_info(self, order):
         """🆕 显示沃美订单详细信息 - 集成订单详情API"""
         try:
-            # 调试打印已移除
+            pass
 
             # 获取订单ID和用户token
             order_id = order.get('order_id', '')
             if not order_id:
-                # 调试打印已移除
                 return
 
             # 获取当前账号token
             account = getattr(self, 'current_account', None)
             if not account or not account.get('token'):
-                # 调试打印已移除
                 return
 
             token = account['token']
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 获取影院ID
             cinema_id = self.get_selected_cinemaid()
@@ -2798,7 +2729,6 @@ class TabManagerWidget(QWidget):
             result = None
 
             if not cinema_id:
-                # 调试打印已移除
                 # 使用订单列表的基本数据
                 order_info = {
                     'order_id': order.get('order_id', '未知订单号'),
@@ -2819,21 +2749,17 @@ class TabManagerWidget(QWidget):
                 # 🆕 调用沃美订单详情API
                 from services.womei_order_service import get_order_detail
 
-                # 调试打印已移除
-                # 调试打印已移除
                 result = get_order_detail(order_id, cinema_id, token)
 
             # 🔧 修复：确保result存在后再判断success
             if result and result.get('success'):
                 # API调用成功，使用详情数据
                 order_detail = result.get('order_detail', {})
-                # 调试打印已移除
 
                 # 🎯 生成取票码二维码
                 ticket_code = order_detail.get('ticket_code', '')
                 order_info_for_qr = order_detail.get('order_info', {})
 
-                # 调试打印已移除
                 print(f"  - ticket_code: {ticket_code}")
                 print(f"  - order_info: {order_info_for_qr}")
 
@@ -2869,7 +2795,6 @@ class TabManagerWidget(QWidget):
                             'display_type': 'generated_qrcode'
                         }
 
-                        pass  # 调试打印已移除
                     else:
                         # 二维码生成失败，使用文本显示
                         order_info = {
@@ -2976,7 +2901,6 @@ class TabManagerWidget(QWidget):
             from utils.signals import event_bus
             event_bus.show_qrcode.emit(order_info)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[沃美订单信息] ❌ 显示订单信息错误: {e}")
@@ -2995,9 +2919,7 @@ class TabManagerWidget(QWidget):
             tuple: (qr_bytes, qr_path) 二维码字节数据和保存路径
         """
         try:
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
+            pass
 
             # 导入二维码生成器
             from utils.qrcode_generator import generate_ticket_qrcode, save_qrcode_image
@@ -3011,9 +2933,6 @@ class TabManagerWidget(QWidget):
                 cinema_id = self.get_selected_cinemaid() or 'UNKNOWN'
                 qr_path = save_qrcode_image(qr_bytes, order_no, cinema_id)
 
-                # 调试打印已移除
-                # 调试打印已移除
-                # 调试打印已移除
 
                 return qr_bytes, qr_path
             else:
@@ -3031,18 +2950,14 @@ class TabManagerWidget(QWidget):
         try:
             from services.order_api import get_order_detail, get_order_qrcode_api
 
-            # 调试打印已移除
 
             # 🔧 获取当前账号信息
             account = getattr(self, 'current_account', None)
             if not account:
-                # 调试打印已移除
                 return
 
-            # 调试打印已移除
 
             # 🎯 第一步：获取订单详情，提取取票码
-            # 调试打印已移除
             detail_params = {
                 'orderno': order_no,
                 'groupid': '',
@@ -3068,7 +2983,6 @@ class TabManagerWidget(QWidget):
 
             # 🔧 修复：检查detail_data是否为None
             if detail_data is None:
-                # 调试打印已移除
                 return
 
             if not isinstance(detail_data, dict):
@@ -3080,17 +2994,13 @@ class TabManagerWidget(QWidget):
             ticket_code = detail_data.get('ticketCode', '') or detail_data.get('ticketcode', '')
             ds_code = detail_data.get('dsValidateCode', '')
 
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 🎯 确定最终的取票码（优先使用qrCode）
             final_ticket_code = qr_code or ds_code or ticket_code
 
             # 🎯 第三步：生成取票码二维码并显示
             if final_ticket_code:
-                # 调试打印已移除
+                pass
 
                 # 🎯 生成取票码二维码并保存到本地
                 self._generate_and_show_ticket_qrcode(order_no, final_ticket_code, detail_data, cinemaid)
@@ -3142,7 +3052,6 @@ class TabManagerWidget(QWidget):
             from utils.signals import event_bus
             event_bus.show_qrcode.emit(ticket_data)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[订单二维码] ❌ 显示取票码文本错误: {e}")
@@ -3190,7 +3099,6 @@ class TabManagerWidget(QWidget):
             from utils.signals import event_bus
             event_bus.show_qrcode.emit(combined_data)
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[订单二维码] ❌ 显示组合信息错误: {e}")
@@ -3200,18 +3108,16 @@ class TabManagerWidget(QWidget):
     def _generate_and_show_ticket_qrcode(self, order_no, ticket_code, detail_data, cinema_id):
         """生成并显示取票码二维码"""
         try:
-            # 调试打印已移除
-            # 调试打印已移除
+            pass
 
             # 🔧 直接导入完整二维码生成器（根据诊断结果，模块是可用的）
             from utils.qrcode_generator import generate_ticket_qrcode, save_qrcode_image
-            # 调试打印已移除
 
             # 🎯 生成二维码图片
             qr_bytes = generate_ticket_qrcode(ticket_code, detail_data)
 
             if qr_bytes:
-                # 调试打印已移除
+                pass
 
                 # 🎯 保存二维码图片到本地
                 save_path = save_qrcode_image(qr_bytes, order_no, cinema_id)
@@ -3245,7 +3151,6 @@ class TabManagerWidget(QWidget):
                 from utils.signals import event_bus
                 event_bus.show_qrcode.emit(combined_data)
 
-                # 调试打印已移除
 
             else:
                 print(f"[订单二维码] ❌ 取票码二维码生成失败")
@@ -3560,7 +3465,7 @@ class TabManagerWidget(QWidget):
     def _on_cinema_collect(self):
         """🆕 影院采集功能 - 打开curl命令输入对话框"""
         try:
-            # 调试打印已移除
+            pass
 
             # 导入curl参数提取对话框
             from ui.dialogs.auto_parameter_extractor import AutoParameterExtractor
@@ -3576,9 +3481,9 @@ class TabManagerWidget(QWidget):
             result = extractor_dialog.exec_()
 
             if result == QDialog.Accepted:
-                pass  # 调试打印已移除
+                pass
             else:
-                pass  # 调试打印已移除
+                pass
 
         except Exception as e:
             print(f"[影院采集] 启动采集功能错误: {e}")
@@ -3591,11 +3496,10 @@ class TabManagerWidget(QWidget):
     def _on_collection_completed(self, success: bool, message: str = ""):
         """🆕 影院采集完成后的回调处理"""
         try:
-            # 调试打印已移除
+            pass
 
             if success:
                 # 🆕 采集成功后刷新所有相关界面
-                # 调试打印已移除
 
                 # 1. 刷新影院表格显示
                 self._refresh_cinema_table_display()
@@ -3613,7 +3517,6 @@ class TabManagerWidget(QWidget):
                     f"🎉 影院采集完成！\n\n{message}\n\n所有相关界面已自动刷新。"
                 )
 
-                # 调试打印已移除
 
             else:
                 # 采集失败，显示错误信息
@@ -3678,12 +3581,11 @@ class TabManagerWidget(QWidget):
     def _init_cascade(self):
         """初始化联动（直接从城市开始）"""
         try:
-            # 调试打印已移除
+            pass
 
             # 直接加载沃美系统的城市列表
             self._load_cities_for_womei()
 
-            # 调试打印已移除
 
         except Exception as e:
             print(f"[Tab管理器] ❌ 联动初始化失败: {e}")
@@ -3721,7 +3623,7 @@ class TabManagerWidget(QWidget):
     def _load_cities_for_womei(self):
         """加载沃美系统的城市列表"""
         try:
-            # 调试打印已移除
+            pass
 
             # 更新城市下拉框状态
             if hasattr(self, 'city_combo'):
@@ -3744,14 +3646,12 @@ class TabManagerWidget(QWidget):
             cities_result = film_service.get_cities()
 
             # 🔧 详细的响应调试
-            # 调试打印已移除
             print(f"  - success: {cities_result.get('success')}")
             print(f"  - total: {cities_result.get('total', 'N/A')}")
             print(f"  - error: {cities_result.get('error', 'N/A')}")
 
             if cities_result.get('success'):
                 cities = cities_result.get('cities', [])
-                # 调试打印已移除
                 print(f"  - 城市数量: {len(cities)}")
 
                 # 🔧 显示前5个城市的详细信息
@@ -3767,13 +3667,11 @@ class TabManagerWidget(QWidget):
                 # 保存数据并更新下拉框
                 self.cities_data = cities
                 self._update_city_combo()
-                # 调试打印已移除
 
                 # 🆕 启用自动选择第一个城市的机制
                 if len(cities) > 0:
                     first_city = cities[0]
                     city_name = first_city.get('city_name', '未知城市')
-                    # 调试打印已移除
                     print(f"[城市调试] 第一个城市: {city_name}（即将自动选择）")
 
                     # 延迟自动选择，确保下拉框更新完成
@@ -3803,7 +3701,6 @@ class TabManagerWidget(QWidget):
                 for i in range(self.city_combo.count()):
                     if self.city_combo.itemText(i) == city_name:
                         self.city_combo.setCurrentIndex(i)
-                        # 调试打印已移除
                         break
         except Exception as e:
             print(f"[城市调试] 自动选择城市失败: {e}")
@@ -3895,10 +3792,9 @@ class TabManagerWidget(QWidget):
     def _update_city_combo(self):
         """更新城市下拉框（修复信号冲突问题）"""
         try:
-            # 调试打印已移除
+            pass
 
             if not hasattr(self, 'city_combo'):
-                # 调试打印已移除
                 return
 
             # 🔧 暂时断开信号连接，防止更新过程中触发信号
@@ -3933,7 +3829,6 @@ class TabManagerWidget(QWidget):
         try:
             city_name = city_data.get('city_name', '未知城市')
             city_id = city_data.get('city_id', '')
-            # 调试打印已移除
             print(f"[影院调试] 城市: {city_name} (ID: {city_id})")
 
             # 更新影院下拉框状态
@@ -3948,7 +3843,6 @@ class TabManagerWidget(QWidget):
 
             if cinemas:
                 # 🔧 显示前3个影院的详细信息
-                # 调试打印已移除
                 for i, cinema in enumerate(cinemas[:3]):
                     cinema_name = cinema.get('cinema_name', '未知影院')
                     cinema_id = cinema.get('cinema_id', 'N/A')
@@ -3960,7 +3854,6 @@ class TabManagerWidget(QWidget):
                 # 使用城市数据中的影院列表
                 self.cinemas_data = cinemas
                 self._update_cinema_combo()
-                # 调试打印已移除
 
                 # 🆕 将沃美影院数据存储到事件总线，供二维码生成器使用
                 from utils.signals import event_bus
@@ -3970,7 +3863,6 @@ class TabManagerWidget(QWidget):
                 if len(cinemas) > 0:
                     first_cinema = cinemas[0]
                     cinema_name = first_cinema.get('cinema_name', '未知影院')
-                    # 调试打印已移除
                     print(f"[影院调试] 第一个影院: {cinema_name}（即将自动选择）")
 
                     # 延迟自动选择，确保下拉框更新完成
@@ -4000,9 +3892,7 @@ class TabManagerWidget(QWidget):
                     if city_cinemas:
                         self.cinemas_data = city_cinemas
                         self._update_cinema_combo()
-                        pass  # 调试打印已移除
                     else:
-                        # 调试打印已移除
                         self._set_cinema_combo_error("该城市暂无影院")
                 else:
                     error = cinemas_result.get('error', '未知错误')
@@ -4010,7 +3900,6 @@ class TabManagerWidget(QWidget):
 
                     print(f"[影院API调试] ❌ 影院API调用失败")
                     print(f"[影院API调试] 📋 错误信息: {error}")
-                    # 调试打印已移除
 
                     # 🎯 检测token失效并处理
                     error_type = cinemas_result.get('error_type', '')
@@ -4020,7 +3909,7 @@ class TabManagerWidget(QWidget):
                         return  # 直接返回，不再继续处理
 
                     if debug_info:
-                        pass  # 调试打印已移除
+                        pass
 
                     print(f"影院API失败: {error}")
                     self._set_cinema_combo_error(f"加载影院失败: {error}")
@@ -4039,7 +3928,6 @@ class TabManagerWidget(QWidget):
                 for i in range(self.cinema_combo.count()):
                     if self.cinema_combo.itemText(i) == cinema_name:
                         self.cinema_combo.setCurrentIndex(i)
-                        # 调试打印已移除
                         break
         except Exception as e:
             print(f"[Tab管理器] 自动选择影院失败: {e}")
@@ -4052,7 +3940,6 @@ class TabManagerWidget(QWidget):
                 for i in range(self.movie_combo.count()):
                     if self.movie_combo.itemText(i) == movie_name:
                         self.movie_combo.setCurrentIndex(i)
-                        # 调试打印已移除
                         break
         except Exception as e:
             print(f"[Tab管理器] 自动选择电影失败: {e}")
@@ -4065,7 +3952,6 @@ class TabManagerWidget(QWidget):
                 for i in range(self.date_combo.count()):
                     if self.date_combo.itemText(i) == date_text:
                         self.date_combo.setCurrentIndex(i)
-                        # 调试打印已移除
                         break
         except Exception as e:
             print(f"[Tab管理器] 自动选择日期失败: {e}")
@@ -4078,7 +3964,6 @@ class TabManagerWidget(QWidget):
                 for i in range(self.session_combo.count()):
                     if self.session_combo.itemText(i) == session_text:
                         self.session_combo.setCurrentIndex(i)
-                        # 调试打印已移除
                         break
         except Exception as e:
             print(f"[Tab管理器] 自动选择场次失败: {e}")

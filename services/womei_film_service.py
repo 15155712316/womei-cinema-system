@@ -53,8 +53,6 @@ class WomeiFilmService:
         # 🎯 检测token失效的条件：ret=0 且 sub=408 且消息包含TOKEN超时
         if ret_code == 0 and sub_code == 408 and 'TOKEN超时' in msg:
             self.token_expired = True  # 设置token失效标志
-            # 调试打印已移除
-            # 调试打印已移除
             print(f"[Token检测] 📋 错误信息: {msg}")
 
             return {
@@ -106,15 +104,12 @@ class WomeiFilmService:
             else:
                 response = self.api.get_cities()
 
-                # 调试打印已移除
-                # 调试打印已移除
 
                 # 🎯 使用统一的token检测机制
                 error_result = self._check_token_validity(response)
                 if error_result:
                     if error_result.get('error_type') == 'token_expired':
                         # Token失效，使用模拟数据继续运行
-                        # 调试打印已移除
                         data = None  # 标记使用模拟数据
                     else:
                         # 其他API错误，直接返回错误
@@ -128,13 +123,12 @@ class WomeiFilmService:
                 else:
                     # API成功，获取真实数据
                     data = response.get('data', {})
-                    # 调试打印已移除
 
             # 检查data是否为字典格式或需要使用模拟数据
             if data is None or isinstance(data, list):
                 # 如果data是列表或为None，说明需要使用模拟数据
                 if data is not None:
-                    pass  # 调试打印已移除
+                    pass
 
                 # 返回模拟的10个城市数据用于测试
                 mock_cities = [
@@ -189,12 +183,10 @@ class WomeiFilmService:
     def get_cinemas(self, city_id: str = None) -> Dict[str, Any]:
         """获取影院列表"""
         try:
-            # 调试打印已移除
-            # 调试打印已移除
+            pass
 
             # 🔧 检查token是否已失效，避免无效API调用
             if self.token_expired:
-                # 调试打印已移除
                 return {
                     "success": False,
                     "error": "Token已失效，请重新登录",
@@ -205,9 +197,6 @@ class WomeiFilmService:
             # 沃美系统的城市列表已包含影院信息
             cities_response = self.api.get_cities()
 
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 🎯 使用统一的token检测机制
             error_result = self._check_token_validity(cities_response)
@@ -226,25 +215,17 @@ class WomeiFilmService:
                 }
 
             data = cities_response.get('data', {})
-            # 调试打印已移除
-            # 调试打印已移除
-            # 调试打印已移除
 
             # 检查data是否为字典格式
             if isinstance(data, list):
                 print(f"[影院API调试] ❌ data为列表格式，这通常表示token失效或API异常")
-                # 调试打印已移除
-                # 调试打印已移除
 
                 # 🔧 增加详细分析
                 if len(data) == 0:
-                    pass  # 调试打印已移除
+                    pass
                 else:
-                    # 调试打印已移除
                     if data:
                         first_item = data[0]
-                        # 调试打印已移除
-                        # 调试打印已移除
 
                 return {
                     "success": False,
@@ -624,7 +605,6 @@ class WomeiFilmService:
         try:
             response = self.api.create_order(cinema_id, seatlable, schedule_id)
 
-            # 调试打印已移除
 
             # 🔧 修复：检查API调用是否成功
             if response.get('ret') != 0:

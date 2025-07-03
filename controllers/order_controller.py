@@ -37,7 +37,6 @@ class OrderController(QObject):
         # 连接事件总线
         self._connect_events()
         
-        # 调试打印已移除
     
     def _connect_events(self):
         """连接事件总线"""
@@ -92,7 +91,6 @@ class OrderController(QObject):
     def create_order(self, seats: List[dict], session_info: dict) -> Optional[dict]:
         """创建订单"""
         try:
-            # 调试打印已移除
             print(f"[订单控制器] 座位数量: {len(seats)}")
             print(f"[订单控制器] 场次信息: {session_info.get('session_text', 'N/A')}")
             

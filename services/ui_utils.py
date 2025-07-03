@@ -281,4 +281,3 @@ if __name__ == "__main__":
     print(f"initial状态是否显示优惠券: {CouponManager.should_show_coupons('initial')}")
     print(f"order_submitted状态是否显示优惠券: {CouponManager.should_show_coupons('order_submitted')}")
     
-    # 调试打印已移除
